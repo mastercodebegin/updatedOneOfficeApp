@@ -1,4 +1,8 @@
 {
   "name": "PdfViewerNew",
-  "displayName": "PdfViewerNew"
+  "displayName": "PdfViewerNew",
+   "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2575560727390585~8429255014",
+    "ios_app_id": "ca-app-pub-2575560727390585~8429255014"
+  }
 }
