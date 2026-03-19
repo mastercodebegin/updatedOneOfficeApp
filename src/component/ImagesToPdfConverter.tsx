@@ -5,7 +5,7 @@ import FloatingButton from './FloatingButton'
 import DocumentPicker from 'react-native-document-picker';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
-import {createPdf} from 'react-native-images-to-pdf';
+import { createPdf } from 'react-native-images-to-pdf';
 import ModalViewForPdfName from './ModalViewForPdfName'
 import RNFetchBlob from 'rn-fetch-blob';
 import { capitalizeFirstLetter, deleteFile, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getDate, getFileSize, heightFromPercentage, navigateTo, scaledSize, widthFromPercentage } from '../utilies/Utilities';
@@ -41,8 +41,9 @@ import CustomPermissionMessage from './CustomPermissionMessage';
 import { CustomPhotoOrCameraSelectOption } from './CustomPhotoOrCameraSelectOption';
 import CustomInput from './CustomInput';
 import CustomVectorIcon from './CustomVectorIcon';
+import RNBlobUtil from 'react-native-blob-util';
 
-const RNImageToPdf = createPdf
+// const RNImageToPdf = createPdf
 
 const ImagesToPdfConverter = () => {
   const toast = useToast()
@@ -179,60 +180,83 @@ const ImagesToPdfConverter = () => {
             : item.path.replace('file://', ''))
       );
 
-      const options = {
-        imagePaths: imagePaths,
-        name: pdfName.length > 0 ? pdfName : 'testpdf',
-        maxSize: { // optional maximum image dimension - larger images will be resized
-          width: 900,
-          height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
-        },
-        quality: getQualityValue(quality), // optional compression paramter
-      };
+const pages = imagePaths.map(path => ({
+  imagePath: path,
+}));
+
+const options = {
+  pages: pages,
+  outputPath: `file://${RNBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
+};
       console.log('options', options);
 
-      const pdf = await RNImageToPdf.createPDFbyImages(options);
+      const pdf = await createPdf(options);
       saveFileinPhoneStorage(pdf)
+      console.log('pdf',pdf);
+      
 
     } catch (e) {
       console.log('error-----', e);
     }
   }
 
-  const saveFileinPhoneStorage = async (file: any) => {
+const saveFileinPhoneStorage = async (filePath: string) => {
 
-    const id = generateUniqueNumber()
-    const date = getDateByMomentFormat(null, null)
-    console.log('date===', date);
-    console.log('file====', file);
-    try {
-      await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH)
-      console.log(' createad directory: ',);  // Handle any error here
-    }
-    catch (error) {
-      console.log('Error creating directory: ', error.message);  // Handle any error here
-    }
-    try {
-      const destinationPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${pdfName}.pdf`; // Specify the file name here
-      await RNFS.copyFile(file.filePath, destinationPath);
-      console.log('File copied successfully');  // Operation succeeded, no data returned
-    } catch (err) {
-      console.log('Error copying file: ', err.message);  // Handle any error here
-    }
-      const state = await RNFS.stat(file.filePath);
-    const existingFiles = await AsyncStorage.getItem(asyncStorageKeyName.CONVERTED_PDF_FILES)
-    console.log('state====', state);
-    console.log('pdfName====', pdfName);
+  const id = generateUniqueNumber();
+  const date = getDateByMomentFormat(null, null);
 
+  console.log('filePath====', filePath);
 
-    const files = [...pdfData, { 'id': id, 'path': file.filePath, 'name': `${pdfName}.pdf`, 'size': state.size, 'date': date }]
-    console.log('files: ', files);
+  // Android fix (remove file:// if exists)
+  const sourcePath =
+    Platform.OS === 'android'
+      ? filePath.replace('file://', '')
+      : `file://${filePath}`;
 
-    await AsyncStorage.setItem(asyncStorageKeyName.CONVERTED_PDF_FILES, JSON.stringify(files))
-    setPdfData(files)
-    //  shareFiles(pdf.filePath)
-    setIsShowCreatePdfModalWindow(false)
-
+  try {
+    await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH).catch(() => {});
+  } catch (error) {
+    console.log('Error creating directory:', error.message);
   }
+
+  const destinationPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${pdfName}.pdf`;
+
+  try {
+    await RNFS.copyFile(sourcePath, destinationPath);
+    console.log('File copied successfully');
+  } catch (err) {
+    console.log('Error copying file:', err.message);
+  }
+
+  // get file info
+  const state = await RNFS.stat(sourcePath);
+
+  // safe AsyncStorage read
+  const existingFiles = await AsyncStorage.getItem(
+    asyncStorageKeyName.CONVERTED_PDF_FILES
+  );
+
+  const parsedFiles = existingFiles ? JSON.parse(existingFiles) : [];
+
+  const files = [
+    ...parsedFiles,
+    {
+      id,
+      path: destinationPath, // ✅ IMPORTANT: save new path
+      name: `${pdfName}.pdf`,
+      size: state.size,
+      date,
+    },
+  ];
+
+  await AsyncStorage.setItem(
+    asyncStorageKeyName.CONVERTED_PDF_FILES,
+    JSON.stringify(files)
+  );
+
+  setPdfData(files);
+  setIsShowCreatePdfModalWindow(false);
+};
 
 
   const onAndroidSharePress = async (url, name) => {
