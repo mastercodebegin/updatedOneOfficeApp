@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
@@ -752,11 +752,13 @@ const renderParentItem = ({ item }) => {
     }
   }
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      {/* <StatusBar backgroundColor={COLORS.THEME_COLOR}/> */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{
         height: scaledSize(50),
-        alignSelf: 'center'
+        alignSelf: 'center',
+        marginTop:heightFromPercentage(4)
+
+        
       }}>
         {isMultiDelete ? <LinearGradient
           colors={['#1385b5', '#2fb2a2']}
@@ -805,16 +807,16 @@ const renderParentItem = ({ item }) => {
 
           <LinearGradient
             colors={['#0081A7', '#00AFB9']}
-
-
             style={{
               flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-              padding: 0, paddingLeft: 0, width: '95%', alignSelf: 'center', marginTop: scaledSize(10),
+               width: '95%', alignSelf: 'center', 
               borderRadius: scaledSize(8),
             }}>
             <View style={{
-              width: widthFromPercentage(78), height: scaledSize(43), marginTop: scaledSize(0),
-              justifyContent: 'center', alignItems: 'center', alignSelf: 'center'
+              width: widthFromPercentage(78), 
+              height: scaledSize(43), 
+              justifyContent: 'center', alignItems: 'center', 
+              alignSelf: 'center',
             }}>
               <Searchbar
                 placeholder="Search"
@@ -855,7 +857,7 @@ const renderParentItem = ({ item }) => {
 
       </View>
       {/* ----------------------------- */}
-      <View style={{ flex: 1, }}>
+      <View style={{ flex: 1,marginTop:heightFromPercentage(0.5) }}>
         {getFiles().length > 0 ? <FlatList
           showsVerticalScrollIndicator={false}
           data={getFiles()}
@@ -1042,7 +1044,7 @@ const renderParentItem = ({ item }) => {
               </View>
         </View>
       </CustomBottomSheet>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -1085,10 +1087,11 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: scaledSize(16),
-    fontWeight: '600',
+    fontSize: scaledSize(14),
+    // fontWeight: '600',
     color: '#1F1F1F',
-    letterSpacing:1
+    letterSpacing:1,
+    // fontFamily:Fonts.regular
   },
 
   date: {

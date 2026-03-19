@@ -2,7 +2,7 @@ import { StackActions } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler, Animated, Linking, ScrollView } from 'react-native'
 import Pdf from 'react-native-pdf';
-import { fileShare, generateUniqueNumber, navigateToBack, scaledSize } from '../utilies/Utilities';
+import { fileShare, generateUniqueNumber, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
 
 import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
@@ -84,49 +84,40 @@ const MultiplePdfView = (props: S) => {
   const headerComp = () => {
     return (
       <View style={{
-        height: scaledSize(30),
+        height: scaledSize(40),
         marginRight: scaledSize(0),
-        justifyContent: 'space-between', zIndex: 99,
+        justifyContent: 'space-between',
+         zIndex: 99,marginTop:heightFromPercentage(2),
         flexDirection: 'row',
       }}>
         
 
 
-        <CustomLinearGradientView colors={['white','white']}>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
+          <View style={{ flexDirection: 'row',
+             flex: 1,
+             justifyContent:'center',alignItems:'center' }}>
             <View style={{ flexDirection: 'row', flex: 1, }}>
               <TouchableOpacity style={{
                 height: scaledSize(20),
                 width: scaledSize(30),
                  borderRadius: scaledSize(30),
-                marginTop: scaledSize(6), marginLeft: scaledSize(10)
+                 marginLeft: scaledSize(10)
               }} onPress={() => onPressCloseHandler()} >
                 <CustomBackIcon onPress={onPressCloseHandler} size={22} color='black' />
               </TouchableOpacity>
             </View>
 
 
-            {selectedSheet?.path &&
-              <View
-                style={{ flexDirection: 'row', flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-
-                {/* {isMultiView ? */}
-
                   <CustomVectorIcon 
                   iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'} 
                   iconLibrary='MaterialCommunityIcons'
-                    style={{ color: COLORS.THEME_COLOR, fontSize: scaledSize(20), top: scaledSize(2) }}
+                    style={{ color: COLORS.THEME_COLOR, fontSize: scaledSize(20),
+                      right:30
+                      }}
                     onPress={() => { setIsMultiView(!isMultiView) }} />
 
-                  {/* :
-                  <CustomVectorIcon iconName='screen-rotation' iconLibrary='FontAwesome5'
-                    style={{ color: 'black', fontSize: scaledSize(25), bottom: scaledSize(4) }}
-                    onPress={() => { setIsMultiView(!isMultiView) }} />} */}
-
-              </View>}
           </View>
 
-        </CustomLinearGradientView>
 
       </View>
     )
@@ -136,9 +127,11 @@ const MultiplePdfView = (props: S) => {
 
   const renderItem = ({ item, index }) => {
     return (<Button
-      containerStyle={{ justifyContent: 'center', alignItems: 'center' }}
+      containerStyle={{ justifyContent: 'center', alignItems: 'center', }}
       buttonStyle={{
-        backgroundColor: 'white',
+        // backgroundColor: 'white',
+        backgroundColor: 'transparent',
+        paddingLeft:scaledSize(10),height:40,
         marginLeft: index == 0 ? 0 : scaledSize(10),
         borderBottomWidth: selectedSheet.name === item.name ? 2 : .5,
         borderColor: selectedSheet.name === item.name ? 'green' : 'gray',
@@ -187,16 +180,15 @@ const MultiplePdfView = (props: S) => {
                 console.log(`Link pressed: ${uri}`);
               }}
               source={{ uri: selectedSheet?.path }}
-
               style={styles.pdf} />
           </View>
           :
-          <View style={{ backgroundColor: 'red', marginTop: 10 }}>
+          <View style={{   }}>
 
             <View style={{
               backgroundColor: 'yellow',
-              height: scaledSize(320),
-              borderBottomWidth: 2, borderColor: 'gray'
+              height: heightFromPercentage(45),
+              // borderBottomWidth: 2, borderColor: 'green'
             }}>
 
               <Pdf
@@ -213,9 +205,11 @@ const MultiplePdfView = (props: S) => {
 
                 style={styles.pdf} />
             </View>
+            <View style={{height:scaledSize(5),backgroundColor:'#d3d3d3'}}></View>
 
             <View style={{
-              backgroundColor: 'yellow', height: scaledSize(350),
+              backgroundColor: 'yellow', 
+              height: heightFromPercentage(45),
               borderColor: 'black'
             }}>
 
@@ -245,10 +239,10 @@ const MultiplePdfView = (props: S) => {
       {headerComp()}
 
       {selectedSheet.path ? renderMultiPdf() : null}
-      {!isAddClosed?<View style={{ height: scaledSize(40) }}>
+      {/* {!isAddClosed?<View style={{ height: scaledSize(40) }}>
         <CustomBannerAdd onPressAddClose={()=>console.log('closed')
         } />
-      </View>:<></>}
+      </View>:<></>} */}
     </View>
 
   )
@@ -261,7 +255,7 @@ const styles = StyleSheet.create({
     // alignItems: 'center',
     // marginTop: scaledSize(25),
     //marginBottom:150
-    backgroundColor: 'white'
+    // backgroundColor: 'white'
   },
   pdf: {
     flex: 1,

@@ -10,11 +10,12 @@ import ImagesToPdfConverter from './src/component/ImagesToPdfConverter';
 import Splashscreen from './src/screen/splash/Splashscreen';
 import { Provider } from 'react-redux';
 import Store from './src/redux/Store';
-import { navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
+import { heightFromPercentage, navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
 import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import PdfViewer from './src/component/PdfView';
 import ReadSystemFile from './src/component/ReadSystemFile';
+
 import ManageExternalStorage from 'react-native-manage-external-storage';
 import MultiplePdfView from './src/component/MultiplePdfView';
 import ContactUs from './src/screen/contactus/ContactUs';
@@ -144,13 +145,12 @@ export default function App(props) {
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: scaledSize(45)
-        }
-      }}
-
-      >
+          // backgroundColor:'red'
+          height: heightFromPercentage(7),
+        }}}>
         {screensData.map((item, key) =>
-          <BottomTabs.Screen key={key} name={item.name} component={item.component}
+          <BottomTabs.Screen key={key} name={item.name} 
+          component={item.component}
             listeners={({ navigation, route }) => ({
               focus: () => {
                 setTimeout(() => {
@@ -159,7 +159,7 @@ export default function App(props) {
               },
             })}
             options={{
-              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center',top:scaledSize(2) }}>
                 {focused ? item.focus : item.unFocus}
               </View>),
               tabBarLabel: ({ focused }) => (

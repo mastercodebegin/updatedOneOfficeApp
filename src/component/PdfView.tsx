@@ -2,7 +2,7 @@ import { StackActions } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler,Animated, Linking } from 'react-native'
 import Pdf from 'react-native-pdf';
-import { fileShare, navigateToBack, scaledSize } from '../utilies/Utilities';
+import { fileShare, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
 
 import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
@@ -79,10 +79,11 @@ const PdfViewer = (props: any) => {
   const headerComp = () => {
     return (
       <Animated.View style={{
-        height: scaledSize(40),
-        marginRight: scaledSize(20),
+        height: scaledSize(50),
+        // marginRight: scaledSize(20),
         justifyContent: 'space-between', zIndex: 99,
         flexDirection: 'row',
+        marginTop:heightFromPercentage(2),
       }}>
 
          <>
@@ -118,7 +119,7 @@ const PdfViewer = (props: any) => {
         {!visible && currentPage==1 ? headerComp() : <></>}
       <View style={{ flex: 1 }}>
 
-        {visible ?
+        {!visible ?
           <Pdf
             onScaleChanged={(v) => console.log('changed================================', v)
             }
