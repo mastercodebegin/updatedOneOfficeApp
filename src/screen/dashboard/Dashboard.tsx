@@ -117,8 +117,8 @@ function Dashboard({ navigation, route }) {
   const [uniqueNumber, setUniqueNumber] = React.useState(0)
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([
-    { key: asyncStorageKeyName.PDF_FILES, title: 'Pdf', },
-    { key: asyncStorageKeyName.WORD_FILES, title: 'Word' },
+    { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
+    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
     // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
     // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
 
@@ -425,11 +425,11 @@ function Dashboard({ navigation, route }) {
   const getLinearColors = () => {
 
     switch (screeName) {
-      case 'Pdf':
+      case 'PDF':
         return ['#0081A7', '#00AFB9']
-      case 'Word':
+      case 'WORD':
         return ['#0066cc', '#0099cc']
-      case 'Excel':
+      case 'EXCEL':
         return ['#1A5319', '#729762',]
       default: return ['#597445', '#729762']
 
@@ -457,25 +457,18 @@ function Dashboard({ navigation, route }) {
     <TabBar
       {...props}
       indicatorStyle={{ backgroundColor: COLORS.THEME_COLOR, height: 1 }}
-      style={{ backgroundColor: 'white', }}
-      labelStyle={{ color: 'black', fontSize: scaledSize(14) }}
+      style={{ backgroundColor: 'white',color: 'black',}}
+      activeColor={COLORS.THEME_COLOR}
+      inactiveColor='gray'
       lazy
       lalazyPreloadDistance={1}
       onTabPress={({ route }) => {
         // Do something when a tab is pressed, e.g., show its name
         setScreenName(route.title)
         setTimeout(() => {
-
           StatusBar.setBackgroundColor(getLinearColors()[0]);
           //double tap to update color
-
-
         }, 50);
-
-        // Cleanup the focus listener when the component is unmounted
-        //return unsubscribeFocus;
-
-        console.log('Tab pressed:', route.title);
       }}
 
     />
@@ -612,14 +605,15 @@ function Dashboard({ navigation, route }) {
       {/* =================================TabBar Started================================ */}
       <View style={{ flex: 1, backgroundColor: 'white' }}>
 
-        {/* <TabView
+        <TabView
           renderTabBar={renderTabBar}
+          
           navigationState={{ index, routes }}
           renderScene={renderScene}
           onIndexChange={(i) => { setIndex(i), setSearchQuery('') }}
           initialLayout={{ width: layout.width, height: '100%' }}
 
-        /> */}
+        />
       </View>
 
       {isShowErrorModal && <CustomErrorMsgModal errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />}

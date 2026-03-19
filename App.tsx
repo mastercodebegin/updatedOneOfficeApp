@@ -13,20 +13,20 @@ import Store from './src/redux/Store';
 import { navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
 import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-// import PdfViewer from './src/component/PdfView';
-// import ReadSystemFile from './src/component/ReadSystemFile';
-// import ManageExternalStorage from 'react-native-manage-external-storage';
-// import MultiplePdfView from './src/component/MultiplePdfView';
-// import ContactUs from './src/screen/contactus/ContactUs';
-// import WordReader from './src/screen/wordFileReader/WordReader';
-// import WordFilesList from './src/screen/wordFileReader/WordFilesList';
-// import { ToastProvider } from 'react-native-toast-notifications'
-// import { Book, Converter, Home, MSExcel } from './src/assets/GlobalImages';
-// import XslxFilesList from './src/screen/XlsxFilReader/XslxFilesList';
-// import XslxReader from './src/screen/XlsxFilReader/XslxReader';
-// import PPTReader from './src/screen/PPTFilReader/PPTReader';
-// import PPTFilesList from './src/screen/PPTFilReader/PPTFilesList';
-// import EditImage from './src/screen/imageEditor/EditImage';
+import PdfViewer from './src/component/PdfView';
+import ReadSystemFile from './src/component/ReadSystemFile';
+import ManageExternalStorage from 'react-native-manage-external-storage';
+import MultiplePdfView from './src/component/MultiplePdfView';
+import ContactUs from './src/screen/contactus/ContactUs';
+import WordReader from './src/screen/wordFileReader/WordReader';
+import WordFilesList from './src/screen/wordFileReader/WordFilesList';
+import { ToastProvider } from 'react-native-toast-notifications'
+import { Book, Converter, Home, MSExcel } from './src/assets/GlobalImages';
+import XslxFilesList from './src/screen/XlsxFilReader/XslxFilesList';
+import XslxReader from './src/screen/XlsxFilReader/XslxReader';
+import PPTReader from './src/screen/PPTFilReader/PPTReader';
+import PPTFilesList from './src/screen/PPTFilReader/PPTFilesList';
+import EditImage from './src/screen/imageEditor/EditImage';
 import MultipleDocumentImageView from './src/screen/documentScanner/DisplayMultipleDocumentImage';
 import DisplayMultipleDocumentImage from './src/screen/documentScanner/DisplayMultipleDocumentImage';
 import DocumentScan from './src/screen/documentScanner/DocumentScan';
@@ -97,19 +97,19 @@ export default function App(props) {
 
 
 
-  // React.useEffect(() => {
-  //   async function AskPermission() {
-  //     await ManageExternalStorage.checkAndGrantPermission(
-  //       err => {
-  //         setResult(false)
-  //       },
-  //       res => {
-  //         setResult(true)
-  //       },
-  //     )
-  //   }
-  //   AskPermission() 
-  // }, []);
+  React.useEffect(() => {
+    async function AskPermission() {
+      await ManageExternalStorage.checkAndGrantPermission(
+        err => {
+          setResult(false)
+        },
+        res => {
+          setResult(true)
+        },
+      )
+    }
+    AskPermission() 
+  }, []);
 
   // const toastConfig = {
     
@@ -182,8 +182,8 @@ export default function App(props) {
                 <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
                   {/* <Stack.Screen name="Splashscreen" component={Splashscreen} /> */}
                   <Stack.Screen name="Home" component={MyTabs} />
-                  {/* <Stack.Screen name="Dashboard" component={Dashboard} /> */}
-                  {/* <Stack.Screen name="EditImage" component={EditImage} />
+                  <Stack.Screen name="Dashboard" component={Dashboard} />
+                 <Stack.Screen name="EditImage" component={EditImage} />
                   <Stack.Screen name="ReadSystemFile" component={ReadSystemFile} />
                   <Stack.Screen name="PdfViewer" component={PdfViewer} />
                   <Stack.Screen name="MultiplePdfView" component={MultiplePdfView} />
@@ -196,7 +196,7 @@ export default function App(props) {
                   <Stack.Screen name="XslxFilesList" component={XslxFilesList} />
                   <Stack.Screen name="PPTFilesList" component={PPTFilesList} />
                   <Stack.Screen name="ImagesToPdfConverter" component={ImagesToPdfConverter} />
-                  <Stack.Screen name="contactus" component={ContactUs} /> */}
+                  <Stack.Screen name="contactus" component={ContactUs} />
                 </Stack.Navigator>
               </NavigationContainer>
             </Provider>
