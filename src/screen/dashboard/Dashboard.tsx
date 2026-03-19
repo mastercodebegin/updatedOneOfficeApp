@@ -10,7 +10,7 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { deleteFile, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
+import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -55,6 +55,8 @@ import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomVectorIcon from '../../component/CustomVectorIcon';
 import { CustomPhotoOrCameraSelectOption } from '../../component/CustomPhotoOrCameraSelectOption';
 import { Overlay } from 'react-native-elements';
+import { pick, types } from '@react-native-documents/picker'
+
 const pdfs = [
   {
     "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
@@ -347,35 +349,41 @@ function Dashboard({ navigation, route }) {
 
 
   const openFile = async () => {
+    console.log('open file===');
+
+
     try {
-      const res = await DocumentPicker.pickSingle({
-        copyTo: 'cachesDirectory',
-        type: [DocumentPicker.types.pdf,
-        DocumentPicker.types.docx,
-        DocumentPicker.types.xlsx,
-        DocumentPicker.types.images,
-        DocumentPicker.types.ppt]
-      })
-      // console.log('response-----', res);
-      // i want a file extension
-      const fileExtension = res.name.split('.').pop()
-      console.log('fileExtension--------------', res);
+      const res = await DocumentPicker({ isMultipleSelection: false })
+      // addResult(res);
+      let fileExtension = ''
+      let uri = ''
+
+      if (res) {
+              console.log('name--------------', res[0].name);
+
+        fileExtension = res[0].name.split('.').pop()
+        uri = res[0].uri
+      }
+
+
+
       console.log('fileExtension--------------', fileExtension);
+      console.log('uri--------------', uri);
 
 
       if (fileExtension === 'pdf') {
         console.log('in pdf');
 
-        navigation.navigate('PdfViewer', { uri: res.fileCopyUri })
+        navigation.navigate('PdfViewer', { uri: uri })
       }
       else if (fileExtension === 'docx') {
-        navigation.navigate('WordReader', { uri: res.uri })
+        navigation.navigate('WordReader', { uri: uri })
       }
       else if (fileExtension === 'xlsx') {
-        navigation.navigate('XslxReader', { uri: res.uri })
+        navigation.navigate('XslxReader', { uri: uri })
       }
       else if (fileExtension === 'ppt') {
-        navigation.navigate('PowerPointReader', { uri: res.uri })
+        navigation.navigate('PowerPointReader', { uri:uri })
       }
 
 
@@ -503,9 +511,9 @@ function Dashboard({ navigation, route }) {
           marginRight: scaledSize(4)
         }}
       >
-        {response.files.length > 0 && <TouchableOpacity 
-        onPress={() => dispatch(checkIsUserViewedPdf(true))} style={{flexDirection:'row'}}>
-            <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{color:'red'}}  onPress={() => dispatch(checkIsUserViewedPdf(true))}/>
+        {response.files.length > 0 && <TouchableOpacity
+          onPress={() => dispatch(checkIsUserViewedPdf(true))} style={{ flexDirection: 'row' }}>
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} onPress={() => dispatch(checkIsUserViewedPdf(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
@@ -530,7 +538,7 @@ function Dashboard({ navigation, route }) {
         />
 
         <TouchableOpacity onPress={openFile}>
-          <Feather name="folder" size={scaledSize(18)} color="#555" />
+          <Feather name="folder" size={scaledSize(18)} color="red" />
         </TouchableOpacity>
 
         <CustomMenu

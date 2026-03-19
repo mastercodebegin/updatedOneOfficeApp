@@ -11,7 +11,7 @@ import { Popup } from 'react-native-popup-confirm-toast';
 import Share from 'react-native-share';
 import  {createPdf}   from 'react-native-images-to-pdf';
 
-import {pick} from '@react-native-documents/picker'
+import {pick, PredefinedFileTypes, types} from '@react-native-documents/picker'
 const RNImageToPdf = createPdf
 import { Platform } from 'react-native';
 
@@ -32,7 +32,6 @@ import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Zocial from 'react-native-vector-icons/Zocial';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
 
-const DocumentPicker=pick
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
 const baseWidth = 360;
 const baseHeight = 700;
@@ -40,7 +39,6 @@ const baseHeight = 700;
 const scaleWidth = width / baseWidth;
 const scaleHeight = height / baseHeight;
 const scale = Math.min(scaleWidth, scaleHeight);
-
 // const storageProvider = require('./StorageProvider');
 export const navigationRef = createNavigationContainerRef();
 
@@ -477,5 +475,38 @@ export const toastForDeleteFile = (toast: any, message: string) => {
 export const getImageUriByOS = (uri: string) => {
   return Platform.OS == 'android' ? `file:${uri}` : `file:${uri}`
 }
+export  { RNImageToPdf} 
 
-export  { DocumentPicker,RNImageToPdf} 
+interface S{
+isMultipleSelection?:boolean,
+fileTypes?:Array<any>
+isBase64?:boolean
+}
+export const DocumentPicker=async(props:S)=>{
+const {isMultipleSelection=false,fileTypes=[],isBase64=false} =props
+console.log('isMultipleSelection',isMultipleSelection);
+
+try {
+    const res = await pick({
+      allowMultiSelection: isMultipleSelection,
+      // type:fileTypes,
+    
+    });
+
+    const allValid = res.every(file => file.hasRequestedType);
+
+    if (!allValid) {
+      alert('Only PDF or DOCX files are allowed');
+      return;
+    }
+
+    // addResult(res);
+    console.log('res===',res[0]);
+    return res;
+}
+catch(err){
+  console.log('error====',err);
+  
+
+}  
+}
