@@ -2,13 +2,21 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
+    "moduleResolution": "node", // Ensure Node-style resolution
     "jsx": "react-native",
     "strict": true,
-    "noEmit": true,
-    "moduleResolution": "node",
-    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
-  }
+    "baseUrl": "./",
+    "paths": {
+      "@react-native-async-storage/async-storage": [
+        "./node_modules/@react-native-async-storage/async-storage",
+        "/node_modules/react-native-elevation"
+        
+      ]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }

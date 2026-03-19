@@ -512,11 +512,12 @@ function Dashboard({ navigation, route }) {
         }
 
         {response.files.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
-          <MaterialCommunityIcons
-            name="file-multiple-outline"
+          <MaterialIcons
+            name="picture-as-pdf"
             size={scaledSize(20)}
             color={COLORS.THEME_COLOR}
           />
+          {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
         </TouchableOpacity>}
 
         <TouchableOpacity onPress={addCardDetails}>
@@ -531,7 +532,7 @@ function Dashboard({ navigation, route }) {
         />
 
         <TouchableOpacity onPress={openFile}>
-          <Feather name="folder" size={scaledSize(18)} color="red" />
+          <Feather name="folder" size={scaledSize(18)} color={COLORS.THEME_COLOR} />
         </TouchableOpacity>
 
         <CustomMenu
