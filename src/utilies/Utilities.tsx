@@ -31,6 +31,7 @@ import Octicons from 'react-native-vector-icons/Octicons';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Zocial from 'react-native-vector-icons/Zocial';
 import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
 const baseWidth = 360;
@@ -510,3 +511,42 @@ catch(err){
 
 }  
 }
+
+ export const createImagesToPdf = async (images:Array<any>) => {
+    console.log('images to convert in pdf>>>>>>', images);
+
+    try {
+      if (!images || images.length === 0) {
+        console.log('No images found');
+        alert('No images found');
+        return;
+      }
+
+      const imagePaths: string[] = images.map((item: any) =>
+        Platform.OS === 'ios'
+          ? (typeof item === 'string' ? item : item.path)
+          : (typeof item === 'string'
+            ? item.replace('file://', '')
+            : item.path.replace('file://', ''))
+      );
+
+const pages = imagePaths.map(path => ({
+  imagePath: path,
+}));
+
+const options = {
+  pages: pages,
+  outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
+};
+      console.log('options', options);
+
+      const createdPdfPath = await createPdf(options);
+      // saveFileinPhoneStorage(pdf)
+      console.log('pdf',createdPdfPath);
+      return createdPdfPath
+      
+
+    } catch (e) {
+      console.log('error-----', e);
+    }
+  }

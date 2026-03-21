@@ -8,7 +8,7 @@ import RNFS from 'react-native-fs';
 import { createPdf } from 'react-native-images-to-pdf';
 import ModalViewForPdfName from './ModalViewForPdfName'
 import RNFetchBlob from 'rn-fetch-blob';
-import { capitalizeFirstLetter, deleteFile, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getDate, getFileSize, heightFromPercentage, navigateTo, scaledSize, widthFromPercentage } from '../utilies/Utilities';
+import { capitalizeFirstLetter, createImagesToPdf, deleteFile, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getDate, getFileSize, heightFromPercentage, navigateTo, scaledSize, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
 import CustomMenu from './Menu';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -162,42 +162,16 @@ const ImagesToPdfConverter = () => {
     }
   };
 
-  const createImagesToPdf = async () => {
-    console.log('images to convert in pdf>>>>>>', pdfImagesArr);
-
-    try {
-      if (!images || images.length === 0) {
-        console.log('No images found');
-        alert('No images found');
-        return;
-      }
-
-      const imagePaths: string[] = images.map((item: any) =>
-        Platform.OS === 'ios'
-          ? (typeof item === 'string' ? item : item.path)
-          : (typeof item === 'string'
-            ? item.replace('file://', '')
-            : item.path.replace('file://', ''))
-      );
-
-const pages = imagePaths.map(path => ({
-  imagePath: path,
-}));
-
-const options = {
-  pages: pages,
-  outputPath: `file://${RNBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
-};
-      console.log('options', options);
-
-      const pdf = await createPdf(options);
-      saveFileinPhoneStorage(pdf)
-      console.log('pdf',pdf);
-      
-
-    } catch (e) {
-      console.log('error-----', e);
+  const createImagesToPdfHandler = async () => {
+    if(pdfName.length==0)
+    {
+      alert('Enter pdf name please')
+      return
     }
+   const createdPdfPath = await createImagesToPdf(images)
+   console.log('createdPdfPath',createdPdfPath);
+   saveFileinPhoneStorage(createdPdfPath)
+   
   }
 
 const saveFileinPhoneStorage = async (filePath: string) => {
@@ -224,6 +198,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
   try {
     await RNFS.copyFile(sourcePath, destinationPath);
     console.log('File copied successfully');
+    deleteFileHandler(sourcePath)
   } catch (err) {
     console.log('Error copying file:', err.message);
   }
@@ -235,6 +210,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
   const existingFiles = await AsyncStorage.getItem(
     asyncStorageKeyName.CONVERTED_PDF_FILES
   );
+  
 
   const parsedFiles = existingFiles ? JSON.parse(existingFiles) : [];
 
@@ -254,8 +230,13 @@ const saveFileinPhoneStorage = async (filePath: string) => {
     JSON.stringify(files)
   );
 
+  setImages([])
+  setPdfName('')
+  
   setPdfData(files);
   setIsShowCreatePdfModalWindow(false);
+
+
 };
 
 
@@ -593,7 +574,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
           {renderPdfQuality()}
 
           <TouchableOpacity activeOpacity={0.85} style={{ marginTop: scaledSize(36), alignSelf: 'center' }}
-            onPress={() => { createImagesToPdf() }}
+            onPress={() => { createImagesToPdfHandler() }}
           >
             <LinearGradient
               colors={['#0891B2', COLORS.THEME_COLOR]}
@@ -630,7 +611,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
         </View>
       </Overlay>
 
-      {isDeleted ? <ConfirmationDialog onCancel={() => setIsDeleted(false)}
+      {isDeleted ? <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
         onSubmit={() => deleteFileHandler(filePath)} visible={isDeleted} /> : null}
       {customPermissionMessageModal()}
     </LinearGradient>
