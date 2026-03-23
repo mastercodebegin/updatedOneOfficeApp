@@ -82,7 +82,7 @@ const onLongPressItem=()=>{
       >
         <View style={[styles.fileNameParentView, { height: scaledSize(40) }]}>
           <View style={styles.fileNameView}>
-            <Text style={{ fontSize: scaledSize(12), fontFamily: Fonts.regular, letterSpacing: 1 }}>
+            <Text style={{ fontSize: scaledSize(12), fontFamily: Fonts.regular, letterSpacing: 1,color:'black' }}>
               {item?.name}
             </Text>
           </View>
