@@ -9,6 +9,7 @@ import {
   Alert, KeyboardAvoidingView,
   StatusBar,
   ScrollView,
+  Button,
 } from 'react-native';
 import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -56,6 +57,7 @@ import CustomVectorIcon from '../../component/CustomVectorIcon';
 import { CustomPhotoOrCameraSelectOption } from '../../component/CustomPhotoOrCameraSelectOption';
 import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
+import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 
 const pdfs = [
   {
@@ -129,6 +131,13 @@ function Dashboard({ navigation, route }) {
   const response = useSelector((state) => state.FileSlice);
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
+  const { user, accessToken, signIn, loading } = useGoogleAuth();
+
+  const handleLogin = async () => {
+    const res = await signIn();
+    console.log('Result:', res);
+  };
 
   useEffect(() => {
     console.log('response', response.files.map((v) => v.id));
@@ -359,7 +368,7 @@ function Dashboard({ navigation, route }) {
       let uri = ''
 
       if (res) {
-              console.log('name--------------', res[0].name);
+        console.log('name--------------', res[0].name);
 
         fileExtension = res[0].name.split('.').pop()
         uri = res[0].uri
@@ -383,7 +392,7 @@ function Dashboard({ navigation, route }) {
         navigation.navigate('XslxReader', { uri: uri })
       }
       else if (fileExtension === 'ppt') {
-        navigation.navigate('PowerPointReader', { uri:uri })
+        navigation.navigate('PowerPointReader', { uri: uri })
       }
 
 
@@ -457,7 +466,7 @@ function Dashboard({ navigation, route }) {
     <TabBar
       {...props}
       indicatorStyle={{ backgroundColor: COLORS.THEME_COLOR, height: 1 }}
-      style={{ backgroundColor: 'white',color: 'black',}}
+      style={{ backgroundColor: 'white', color: 'black', }}
       activeColor={COLORS.THEME_COLOR}
       inactiveColor='gray'
       lazy
@@ -564,6 +573,13 @@ function Dashboard({ navigation, route }) {
         <ScrollView style={{ flex: 1 }}>
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <Button title="Login with Google" onPress={handleLogin} />
+
+                {user && (
+                  <Text>Welcome: {user.user?.name}</Text>
+                )}
+              </View>
             </View>
 
             {renderHeaderIcons()}
@@ -608,7 +624,7 @@ function Dashboard({ navigation, route }) {
 
         <TabView
           renderTabBar={renderTabBar}
-          
+
           navigationState={{ index, routes }}
           renderScene={renderScene}
           onIndexChange={(i) => { setIndex(i), setSearchQuery('') }}
