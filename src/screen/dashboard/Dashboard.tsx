@@ -11,10 +11,10 @@ import {
   ScrollView,
   Button,
 } from 'react-native';
-import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
+import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, heightFromPercentage, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
+import RNFS from 'react-native-fs';
 // import Icon from 'react-native-vector-icons/Ionicons';
 import Icon from 'react-native-vector-icons/Feather';
 import CustomMenu from '../../component/Menu'
@@ -58,6 +58,7 @@ import { CustomPhotoOrCameraSelectOption } from '../../component/CustomPhotoOrCa
 import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
+import WebView from 'react-native-webview';
 
 const pdfs = [
   {
@@ -94,6 +95,7 @@ function Dashboard({ navigation, route }) {
   const [filterData, setFilterData] = useState([]);
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
+
   const [documents, setDocuments] = useState<DocumentTypes>({
     pdfFiles: [],
     wordFiles: [],
@@ -130,13 +132,17 @@ function Dashboard({ navigation, route }) {
   const dispatch = useDispatch();
   const response = useSelector((state) => state.FileSlice);
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
 
   const { user, accessToken, signIn, loading } = useGoogleAuth();
+  const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
-    const res = await signIn();
-    console.log('Result:', res);
+    setIsShowEditPdfModal(true)
+    // const res = await signIn();
+    // console.log('Result:', res);
   };
 
   useEffect(() => {
@@ -241,6 +247,8 @@ function Dashboard({ navigation, route }) {
     });
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('press back btn');
+      setIsShowEditPdfModal(false)
       setIsUserBack(true)
 
     });
@@ -560,9 +568,85 @@ function Dashboard({ navigation, route }) {
       </View>
     )
   }
+  // const handleDownloadPress = () => {
+  //   console.log('🟢 RN: Button pressed');
+
+  //   webViewRef.current?.postMessage(
+  //     JSON.stringify({ type: 'TRIGGER_DOWNLOAD' })
+  //   );
+  // };
+
+  const handleMessage = async (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      console.log('📩 FROM WEB:', data);
+
+      // 👉 When user clicks Download in web
+      if (data.type === 'DOWNLOAD_CLICKED') {
+        console.log('🟢 Download clicked from Web');
+
+        webViewRef.current?.injectJavaScript(`
+        (function() {
+          const viewer = document
+            .getElementById('container')
+            ?.ej2_instances?.[0];
+
+          if (!viewer) {
+            window.ReactNativeWebView.postMessage(
+              JSON.stringify({ type: 'ERROR', message: 'Viewer not found' })
+            );
+            return;
+          }
+
+          viewer.saveAsBlob().then(function(blob) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+
+            reader.onloadend = function() {
+              window.ReactNativeWebView.postMessage(
+                JSON.stringify({
+                  type: 'PDF_FILE',
+                  data: reader.result
+                })
+              );
+            };
+          });
+        })();
+        true;
+      `);
+      }
+
+      // 👉 When PDF comes back
+      if (data.type === 'PDF_FILE') {
+        console.log('📥 PDF received');
+
+        const base64 = data.data.split(',')[1];
+
+        const path =
+          RNFS.DownloadDirectoryPath +
+          '/edited_' +
+          Date.now() +
+          '.pdf';
+
+        await RNFS.writeFile(path, base64, 'base64');
+
+        console.log('✅ PDF saved at:', path);
+      }
+
+      // 👉 Error from web
+      if (data.type === 'ERROR') {
+        console.log('❌ Error from Web:', data.message);
+      }
+
+    } catch (e) {
+      console.log('❌ Parse error:', e);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} >
+
       <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
         <CustomSpinner isLoading={isLoading} />
       </View>
@@ -637,6 +721,51 @@ function Dashboard({ navigation, route }) {
       {count >= 8 ? <VideoAddMob count={randomNumber} /> : null}
       <Modal visible={isShowCardModal}>
         <SaveUserCardDetails onPress={() => setIsShowCardModal(false)} />
+      </Modal>
+      <Modal
+        // overlayStyle={{height:heightFromPercentage(100),width:widthFromPercentage(100)}}
+        visible={isShowEditPdfModal}
+      // onBackdropPress={() => setIsShowEditPdfModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'red' }}>
+          <WebView
+            source={{ uri: 'http://192.168.1.3:5173' }}
+            style={{ flex: 1 }}
+            ref={webViewRef}
+            onMessage={(event) => {
+              handleMessage(event)
+            }}
+          />
+
+
+          {/* Close button */}
+          <TouchableOpacity
+            onPress={() => setIsShowEditPdfModal(false)}
+            style={{
+              position: 'absolute',
+              top: heightFromPercentage(1),
+              left: scaledSize(160),
+              // backgroundColor: 'red',
+              padding: 10,
+            }}
+          >
+            <Text style={{ color: 'black' }}>Back</Text>
+          </TouchableOpacity>
+          {/* <TouchableOpacity
+            onPress={handleDownloadPress}
+            style={{
+              position: 'absolute',
+              bottom: 30,
+              right: 20,
+              backgroundColor: '#007bff',
+              padding: 15,
+              borderRadius: 50,
+              elevation: 5
+            }}
+          >
+            <Text style={{ color: '#fff' }}>Download</Text>
+          </TouchableOpacity> */}
+        </View>
       </Modal>
     </SafeAreaView>
   );
