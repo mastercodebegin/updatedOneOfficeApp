@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   box: {
     width: scaledSize(220),
     paddingVertical: scaledSize(25),
-    borderRadius: scaledSize(18),
+    borderRadius: scaledSize(12),
     backgroundColor: '#fff',
     alignItems: 'center',
     height:scaledSize(150),
@@ -69,6 +69,5 @@ const styles = StyleSheet.create({
     fontSize: scaledSize(12),
     letterSpacing:1,
     color: '#000',
-    fontWeight: '500',
   },
 });
