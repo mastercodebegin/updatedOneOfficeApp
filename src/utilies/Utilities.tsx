@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppShare, asyncStorageKeyName, CONSTANT } from './Constants';
 import { CommonActions } from '@react-navigation/native';
 import { createNavigationContainerRef } from '@react-navigation/native';
-import { Popup } from 'react-native-popup-confirm-toast';
+import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
 import Share from 'react-native-share';
 import { createPdf } from 'react-native-images-to-pdf';
 

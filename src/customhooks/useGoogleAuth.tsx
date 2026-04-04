@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { asyncStorageKeyName } from '../utilies/Constants';
-import { getData, setData } from '../utilies/storageService';
+import { getLocalData, setLocalData } from '../utilies/storageService';
 
 interface GoogleUser {
   user: any;
@@ -61,7 +61,7 @@ const signOut = async () => {
 
 const getFolderId = async (accessToken: string) => {
   try {
-    let folderId = getData(asyncStorageKeyName.DRIVE_FOLDER_ID);
+    let folderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID);
 
     // ✅ If exists → return
     if (folderId) {
@@ -94,7 +94,7 @@ const getFolderId = async (accessToken: string) => {
     folderId = data.id;
 
     // ✅ Save in MMKV
-    setData(asyncStorageKeyName.DRIVE_FOLDER_ID, folderId);
+    setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, folderId);
 
     return folderId;
 

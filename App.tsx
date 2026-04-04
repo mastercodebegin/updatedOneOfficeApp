@@ -11,7 +11,7 @@ import Splashscreen from './src/screen/splash/Splashscreen';
 import { Provider } from 'react-redux';
 import Store from './src/redux/Store';
 import { heightFromPercentage, navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
-import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
+import {Root as PopupRootProvider} from '@sekizlipenguen/react-native-popup-confirm-toast';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import PdfViewer from './src/component/PdfView';
 import ReadSystemFile from './src/component/ReadSystemFile';
