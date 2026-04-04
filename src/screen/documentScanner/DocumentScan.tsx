@@ -354,18 +354,39 @@ export const DocumentScan = () => {
 
     }
   }
-  const renameFolder = async () => {
-    setIsFolderNameChange(false)
-    const updatedData = [...data]
-    updatedData.forEach(item => {
-      if (item.id === folderId) {
-        item.folderName = folderName
-      }
-    })
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
+ const renameFolder = async () => {
+  setIsFolderNameChange(false);
 
-  }
+  const updatedFolders = data.folders.map(item => {
+    console.log('itemid b',item.id);
+    console.log('folderId b',folderId);
+    console.log('folderName b',folderName);
+    if (item.id === folderId) {
+      console.log('itemid',item.id);
+      console.log('folderId',folderId);
+      console.log('folderName',folderName);
+      
+      return {
+        ...item,
+        name: folderName, // ✅ immutable update
+      };
+    }
+    return item;
+  });
+
+  const newData = {
+    ...data,
+    folders: updatedFolders,
+  };
+console.log();
+
+  // ✅ update UI
+  setData(newData);
+
+  // ✅ persist
+  setLocalData(asyncStorageKeyName.DOCUMENTS,newData)
+};
+
   const deleteFolder = async () => {
     const updatedData = [...data]
     updatedData.forEach((item, index) => {
