@@ -73,17 +73,41 @@ export const DocumentScan = () => {
   const isFocused = useIsFocused();
  
 
-  useEffect(() => {
-    if (isFocused) {
-      console.log('is focused',);
-      AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS).then((value) => {
-        if (value) {
-          setData(JSON.parse(value));
-        }
-      });
+  // useEffect(() => {
+  //   if (isFocused) {
+  //     console.log('is focused',);
+  //     AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS).then((value) => {
+  //       if (value) {
+  //         setData(JSON.parse(value));
+  //       }
+  //     });
 
+  //   }
+  // }, [isFocused])
+  useEffect(() => {
+  if (!isFocused) return;
+
+  const loadData = async () => {
+    try {
+      console.log('is focused');
+
+      const value = await AsyncStorage.getItem(
+        asyncStorageKeyName.DOCUMENTS
+      );
+
+      if (value) {
+        setData(JSON.parse(value));
+      } else {
+        setData([]);
+      }
+    } catch (error) {
+      console.log('AsyncStorage error:', error);
     }
-  }, [isFocused])
+  };
+
+  loadData();
+}, [isFocused]);
+
   const deleteAsyncStorage = async () => {
     AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
     setData([])

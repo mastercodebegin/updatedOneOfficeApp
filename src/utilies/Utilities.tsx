@@ -9,9 +9,9 @@ import { CommonActions } from '@react-navigation/native';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { Popup } from 'react-native-popup-confirm-toast';
 import Share from 'react-native-share';
-import  {createPdf}   from 'react-native-images-to-pdf';
+import { createPdf } from 'react-native-images-to-pdf';
 
-import {pick, PredefinedFileTypes, types} from '@react-native-documents/picker'
+import { keepLocalCopy, pick, PredefinedFileTypes, types } from '@react-native-documents/picker'
 const RNImageToPdf = createPdf
 import { Platform } from 'react-native';
 
@@ -30,7 +30,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Octicons from 'react-native-vector-icons/Octicons';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Zocial from 'react-native-vector-icons/Zocial';
-import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
@@ -334,8 +334,8 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
     // await AsyncStorage.setItem(asyncStorageKeyName.WORD_FILES, JSON.stringify(wordFiles));
     // await AsyncStorage.setItem(asyncStorageKeyName.XLSX_FILES, JSON.stringify(xlsxFiles));
     // await AsyncStorage.setItem(asyncStorageKeyName.PPT_FILES, JSON.stringify(pptFiles));
-    console.log('pptFiles------',pptFiles);
-    
+    console.log('pptFiles------', pptFiles);
+
     await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify({ pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles }));
     // console.log('stoaring files in asyncstorage end=======');
     // console.log('returning files as per extension=======');
@@ -476,23 +476,34 @@ export const toastForDeleteFile = (toast: any, message: string) => {
 export const getImageUriByOS = (uri: string) => {
   return Platform.OS == 'android' ? `file:${uri}` : `file:${uri}`
 }
-export  { RNImageToPdf} 
+export { RNImageToPdf }
 
-interface S{
-isMultipleSelection?:boolean,
-fileTypes?:Array<any>
-isBase64?:boolean
+interface S {
+  isMultipleSelection?: boolean,
+  fileTypes?: Array<any>
+  isBase64?: boolean
 }
-export const DocumentPicker=async(props:S)=>{
-const {isMultipleSelection=false,fileTypes=[],isBase64=false} =props
-console.log('isMultipleSelection',isMultipleSelection);
+export const DocumentPicker = async (props: S) => {
+  const { isMultipleSelection = false, fileTypes = [], isBase64 = false } = props
 
-try {
+  try {
     const res = await pick({
       allowMultiSelection: isMultipleSelection,
       // type:fileTypes,
-    
+      mode: 'open', // 👈 important
+      copyTo: 'cachesDirectory', // 👈 BEST FIX
     });
+
+    const localFiles = await keepLocalCopy({
+      destination: 'cachesDirectory',
+      files: res.map(file => ({
+        uri: file.uri,
+        fileName: file.name,
+      })),
+    });
+
+    console.log('📂 Local files:', localFiles);
+    // console.log('res pick===', res);
 
     const allValid = res.every(file => file.hasRequestedType);
 
@@ -501,52 +512,50 @@ try {
       return;
     }
 
-    // addResult(res);
-    console.log('res===',res[0]);
-    return res;
-}
-catch(err){
-  console.log('error====',err);
-  
-
-}  
-}
-
- export const createImagesToPdf = async (images:Array<any>) => {
-    console.log('images to convert in pdf>>>>>>', images);
-
-    try {
-      if (!images || images.length === 0) {
-        console.log('No images found');
-        alert('No images found');
-        return;
-      }
-
-      const imagePaths: string[] = images.map((item: any) =>
-        Platform.OS === 'ios'
-          ? (typeof item === 'string' ? item : item.path)
-          : (typeof item === 'string'
-            ? item.replace('file://', '')
-            : item.path.replace('file://', ''))
-      );
-
-const pages = imagePaths.map(path => ({
-  imagePath: path,
-}));
-
-const options = {
-  pages: pages,
-  outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
-};
-      console.log('options', options);
-
-      const createdPdfPath = await createPdf(options);
-      // saveFileinPhoneStorage(pdf)
-      console.log('pdf',createdPdfPath);
-      return createdPdfPath
-      
-
-    } catch (e) {
-      console.log('error-----', e);
-    }
+    return localFiles;
   }
+  catch (err) {
+    console.log('error====', err);
+
+
+  }
+}
+
+export const createImagesToPdf = async (images: Array<any>) => {
+  console.log('images to convert in pdf>>>>>>', images);
+
+  try {
+    if (!images || images.length === 0) {
+      console.log('No images found');
+      alert('No images found');
+      return;
+    }
+
+    const imagePaths: string[] = images.map((item: any) =>
+      Platform.OS === 'ios'
+        ? (typeof item === 'string' ? item : item.path)
+        : (typeof item === 'string'
+          ? item.replace('file://', '')
+          : item.path.replace('file://', ''))
+    );
+
+    const pages = imagePaths.map(path => ({
+      imagePath: path,
+    }));
+
+    const options = {
+      pages: pages,
+      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
+    };
+    console.log('options', options);
+
+    const createdPdfPath = await createPdf(options);
+    // saveFileinPhoneStorage(pdf)
+    console.log('pdf', createdPdfPath);
+    return createdPdfPath
+
+
+  } catch (e) {
+    console.log('error-----', e);
+  }
+}
