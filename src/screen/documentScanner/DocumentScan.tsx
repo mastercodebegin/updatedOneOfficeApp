@@ -4,7 +4,7 @@ import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
 import RNFS from 'react-native-fs';
-import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants';
+import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
 import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
@@ -40,6 +40,9 @@ import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { getData, getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
+import { DateHelper } from '../../utilies/DateHelper';
+import { FileLocalService } from '../../db/fileLocalService';
 
 const imagesURI = [{
   // Simplest usage.
@@ -201,8 +204,68 @@ export const DocumentScan = () => {
   //   };
   // }, [isFocused]);
 
+  const resetDB = async () => {
+    resetFoldersTable()
+  }
+
+   const getAndCreateFileData = async (isCreate: boolean, name: string) => {
+    let finalName = name
+    if (isCreate) {
+        // file.name,
+        // file.path,
+        // file.size,
+        // file.lastModified,
+
+        console.log('started file created===');
+        const obj={name:'p1',size:'20Mb',folderId:1,lastModified:Date.now()}
+        const res = await FileLocalService.createFile(obj)
+        console.log('file created===', res);
+        // if (res) {
+        //   const date = DateHelper.getDateByMomentFormat()
+        //   console.log('date===', date);
+        //   finalName = finalName+'-' + date
+        // }
+    }
+
+    else {
+      const folders = await FileLocalService.getAllFiles()
+      console.log('files folders-----', folders);
+
+    }
+  }
+
+  const getAndCreateFolderData = async (isCreate: boolean, name: string) => {
+    let finalName = name
+    if (isCreate) {
+      Math.random()
+        const res = await FolderLocalService.isFolderExists(name)
+        console.log('res===', res);
+        if (res) {
+          const date = DateHelper.getDateByMomentFormat()
+          console.log('date===', date);
+          finalName = finalName+'-' + date
+        }
 
 
+
+      const cname = await FolderLocalService.createFolder(finalName)
+      console.log('name===', cname);
+
+    }
+
+    else {
+      const folders = await FolderLocalService.getAllFolders()
+      console.log(' folders id -----', folders);
+
+    }
+  }
+
+  const updateFolderNameHandler = async (name:string,id:number) => {
+    const existing=await FolderLocalService.getFolderById(1)
+   const update =  await FolderLocalService.updateFolder(id, existing.name,'testuri')
+   console.log('updated----',update);
+   
+  }
 
   const scanDocument = async () => {
     // start the document scanner
@@ -354,38 +417,38 @@ export const DocumentScan = () => {
 
     }
   }
- const renameFolder = async () => {
-  setIsFolderNameChange(false);
+  const renameFolder = async () => {
+    setIsFolderNameChange(false);
 
-  const updatedFolders = data.folders.map(item => {
-    console.log('itemid b',item.id);
-    console.log('folderId b',folderId);
-    console.log('folderName b',folderName);
-    if (item.id === folderId) {
-      console.log('itemid',item.id);
-      console.log('folderId',folderId);
-      console.log('folderName',folderName);
-      
-      return {
-        ...item,
-        name: folderName, // ✅ immutable update
-      };
-    }
-    return item;
-  });
+    const updatedFolders = data.folders.map(item => {
+      console.log('itemid b', item.id);
+      console.log('folderId b', folderId);
+      console.log('folderName b', folderName);
+      if (item.id === folderId) {
+        console.log('itemid', item.id);
+        console.log('folderId', folderId);
+        console.log('folderName', folderName);
 
-  const newData = {
-    ...data,
-    folders: updatedFolders,
+        return {
+          ...item,
+          name: folderName, // ✅ immutable update
+        };
+      }
+      return item;
+    });
+
+    const newData = {
+      ...data,
+      folders: updatedFolders,
+    };
+    console.log();
+
+    // ✅ update UI
+    setData(newData);
+
+    // ✅ persist
+    setLocalData(asyncStorageKeyName.DOCUMENTS, newData)
   };
-console.log();
-
-  // ✅ update UI
-  setData(newData);
-
-  // ✅ persist
-  setLocalData(asyncStorageKeyName.DOCUMENTS,newData)
-};
 
   const deleteFolder = async () => {
     const updatedData = [...data]
@@ -666,6 +729,14 @@ console.log();
                 >
                   <MaterialIcons name="delete" size={18} color="#E4003A" />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() =>
+                    deleteFoldersConfirmationForSingleItem(item)
+                  }
+                >
+                  <MaterialIcons name="reset" size={18} color="green" />
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.actionButton}
@@ -716,8 +787,8 @@ console.log();
         );
       } else {
         // return []
-        console.log('log==',data.folders);
-        
+        console.log('log==', data.folders);
+
         return data.folders;
       }
     }
@@ -1084,11 +1155,43 @@ console.log();
 
 
 
-      <View style={{ height: scaledSize(50), width: 50 }}>
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 
-        <CustomeButton onPress={() => getTestData()} name={'test----'} />
-        <CustomeButton onPress={() => removeLocalData(asyncStorageKeyName.DOCUMENTS)} name={'delete'} buttonStyle={{ backgroundColor: 'red' }} />
+          <CustomeButton onPress={() => getAndCreateFileData(true, 'jolo')} name={'Insert'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => getAndCreateFileData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
+          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
+          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => FileLocalService.resetFilesTable()} name={'Reset-file'}
+            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
+        </View>
+        <Image source={{ uri: 'file:///data/user/0/com.shopax.pdfviewer/cache/mlkit_docscan_ui_client/278162982496889.jpg' }} style={{ height: 30, width: 30 }} />
+        {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
+      </View>
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 
+          <CustomeButton onPress={() => getAndCreateData(true, 'jolo')} name={'Insert'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => getAndCreateData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
+          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
+          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => resetFoldersTable()} name={'Reset'}
+            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
+        </View>
         <Image source={{ uri: 'file:///data/user/0/com.shopax.pdfviewer/cache/mlkit_docscan_ui_client/278162982496889.jpg' }} style={{ height: 30, width: 30 }} />
         {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
       </View>

@@ -1,7 +1,7 @@
 import moment from "moment"
 import { DateFormat } from "../utilies/Constants"
 
-export const getDateFromString = (dateStr: string) => {
+ const getDateFromString = (dateStr: string) => {
 
     const date = new Date(dateStr)
     return date
@@ -9,7 +9,7 @@ export const getDateFromString = (dateStr: string) => {
 }
 
 
-export const getDateByMomentFormat = (dateStr: string|null|undefined, format?: string|null|undefined) => {
+ const getDateByMomentFormat = (dateStr?: string|null|undefined, format?: string|null|undefined) => {
     if (dateStr != null && dateStr != undefined) {
         if (format) {
             const date = moment(dateStr).format(format)
@@ -34,4 +34,9 @@ export const getDateByMomentFormat = (dateStr: string|null|undefined, format?: s
         }
 
     }
+}
+
+export const DateHelper= {
+    getDateFromString,
+    getDateByMomentFormat
 }

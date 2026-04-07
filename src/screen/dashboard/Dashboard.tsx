@@ -60,7 +60,10 @@ import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import WebView from 'react-native-webview';
-import { getData } from '../../utilies/storageService';
+import { getLocalData } from '../../utilies/storageService';
+import { FileLocalService } from '../../db/fileLocalService';
+import { testFolders } from '../../db/folderLocalService';
+import { FolderLocalService } from '../../db/folderLocalService';
 
 const pdfs = [
   {
@@ -137,35 +140,30 @@ function Dashboard({ navigation, route }) {
   const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
   const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn, loading,getFolderId,uploadImage } = useGoogleAuth();
+  const { user, accessToken, signIn, loading, getFolderId, uploadImage } = useGoogleAuth();
   const webViewRef = React.useRef(null);
 
- const handleLogin = async () => {
-  try {
-    const res = await signIn();
+  const handleLogin = async () => {
+    try {
+      const res = await signIn();
 
-    console.log('Result:', res);
+      console.log('Result:', res);
 
-    const token = res?.accessToken;
+      const token = res?.accessToken;
 
-    if (token) {
-      console.log('accessToken:', token);
+      if (token) {
+        console.log('accessToken:', token);
 
-      await getFolderId(token); // ✅ use token here
+        await getFolderId(token); // ✅ use token here
 
-    } else {
-      console.log('access token is invalid', token);
+      } else {
+        console.log('access token is invalid', token);
+      }
+
+    } catch (error) {
+      console.log('Login error:', error);
     }
-
-  } catch (error) {
-    console.log('Login error:', error);
-  }
-};
-
-  useEffect(() => {
-    console.log('response', response.files.map((v) => v.id));
-
-  })
+  };
 
 
 
@@ -183,11 +181,14 @@ function Dashboard({ navigation, route }) {
   }
   useEffect(() => {
     const res = fetch('https://api.jsonsilo.com/public/fb20cc0e-8ad8-4e0d-971b-a4e7cbba310c').then(res => res.json()).then(res => console.log()).catch(err => console.log('err', err))
-    // console.log('res=====',res);
+    console.log('api.jsonsilo=====', res);
+    (async()=>{
+      await getAllTables()
 
+    })()
     // dispatch(getBankList())
     getPermission()
-  })
+  }, [])
 
   const DesendingreadPdfFiles = async () => {
     console.log('Decending order by date-------');
@@ -300,9 +301,7 @@ function Dashboard({ navigation, route }) {
   }, [navigation, route, isFocused]);
 
 
-  const deleteLocalStorageData = async () => {
-    await AsyncStorage.removeItem('pdfFiles')
-  }
+
 
   const deleteFileHandler = async (item) => {
     //@ts-ignore
@@ -525,6 +524,8 @@ function Dashboard({ navigation, route }) {
         />
 
         <TouchableOpacity onPress={openFile}>
+
+        {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
           <Feather name="folder" size={scaledSize(18)} color={COLORS.THEME_COLOR} />
         </TouchableOpacity>
 
@@ -567,15 +568,15 @@ function Dashboard({ navigation, route }) {
         console.log('name--------------', res[0].localUri);
         fileExtension = res[0].localUri.split('.').pop()
         uri = res[0].localUri
-       const folderId= getData(asyncStorageKeyName.DRIVE_FOLDER_ID)
-       console.log('accesstoken',accessToken);
-       console.log('folderId',folderId);
-       console.log('localUri====',uri);
-       
-       
-        uploadImage(uri,accessToken,folderId)
+        const folderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
+        console.log('accesstoken', accessToken);
+        console.log('folderId', folderId);
+        console.log('localUri====', uri);
+
+
+        uploadImage(uri, accessToken, folderId)
       }
-     
+
 
       console.log('fileExtension--------------', fileExtension);
       console.log('uri--------------', uri);

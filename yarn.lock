@@ -1969,6 +1969,11 @@
     redux-thunk "^3.1.0"
     reselect "^5.1.0"
 
+"@sekizlipenguen/react-native-popup-confirm-toast@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@sekizlipenguen/react-native-popup-confirm-toast/-/react-native-popup-confirm-toast-1.1.1.tgz#8307160b45f384bbd7111b9464ecbd7347c122c1"
+  integrity sha512-ex0QjZywODG9fdzn1MjeA3txdR+b1gUYEkn0DXx9GH6Bc87Y3/fOl5GxyKHILPONJK+29uuu0HwS1AZ2CruoFA==
+
 "@sideway/address@^4.1.5":
   version "4.1.5"
   resolved "https://registry.yarnpkg.com/@sideway/address/-/address-4.1.5.tgz#4bc149a0076623ced99ca8208ba780d65a99b9d5"
@@ -2098,6 +2103,11 @@
   integrity sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw==
   dependencies:
     undici-types "~7.18.0"
+
+"@types/react-native-sqlite-storage@^6.0.5":
+  version "6.0.5"
+  resolved "https://registry.yarnpkg.com/@types/react-native-sqlite-storage/-/react-native-sqlite-storage-6.0.5.tgz#2b32935cc06ec59ffeade0e7c7eb6097c5d9109e"
+  integrity sha512-1gPwgYil6pHV/EDF816M8KmVsQC5nGMTAm8OMC25GbyuBaXFn7sdguMq6A2owtXB8c4qsH2tOEIQNetbOquawA==
 
 "@types/react-native-vector-icons@^6.4.6":
   version "6.4.18"
@@ -7092,12 +7102,22 @@ react-native-manage-external-storage@^0.1.7:
   resolved "https://registry.yarnpkg.com/react-native-manage-external-storage/-/react-native-manage-external-storage-0.1.8.tgz#f23db3becae66dfcff1b51e46d44e24b2d9a127c"
   integrity sha512-ft8jDTVvAV04SyvGa2hlkiaNX/S+tsQ1kx2kSkc80jRUYSmO7C5MguJPqrr4EO+J2TpPHnWq4fst8HNrtPcbzQ==
 
+react-native-mmkv@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-mmkv/-/react-native-mmkv-4.3.0.tgz#dbb2817b75270194dd231b4290d3c834f7d6d417"
+  integrity sha512-D1wB2ViMrm+0rs7FcbLoct/BV+qugASi+XAZT8MzXy5yl0CI0qxToh2LPnw9UENHrNefpfDZgE5FpMhIB37I5Q==
+
 react-native-modal@^13.0.1:
   version "13.0.2"
   resolved "https://registry.yarnpkg.com/react-native-modal/-/react-native-modal-13.0.2.tgz#4e4d777fdb0f5af5a50003a53eebc4de9ead5695"
   integrity sha512-jCUR2DAskuZtVIbnt2ZssX70DCbTLydkL1Glv1Fc/fqVIhq1LpwBK2hKgSf9VIINXFnDjjGIMIC9HhDXnW7Enw==
   dependencies:
     react-native-animatable "1.4.0"
+
+react-native-nitro-modules@^0.35.3:
+  version "0.35.3"
+  resolved "https://registry.yarnpkg.com/react-native-nitro-modules/-/react-native-nitro-modules-0.35.3.tgz#26c3e287d3fff780f91d7d87a62e6a9b450e3c17"
+  integrity sha512-pfPfFtGeMfFpLo4HidTFs5zsAs1wRh9qaWGSiF5UeI2YQaAgRHPlson0UNxw25pTCLV9NBrKgSDaMVfPEXXbNw==
 
 react-native-pager-view@^6.2.1:
   version "6.9.1"
@@ -7132,17 +7152,6 @@ react-native-photo-manipulator@^1.9.0:
   integrity sha512-Q3Y3mGAIYTk0QhXYvCb1/m6amkFZ2ieUvkOkHaOa/zWECyGP5Pi+z0Z0PvtM2acdb2oBv7SZyeVg9W4g3ZggQw==
   dependencies:
     color-rgba "^3.0.0"
-
-react-native-popup-confirm-toast@^2.3.6:
-  version "2.3.9"
-  resolved "https://registry.yarnpkg.com/react-native-popup-confirm-toast/-/react-native-popup-confirm-toast-2.3.9.tgz#cf0646aeb1927d6ad6483da511be454d9957464f"
-  integrity sha512-pSYsnvNr2ohnR/XVNDaAR/apBf5fd1oAf2xGqen2CeJVo/rw8n5ZRtrk/Qc3aGRcMG64DXvz7gwUtMmJ1r3aXw==
-  dependencies:
-    react-native-popup-confirm-toast "github:sekizlipenguen/react-native-popup-confirm-toast#c497b38c9070a5cd14f6ca8983c0aa271ed6a9bb"
-
-"react-native-popup-confirm-toast@github:sekizlipenguen/react-native-popup-confirm-toast#c497b38c9070a5cd14f6ca8983c0aa271ed6a9bb":
-  version "2.3.6"
-  resolved "https://codeload.github.com/sekizlipenguen/react-native-popup-confirm-toast/tar.gz/c497b38c9070a5cd14f6ca8983c0aa271ed6a9bb"
 
 react-native-popup-menu@^0.16.1:
   version "0.16.1"
@@ -7249,6 +7258,11 @@ react-native-size-matters@^0.3.1:
   resolved "https://registry.yarnpkg.com/react-native-size-matters/-/react-native-size-matters-0.3.1.tgz#24d0cfc335a2c730f6d58bd7b43ea5a41be4b49f"
   integrity sha512-mKOfBLIBFBcs9br1rlZDvxD5+mAl8Gfr5CounwJtxI6Z82rGrMO+Kgl9EIg3RMVf3G855a85YVqHJL2f5EDRlw==
 
+react-native-sqlite-storage@^6.0.1:
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/react-native-sqlite-storage/-/react-native-sqlite-storage-6.0.1.tgz#ce6a6b852f07abbea68658d5363818c8bef45dfb"
+  integrity sha512-1tDFjrint6X6qSYKf3gDyz+XB+X79jfiL6xTugKHPRtF0WvqMtVgdLuNqZunIXjNEvNtNVEbXaeZ6MsguFu00A==
+
 react-native-svg-uri@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/react-native-svg-uri/-/react-native-svg-uri-1.2.3.tgz#2f67f30564068a0fee68a751845332a5185a1aab"
@@ -7303,7 +7317,7 @@ react-native-version-check@^3.4.7:
     lodash "^4.17.21"
     semver "^6.1.1"
 
-react-native-webview@^13.11.1:
+react-native-webview@^13.16.1:
   version "13.16.1"
   resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-13.16.1.tgz#d5a6483fcb823eac704bd2a3d82c263771c6ede3"
   integrity sha512-If0eHhoEdOYDcHsX+xBFwHMbWBGK1BvGDQDQdVkwtSIXiq1uiqjkpWVP2uQ1as94J0CzvFE9PUNDuhiX0Z6ubw==
