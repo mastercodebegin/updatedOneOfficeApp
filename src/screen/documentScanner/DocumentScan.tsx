@@ -391,34 +391,15 @@ const readFilesFromDirectory = async () => {
   const renameFolder = async () => {
     setIsFolderNameChange(false);
 
-    const updatedFolders = data.folders.map(item => {
-      console.log('itemid b', item.id);
-      console.log('folderId b', folderId);
-      console.log('folderName b', folderName);
-      if (item.id === folderId) {
-        console.log('itemid', item.id);
-        console.log('folderId', folderId);
-        console.log('folderName', folderName);
-
-        return {
-          ...item,
-          name: folderName, // ✅ immutable update
-        };
-      }
-      return item;
-    });
-
-    const newData = {
-      ...data,
-      folders: updatedFolders,
-    };
+    let existingFolder = await FolderLocalService.getFolderById(folderId)
+    await FolderLocalService.updateFolder(folderId,folderName,existingFolder.coverUri)
+    const updatedFolder = await FolderLocalService.getAllFolders()
     console.log();
 
     // ✅ update UI
-    setData(newData);
+    setData(updatedFolder);
+    setIsFolderNameChange(false)
 
-    // ✅ persist
-    setLocalData(asyncStorageKeyName.DOCUMENTS, newData)
   };
 
   const deleteFolder = async () => {

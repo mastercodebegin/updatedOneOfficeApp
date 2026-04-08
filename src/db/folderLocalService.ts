@@ -39,7 +39,6 @@ async updateFolder(
   coverUri: string | null = null
 ) {
   const db = await getDB();
-
   const timestamp = Date.now();
 
   await db.executeSql(
@@ -64,7 +63,16 @@ async updateFolder(
     const res = await db.executeSql(`SELECT * FROM folders`);
     return res[0].rows.raw();
   },
+async getFolderById(id: number) {
+  const db = await getDB();
 
+  const res = await db.executeSql(
+    `SELECT * FROM folders WHERE id = ?`,
+    [id]
+  );
+
+  return res[0].rows.length > 0 ? res[0].rows.item(0) : null;
+},
 async deleteFoldersWithFiles(folderIds: number[]) {
   const db = await getDB();
 
