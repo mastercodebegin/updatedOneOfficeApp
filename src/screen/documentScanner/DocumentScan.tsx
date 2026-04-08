@@ -620,7 +620,6 @@ console.log('files=======',files);
 
   }
   const renderParentItem = ({ item }) => {
-    console.log('parent-item', item);
 
     const isSelected = checkisFolderSelected(item.id);
     const isEditable = checkIsEditable(item.id);
@@ -1045,7 +1044,7 @@ console.log('files=======',files);
               </Text>
             </View>
             <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false), copyFilesToDirectory() }}>
+              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false) }}>
                 <MaterialIcons name='close'
                   size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
               </TouchableOpacity>
