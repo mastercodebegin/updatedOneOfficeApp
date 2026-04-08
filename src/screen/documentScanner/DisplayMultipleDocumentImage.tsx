@@ -64,6 +64,10 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setFolderName(props.route.params.folderName)
 
 
+      // console.log('props.route.params',props.route.params);
+      
+
+
     }
 
   },)
@@ -83,6 +87,8 @@ export default function DisplayMultipleDocumentImage(props: any) {
       backHandler.remove();
     };
   },);
+
+
   const renameFolder = async () => {
     if (fileName.length == 0) {
       alert('Please enter a file name')
@@ -242,13 +248,13 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setSelectedFoldersId(data.map(item => item))
     }
   }
-  const onPressItem = (item: any) => {
+  const onPressItem = async (item: any) => {
 
     if (isMultiDelete) {
       onSelectFolders(item)
     }
     else {
-      const urls = data.map((item) => ({ url: 'file:' + item.path }));
+      const urls = data.map((item) => ({ url:  getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH+item.name) }));
       console.log('urls----', urls);
 
       setImageUrls(urls);
@@ -259,18 +265,18 @@ export default function DisplayMultipleDocumentImage(props: any) {
   }
   const onLongPressItem = (item: any) => {
     setMultidelete(true)
-    // if (isMultiDelete) {
+    if (isMultiDelete) {
     onSelectFolders(item)
-    // }
-    // else {
-    //   const urls = data.map((item) => ({ url: 'file:' + item.path }));
-    //   console.log('urls----', urls);
+    }
+    else {
+      const urls = data.map((item) => ({ url: 'file:' + item.path }));
+      console.log('urls----', urls);
 
-    //   setImageUrls(urls);
-    //   setIsImageView(true)
-    //   setFileName(item.name)
-    //   setImagePath(item.path)
-    // }
+      setImageUrls(urls);
+      setIsImageView(true)
+      setFileName(item.name)
+      setImagePath(item.path)
+    }
   }
   const copyFilesToDirectory = async () => {
     console.log('folderName', folderName);
@@ -380,7 +386,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           <Image
             resizeMode="contain"
             // resizeMethod='auto'
-            source={{ uri: getImageUriByOS(item.path) }}
+            source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH+item.name) }}
             style={{
               height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
             }}

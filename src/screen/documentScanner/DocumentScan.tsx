@@ -5,7 +5,7 @@ import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 import Elevations from 'react-native-elevation'
@@ -55,7 +55,7 @@ const imagesURI = [{
 const destinationPath = CONSTANT.SAVED_DOCUMENTS_PATH;
 
 export const DocumentScan = () => {
-  const [images, setImages] = useState<Array<{ name: string }>>();
+  const [images, setImages] = useState<Array<any>>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
   const [folderId, setFolderId] = React.useState(0)
@@ -78,53 +78,30 @@ export const DocumentScan = () => {
   const isFocused = useIsFocused();
 
 
-  // useEffect(() => {
-  //   if (isFocused) {
-  //     console.log('is focused',);
-  //     AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS).then((value) => {
-  //       if (value) {
-  //         setData(JSON.parse(value));
-  //       }
-  //     });
+ 
 
-  //   }
-  // }, [isFocused])
   useEffect(() => {
-    if (!isFocused) return;
-    if (isLocalDataFetch == false) {
+  if (!isFocused) return;
 
+  const fetchData = async () => {
+    try {
+      const folders = await FolderLocalService.getAllFolders();
 
-      let localData = getLocalData(asyncStorageKeyName.DOCUMENTS) || {}
-      // 🔥 normalize safely
-      localData.folders = Array.isArray(localData.folders) ? localData.folders : [];
-      localData.photos = Array.isArray(localData.photos) ? localData.photos : [];
-      console.log('data=====', localData);
-      setData(localData)
-      setIsLocalDataFetch(true)
+      console.log('folders=====', folders);
+
+      setData(folders);
+
+      setIsLocalDataFetch(true);
+    } catch (error) {
+      console.log('fetch error:', error);
     }
+  };
+
+  fetchData();
+}, [isFocused]);
 
 
-
-    // const loadData = async () => {
-    //   try {
-    //     console.log('is focused');
-
-    //     const value = await AsyncStorage.getItem(
-    //       asyncStorageKeyName.DOCUMENTS
-    //     );
-
-    //     if (value) {
-    //       setData(JSON.parse(value));
-    //     } else {
-    //       setData([]);
-    //     }
-    //   } catch (error) {
-    //     console.log('AsyncStorage error:', error);
-    //   }
-    // };
-
-    // loadData();
-  }, [isFocused]);
+   
 
   const getTestData = () => {
     const d = getLocalData(asyncStorageKeyName.DOCUMENTS)
@@ -285,119 +262,113 @@ export const DocumentScan = () => {
 
       }
       setIsShowFolderNameModal(true)
-      //copyFilesToDirectory(scannedImages)
     }
   }
 
-  const copyFilesToDirectory = async () => {
-    try {
-      console.log('scannedimages', images);
-
-      await RNFS.mkdir(destinationPath);
-
-      // 1. Get existing data (MMKV - sync)
-      let data = getLocalData(asyncStorageKeyName.DOCUMENTS) || {}
-
-      // 🔥 normalize safely
-      data.folders = Array.isArray(data.folders) ? data.folders : [];
-      data.photos = Array.isArray(data.photos) ? data.photos : [];
-      console.log('data=====', data);
 
 
-      // 2. Create new folder
-      const folderId = Date.now().toString();
-      console.log('fo;derid', folderId);
 
-      const folderDisplayName =
-        folderName.length > 0 ? folderName : 'New Folder';
+const copyFilesToDirectory = async () => {
+  try {
+    console.log('scanned images:', images);
 
-      const newFolder = {
-        id: folderId,
-        name: folderDisplayName,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        photoCount: images.length,
-        thumbnailId: null,
-        previewUri: images[0],
-        isDeleted: false,
-        isSynced: false // optional (for folder sync)
-      };
+    await RNFS.mkdir(destinationPath);
 
-      data.folders.push(newFolder);
+    // 🔥 Single timestamp for entire operation
+    const baseTimestamp = Date.now();
 
-      // 3. Process images
-      const newPhotos = [];
+    // 👉 First image (for cover)
+    const firstFileName = images[0]?.split('/').pop() || '';
+    const firstExtension = firstFileName?.includes('.')
+      ? firstFileName.split('.').pop()
+      : 'jpg';
 
-      for (let i = 0; i < images.length; i++) {
-        const uri = images[i];
+    const coverUri = `${baseTimestamp}_0.${firstExtension}`;
 
-        const fileName = uri.split('/').pop();
-        const extension = fileName.split('.').pop();
+    console.log('coverUri:', coverUri);
 
-        const uniqueName = `${Date.now()}_${i}.${extension}`;
-        const destinationFilePath = `${destinationPath}/${uniqueName}`;
+    // 1. Create folder with cover image
+    const folderDisplayName =
+      folderName?.length > 0 ? folderName : 'New Folder';
 
-        // Copy file
-        console.log('copy uri', uri);
+    const folder = await FolderLocalService.createFolder(
+      folderDisplayName,
+      coverUri
+    );
 
-        await RNFS.copyFile(uri, destinationFilePath);
+    const folderId = folder.id;
+    console.log('folderId:', folderId);
 
-        const photoId = `${Date.now()}_${i}`;
+    // 2. Process all images
+    for (let i = 0; i < images.length; i++) {
+      const uri = images[i];
 
-        newPhotos.push({
-          id: photoId,
-          folderId,
-          fileId: null,
-          thumbnailId: null,
-          localPath: `file://${destinationFilePath}`,
-          createdAt: new Date().toISOString(),
-          isDeleted: false,
-          isSynced: false // 🔥 important
-        });
-      }
+      const originalFileName = uri.split('/').pop() || '';
+      const extension = originalFileName?.includes('.')
+        ? originalFileName.split('.').pop()
+        : 'jpg';
 
-      // 4. Add photos to global list
-      data.photos = [...data.photos, ...newPhotos];
+      // 🔥 Same timestamp used here
+      const uniqueName = `${baseTimestamp}_${i}.${extension}`;
+      const destinationFilePath = `${destinationPath}/${uniqueName}`;
 
-      // 5. Save once (MMKV sync)
-      setLocalData(asyncStorageKeyName.DOCUMENTS, data);
+      console.log('Copying:', uri);
+      console.log('Saving as:', destinationFilePath);
 
-      // 6. Update UI
-      setData(data); // your React state
-      setIsShowFolderNameModal(false);
-      setFolderName('');
+      // Copy file
+      await RNFS.copyFile(uri, destinationFilePath);
 
-      console.log('All files copied successfully!');
-    } catch (error) {
-      console.log('Error in copyFilesToDirectory:', error);
+      // Save file in DB
+      await FileLocalService.createFile({
+        name: uniqueName,
+        size: 0, // you can calculate later if needed
+        lastModified: Date.now(),
+        folderId: folderId,
+      });
     }
-  };
 
-  const readFilesFromDirectory = async () => {
-    // const directoryPath = `/storage/emulated/0/Android/data/${CONSTANT.PACKAGE_NAME}/files/`;
+    console.log('✅ All files copied successfully');
+   const updatedFolders= await FolderLocalService.getAllFolders()
+   setData(updatedFolders)
+    setIsShowFolderNameModal(false)
+    setFolderName('')
+  } catch (error) {
+    console.log('❌ Error in copyFilesToDirectory:', error);
+  }
+};
+const readFilesFromDirectory = async () => {
+  try {
     console.log('Reading files from directory: ', destinationPath);
 
+    const files = await RNFS.exists(destinationPath+'1775636794547_0.jpg');
 
+    // if (files.length === 0) {
+    //   console.log('❌ No files found');
+    //   return;
+    // }
 
-    // List the files in the directory
-    const filesStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS); // returns an array of file objects
-    console.log('filesStr', filesStr);
-    let filesObject = [];
-    if (filesStr != null) {
-      console.log('if', filesStr);
-      filesObject = JSON.parse(filesStr)
-    }
-    else {
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, '[]')
-    }
-    console.log('filesObject', filesObject);
+    console.log('✅ Files found:', files);
 
-    setData(filesObject)
-    console.log('All files read successfully!');
-    return filesObject
+  } catch (error) {
+    console.log('Error reading directory:', error);
+  }
+  // try {
+  //   const path = destinationPath
 
+  //   const files = await RNFS.readDir(path);
 
-  };
+  //   for (const file of files) {
+  //     if (file.isFile()) {
+  //       await RNFS.unlink(file.path);
+  //     }
+  //   }
+
+  //   console.log('All files deleted successfully');
+  // } catch (error) {
+  //   console.log('Error deleting files:', error);
+  // }
+};
+
   const deleteKey = async () => {
     await AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
   }
@@ -557,36 +528,45 @@ export const DocumentScan = () => {
     }
   };
 
-  const deleteSingleFolder = async (obj: any) => {
+const deleteSingleFolder = async (obj: any) => {
+  try {
+    console.log('Deleting folder:', obj.id);
 
-    console.log('obj------', obj.id);
-    console.log('before', data.folders);
-    const updatedData = data.folders.filter(item => item.id !== obj.id);
-    console.log('after==========', updatedData);
+    // 1. Get all files of this folder
+    // const files = data.photos.filter((item:any) => item.folderId === obj.id);
+    const files = await FileLocalService.getFilesByFolder(obj.id)
+
+    console.log('Files to delete:', files);
+
+    // 2. Delete files from storage
+    // await Promise.all(
+    //   files.map(async (file:any) => {
+    //     const path = `${destinationPath}${file.name}`;
+    //     const exists = await RNFS.exists(path);
+
+    //     if (exists) {
+    //       await RNFS.unlink(path);
+    //     }
+    //   })
+    // );
+
+    // 3. Delete files from DB
+    await FolderLocalService.deleteFoldersWithFiles([obj.id])
+    const updatedData=await FolderLocalService.getAllFolders()
+   
+    setData(updatedData);
 
 
-    // update state
-    setData(prev => ({
-      ...prev,
-      folders: updatedData,
-    }));
-    const temp = {
-      ...data,
-      folders: updatedData,
-    };
-    console.log('data folder', data);
 
-    const photos = data.photos.find(item => item.folderId === obj.id);
-    console.log('folders---', photos);
+    // Reset UI states
+    setSelectedFoldersId([]);
+    setMultidelete(false);
 
-    photos || []; // or folder?.photos
-
-    deleteFilesFromFolder(photos)
-    setLocalData(asyncStorageKeyName.DOCUMENTS, temp)
-
-    setSelectedFoldersId([])
-    setMultidelete(false)
+    console.log('✅ Folder deleted successfully');
+  } catch (error) {
+    console.log('❌ Error deleting folder:', error);
   }
+};
 
   const deleteFilesFromFolder = async (photos: Array<any>) => {
     console.log('photos===', photos);
@@ -617,18 +597,19 @@ export const DocumentScan = () => {
       setSelectedFoldersId(data.map(item => item))
     }
   }
-  const onPressItem = (item) => {
+  const onPressItem = async (item) => {
 
     if (isMultiDelete) {
       onSelectFolders(item)
     }
     else {
-      const obj = data.find((v) => v.id === item.id)
-      // console.log('found', obj);
-      const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
-      // console.log(selectedFolder);
+      // const obj = data.find((v) => v.id === item.id)
+      // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
-      navigateTo('DisplayMultipleDocumentImage', selectedFolder)
+      const files = await FileLocalService.getFilesByFolder(item.id) 
+      navigateTo('DisplayMultipleDocumentImage', {folderName:item.name,folderId:item.id,files:files})
+console.log('files=======',files);
+
     }
   }
 
@@ -653,6 +634,10 @@ export const DocumentScan = () => {
 
   }
 
+  const readDirectory=()=>{
+    readFilesFromDirectory
+
+  }
   const renderParentItem = ({ item }) => {
     console.log('parent-item', item);
 
@@ -679,7 +664,7 @@ export const DocumentScan = () => {
         {/* Thumbnail */}
         <View style={styles.thumbnailWrapper}>
           <Image
-            source={{ uri: item?.previewUri }}
+            source={{ uri: getImageUriByOS(destinationPath+item?.coverUri) }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
@@ -782,14 +767,14 @@ export const DocumentScan = () => {
     if (isLocalDataFetch) {
 
       if (searchQuery.length > 0) {
-        return data.folders.filter(file =>
-          file.folderName.toLowerCase().includes(searchQuery.toLowerCase())
+        return data.filter(file =>
+          file.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
       } else {
         // return []
         console.log('log==', data.folders);
 
-        return data.folders;
+        return data;
       }
     }
     else {
@@ -1154,6 +1139,12 @@ export const DocumentScan = () => {
       </Overlay>
 
 
+        <Image source={{ uri:  destinationPath+'1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
+        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
+
+          <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
+        </View>
 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
@@ -1172,17 +1163,17 @@ export const DocumentScan = () => {
           <CustomeButton onPress={() => FileLocalService.resetFilesTable()} name={'Reset-file'}
             buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
         </View>
-        <Image source={{ uri: 'file:///data/user/0/com.shopax.pdfviewer/cache/mlkit_docscan_ui_client/278162982496889.jpg' }} style={{ height: 30, width: 30 }} />
+        <Image source={{ uri: getImageUriByOS(destinationPath+'1775636794547_0.jpg') }} style={{ height: 30, width: 30 }} />
         {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
       </View>
       <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 
-          <CustomeButton onPress={() => getAndCreateData(true, 'jolo')} name={'Insert'}
+          <CustomeButton onPress={() => getAndCreateFolderData(true, 'jolo')} name={'Insert'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
         </View>
         <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
-          <CustomeButton onPress={() => getAndCreateData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+          <CustomeButton onPress={() => getAndCreateFolderData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
         </View>
         <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
           <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
@@ -1192,7 +1183,6 @@ export const DocumentScan = () => {
           <CustomeButton onPress={() => resetFoldersTable()} name={'Reset'}
             buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
         </View>
-        <Image source={{ uri: 'file:///data/user/0/com.shopax.pdfviewer/cache/mlkit_docscan_ui_client/278162982496889.jpg' }} style={{ height: 30, width: 30 }} />
         {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
       </View>
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'

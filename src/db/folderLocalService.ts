@@ -2,15 +2,16 @@ import { getDB } from ".";
 
 export const FolderLocalService = {
   // CREATE
-async createFolder(name: string) {
+async createFolder(name: string,coverUri:string) {
   const db = await getDB();
+console.log('coverUri===',coverUri);
 
   const timestamp = Date.now();
 
   const res = await db.executeSql(
     `INSERT INTO folders (name, remoteId, updatedAt, coverUri)
      VALUES (?, ?, ?, ?)`,
-    [name, null, timestamp, null]
+    [name, null, timestamp, coverUri]
   );
 
   return {
@@ -64,26 +65,48 @@ async updateFolder(
     return res[0].rows.raw();
   },
 
-  async getFolderById(id: number) {
-    const db = await getDB();
+async deleteFoldersWithFiles(folderIds: number[]) {
+  const db = await getDB();
 
-    const res = await db.executeSql(
-      `SELECT * FROM folders WHERE id = ?`,
-      [id]
+  console.log('folders ids =====', folderIds);
+
+  if (!folderIds || folderIds.length === 0) return;
+
+  const placeholders = folderIds.map(() => '?').join(',');
+
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx) => {
+        // 1. Delete files
+        tx.executeSql(
+          `DELETE FROM files WHERE folderId IN (${placeholders})`,
+          folderIds
+        );
+
+        // 2. Delete folders
+        tx.executeSql(
+          `DELETE FROM folders WHERE id IN (${placeholders})`,
+          folderIds
+        );
+      },
+      (error) => {
+        console.log('❌ Transaction error:', error);
+        reject(error);
+      },
+      () => {
+        console.log('✅ Transaction success');
+        resolve(true);
+      }
     );
-
-    return res[0].rows.item(0);
-  },
-};
-
+  })}}
 export const testFolders = async () => {
   try {
     console.log('🚀 Testing folders...');
 
     // ➕ Insert dummy data
-    await FolderLocalService.createFolder('Travel');
-    await FolderLocalService.createFolder('Work');
-    await FolderLocalService.createFolder('Personal');
+    await FolderLocalService.createFolder('Travel','');
+    await FolderLocalService.createFolder('Work','');
+    await FolderLocalService.createFolder('Personal','');
 
     console.log('✅ Inserted folders');
 

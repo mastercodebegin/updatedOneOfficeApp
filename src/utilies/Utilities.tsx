@@ -474,8 +474,10 @@ export const toastForDeleteFile = (toast: any, message: string) => {
 }
 
 export const getImageUriByOS = (uri: string) => {
-  return Platform.OS == 'android' ? `file:${uri}` : `file:${uri}`
-}
+  if (!uri) return '';
+
+  return uri.startsWith('file://') ? uri : `file://${uri}`;
+};
 export { RNImageToPdf }
 
 interface S {
