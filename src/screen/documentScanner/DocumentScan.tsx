@@ -321,6 +321,7 @@ const copyFilesToDirectory = async () => {
       // Save file in DB
       await FileLocalService.createFile({
         name: uniqueName,
+        displayName:uniqueName,
         size: 0, // you can calculate later if needed
         lastModified: Date.now(),
         folderId: folderId,
@@ -340,14 +341,15 @@ const readFilesFromDirectory = async () => {
   try {
     console.log('Reading files from directory: ', destinationPath);
 
-    const files = await RNFS.exists(destinationPath+'1775636794547_0.jpg');
-
-    // if (files.length === 0) {
-    //   console.log('❌ No files found');
-    //   return;
+    const files = await RNFS.readDir(destinationPath);
+    // for (const file of files) {
+    //   if (file.isFile()) {
+    //     await RNFS.unlink(file.path);
+    //   }
     // }
 
-    console.log('✅ Files found:', files);
+    // console.log('✅ Files :', files);
+    console.log('✅ Files found:', files.length);
 
   } catch (error) {
     console.log('Error reading directory:', error);
@@ -520,16 +522,16 @@ const deleteSingleFolder = async (obj: any) => {
     console.log('Files to delete:', files);
 
     // 2. Delete files from storage
-    // await Promise.all(
-    //   files.map(async (file:any) => {
-    //     const path = `${destinationPath}${file.name}`;
-    //     const exists = await RNFS.exists(path);
+    await Promise.all(
+      files.map(async (file:any) => {
+        const path = `${destinationPath}${file.name}`;
+        const exists = await RNFS.exists(path);
 
-    //     if (exists) {
-    //       await RNFS.unlink(path);
-    //     }
-    //   })
-    // );
+        if (exists) {
+          await RNFS.unlink(path);
+        }
+      })
+    );
 
     // 3. Delete files from DB
     await FolderLocalService.deleteFoldersWithFiles([obj.id])
@@ -694,14 +696,7 @@ console.log('files=======',files);
                 >
                   <MaterialIcons name="delete" size={18} color="#E4003A" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() =>
-                    deleteFoldersConfirmationForSingleItem(item)
-                  }
-                >
-                  <MaterialIcons name="reset" size={18} color="green" />
-                </TouchableOpacity>
+
 
                 <TouchableOpacity
                   style={styles.actionButton}
@@ -1125,7 +1120,7 @@ console.log('files=======',files);
           <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
         </View>
-
+{/* 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 
@@ -1144,9 +1139,8 @@ console.log('files=======',files);
             buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
         </View>
         <Image source={{ uri: getImageUriByOS(destinationPath+'1775636794547_0.jpg') }} style={{ height: 30, width: 30 }} />
-        {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
-      </View>
-      <View style={{ flexDirection: 'row' }}>
+      </View> */}
+      {/* <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 
           <CustomeButton onPress={() => getAndCreateFolderData(true, 'jolo')} name={'Insert'}
@@ -1163,14 +1157,14 @@ console.log('files=======',files);
           <CustomeButton onPress={() => resetFoldersTable()} name={'Reset'}
             buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
         </View>
-        {/* <CustomBannerAdd onPressAddClose={()=>getTestData()} /> */}
-      </View>
+      </View> */}
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
         <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: scaledSize(16), letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
           </View>
+
           <View
             style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
             <TouchableOpacity style={styles.shareOptionS} onPress={() => generateAndSharePdfs(selectedFoldersId)}>
@@ -1256,7 +1250,7 @@ const styles = StyleSheet.create({
     width: scaledSize(28),
     height: scaledSize(28),
     borderRadius: scaledSize(18),
-    backgroundColor: '#F4F6F8',
+    // backgroundColor: '#F4F6F8',
     justifyContent: 'center',
     alignItems: 'center',
   },

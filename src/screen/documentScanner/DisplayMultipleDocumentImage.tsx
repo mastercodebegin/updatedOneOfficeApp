@@ -38,7 +38,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [scannedImage, setScannedImage] = useState();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
-  const [existingFile, setExistingFile] = React.useState(0)
+  const [existingFile, setExistingFile] = React.useState()
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
@@ -57,7 +57,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const itemId = props.route.params.id
   const refForDocShare = useRef<BottomSheetModal>(null);
 
-const {folderId} = props.route.params
+  const { folderId } = props.route.params
   useEffect(() => {
     console.log('props',);
     if (data.length == 0) {
@@ -66,8 +66,8 @@ const {folderId} = props.route.params
       setFolderName(props.route.params.folderName)
 
 
-      console.log('props.route.params',props.route.params);
-      
+      console.log('props.route.params', props.route.params);
+
 
 
     }
@@ -92,32 +92,23 @@ const {folderId} = props.route.params
 
 
   const renameFolder = async () => {
+    console.log('rename file====');
+
     if (fileName.length == 0) {
       alert('Please enter a file name')
       return false
     }
-    const updatedData = [...data]
-    updatedData.forEach(item => {
-      if (item.id === existingFile.id) {
-        item.name = fileName
-      }
-    })
-    const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-    const docsObject = JSON.parse(dataStr)
-    console.log('itemId================================================================', itemId);
-    const obj = docsObject.find((item: any) => item.id === itemId)
-    obj.files = updatedData
-    console.log('obj================================================================', obj);
-    const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
-    console.log('filterObjects================================================================', filterObjects);
-    filterObjects.push(obj)
-    console.log('obj 2================================================================', filterObjects);
-    // console.log('data================================================================', obj[0].id);
-    setData(obj.files)
+    console.log('existing file', existingFile);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+    let existingFileTemp = await FileLocalService.getFileById(existingFile.id)
+    existingFileTemp.displayName = fileName + '.jpg'
+    await FileLocalService.updateFile(existingFile.id, existingFileTemp)
+    const updatedFolder = await FileLocalService.getFilesByFolder(folderId)
+    setData(updatedFolder)
+
     setIsShowFileNameModal(false)
     setIsNewFile(false)
+    setFileName('')
 
   }
 
@@ -174,46 +165,101 @@ const {folderId} = props.route.params
 
   }
 
+  // const deleteSingleFile = async (obj: any) => {
+  //   console.log('folder------', selectedFoldersId);
+
+  //   const updatedData = [...data]
+
+  //   const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
+  //   const docsObject = JSON.parse(dataStr)
+  //   const removedDeletedFiles = updatedData.filter((item: any) => item.id !== obj.id)
+  //   console.log('itemId================================================================', itemId);
+  //   const singleObj = docsObject.find((item: any) => item.id === itemId)
+  //   singleObj.files = removedDeletedFiles
+  //   console.log('obj================================================================', obj);
+  //   const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
+  //   console.log('filterObjects================================================================', filterObjects);
+
+  //   console.log('obj 2================================================================', filterObjects);
+  //   if (data.length == 1) {
+  //     console.log('if(data.length==1');
+
+  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+  //     navigateToBack()
+  //   }
+  //   if (data.length > 1) {
+  //     console.log('if(data.length>0');
+
+  //     filterObjects.push(singleObj)
+  //     setData(singleObj.files)
+  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+  //     setSelectedFoldersId([])
+  //   }
+  //   try {
+  //     for (const filePath of selectedFoldersId) {
+  //       deleteFile(filePath)
+  //     }
+  //     console.log('Files deleted successfully!');
+  //   } catch (error) {
+  //     console.error('Error deleting files:', error);
+  //   }
+  //   setMultidelete(false)
+  // }
+
   const deleteSingleFile = async (obj: any) => {
-    console.log('folder------', selectedFoldersId);
-
-    const updatedData = [...data]
-
-    const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-    const docsObject = JSON.parse(dataStr)
-    const removedDeletedFiles = updatedData.filter((item: any) => item.id !== obj.id)
-    console.log('itemId================================================================', itemId);
-    const singleObj = docsObject.find((item: any) => item.id === itemId)
-    singleObj.files = removedDeletedFiles
-    console.log('obj================================================================', obj);
-    const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
-    console.log('filterObjects================================================================', filterObjects);
-
-    console.log('obj 2================================================================', filterObjects);
-    if (data.length == 1) {
-      console.log('if(data.length==1');
-
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      navigateToBack()
-    }
-    if (data.length > 1) {
-      console.log('if(data.length>0');
-
-      filterObjects.push(singleObj)
-      setData(singleObj.files)
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      setSelectedFoldersId([])
-    }
     try {
-      for (const filePath of selectedFoldersId) {
-        deleteFile(filePath)
+      console.log('Deleting folder:', obj.id);
+
+      // 1. Get all files of this folder
+      // const files = data.photos.filter((item:any) => item.folderId === obj.id);
+      const files = await FileLocalService.getFilesByIds([obj.id])
+
+      console.log('Files to delete:', files);
+
+      // 2. Delete files from storage
+      await Promise.all(
+        files.map(async (file: any) => {
+          const path = `${destinationPath}${file.name}`;
+          const exists = await RNFS.exists(path);
+
+          if (exists) {
+            await RNFS.unlink(path);
+          }
+        })
+      );
+
+      // 3. Delete files from DB
+      await FileLocalService.deleteFile(obj.id)
+      const updatedFiles = await FileLocalService.getFilesByFolder(folderId)
+      console.log('updatedFiles----', updatedFiles);
+
+      if (updatedFiles.length == 0) {
+        const files = await FileLocalService.getFilesByFolder(obj.id)
+
+        console.log('Files to delete:', files);
+
+
+
+        // 3. Delete files from DB
+        await FolderLocalService.deleteFoldersWithFiles([folderId])
+        const updatedData = await FolderLocalService.getAllFolders()
+        navigateToBack()
+
       }
-      console.log('Files deleted successfully!');
+
+      setData(updatedFiles);
+
+
+
+      // Reset UI states
+      setSelectedFoldersId([]);
+      setMultidelete(false);
+
+      console.log('✅ Folder deleted successfully');
     } catch (error) {
-      console.error('Error deleting files:', error);
+      console.log('❌ Error deleting folder:', error);
     }
-    setMultidelete(false)
-  }
+  };
 
 
   const deleteFoldersConfirmationForMultipleItem = () => {
@@ -256,7 +302,7 @@ const {folderId} = props.route.params
       onSelectFolders(item)
     }
     else {
-      const urls = data.map((item) => ({ url:  getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH+item.name) }));
+      const urls = data.map((item) => ({ url: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }));
       console.log('urls----', urls);
 
       setImageUrls(urls);
@@ -268,7 +314,7 @@ const {folderId} = props.route.params
   const onLongPressItem = (item: any) => {
     setMultidelete(true)
     if (isMultiDelete) {
-    onSelectFolders(item)
+      onSelectFolders(item)
     }
     else {
       const urls = data.map((item) => ({ url: 'file:' + item.path }));
@@ -354,77 +400,81 @@ const {folderId} = props.route.params
 
   // };
 
-const copyFilesToDirectory = async () => {
-  try {
-    console.log('scanned images:', images);
+  const copyFilesToDirectory = async () => {
+    try {
+      console.log('scanned images:', images);
 
-    await RNFS.mkdir(destinationPath);
+      await RNFS.mkdir(destinationPath);
 
-    const baseTimestamp = Date.now();
+      const baseTimestamp = Date.now();
 
-    for (let i = 0; i < images.length; i++) {
-      const uri = images[i];
+      for (let i = 0; i < images.length; i++) {
+        const uri = images[i];
 
-      const originalFileName = uri.split('/').pop() || '';
-      const extension = originalFileName?.includes('.')
-        ? originalFileName.split('.').pop()
-        : 'jpg';
+        const originalFileName = uri.split('/').pop() || '';
+        const extension = originalFileName?.includes('.')
+          ? originalFileName.split('.').pop()
+          : 'jpg';
 
-      // 👉 user provided name OR fallback
-      let baseName = fileName?.trim()
-        ? fileName.trim()
-        : `${baseTimestamp}`;
+        // 👉 user provided name OR fallback
+        let baseName = fileName?.trim()
+          ? fileName.trim()
+          : `${baseTimestamp}`;
 
-      let finalName = `${baseName}.${extension}`;
-      let destinationFilePath = `${destinationPath}/${finalName}`;
+        let finalName = `${baseName}.${extension}`;
+        let destinationFilePath = `${destinationPath}/${finalName}`;
 
-      // ✅ if already exists → add random
-      while (await RNFS.exists(destinationFilePath)) {
-        const random = Math.random().toString(36).slice(2, 6);
-        finalName = `${baseName}_${random}.${extension}`;
-        destinationFilePath = `${destinationPath}/${finalName}`;
+        // ✅ if already exists → add random
+        while (await RNFS.exists(destinationFilePath)) {
+          const random = Math.random().toString(36).slice(2, 6);
+          finalName = `${baseName}_${random}.${extension}`;
+          destinationFilePath = `${destinationPath}/${finalName}`;
+        }
+
+        console.log('Saving as:', finalName);
+
+        await RNFS.copyFile(uri, destinationFilePath);
+
+        await FileLocalService.createFile({
+          name: finalName,
+          displayName: fileName,
+          size: 0,
+          lastModified: Date.now(),
+          folderId: folderId,
+        });
       }
 
-      console.log('Saving as:', finalName);
+      const files = await FileLocalService.getFilesByFolder(folderId);
+      setData(files);
 
-      await RNFS.copyFile(uri, destinationFilePath);
+      setIsShowFileNameModal(false);
+      setFileName('')
+      console.log('✅ Files saved successfully');
 
-      await FileLocalService.createFile({
-        name: finalName,
-        size: 0,
-        lastModified: Date.now(),
-        folderId: folderId,
-      });
+    } catch (error) {
+      console.log('❌ Error:', error);
     }
-
-    const files = await FileLocalService.getFilesByFolder(folderId);
-    setData(files);
-
-    setIsShowFileNameModal(false);
-
-    console.log('✅ Files saved successfully');
-
-  } catch (error) {
-    console.log('❌ Error:', error);
-  }
-};
+  };
 
   const onPressEditFile = (item: any) => {
-
+    console.log('onpress edit ', isNewFile);
 
     setExistingFile(item),
-      setFileName(item.name)
+      setIsNewFile(false)
+
+    setFileName(item.displayName?.replace('.jpg', '')
+    )
     setIsShowFileNameModal(true)
-
   }
-  const onPressEditImage = (item: any) => {
 
+  const onPressEditImage = (item: any) => {
     setIsShowEditImage(true)
     setEditImageUri(item.path)
   }
+
   const renderItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
-
+    console.log('RAW VALUE >>>', item.displayName, typeof item.displayName);
     return (
       <TouchableOpacity
         activeOpacity={0.9}
@@ -444,19 +494,13 @@ const copyFilesToDirectory = async () => {
           <Image
             resizeMode="contain"
             // resizeMethod='auto'
-            source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH+item.name) }}
+            source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
             style={{
               height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
             }}
           />
 
-          {/* <View style={styles.imageWrapper}>
-  <Image
-    source={{ uri: getImageUriByOS(item.path) }}
-    style={styles.image}
-    resizeMode="cover"
-  />
-</View> */}
+
 
           {/* Overlay Actions */}
           <View style={styles.overlayActions}>
@@ -499,7 +543,7 @@ const copyFilesToDirectory = async () => {
 
         {/* File Name */}
         <Text style={styles.fileName} numberOfLines={1}>
-          {item.name}
+          {item.displayName?.replace(/\.[^/.]+$/, '')}
         </Text>
       </TouchableOpacity>
     );
@@ -588,8 +632,8 @@ const copyFilesToDirectory = async () => {
               </Text>
             </View>
             <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setIsShowFileNameModal(false)}}>
-              {/* <TouchableOpacity onPress={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}> */}
+              {/* <TouchableOpacity onPress={() => { setIsShowFileNameModal(false)}}> */}
+              <TouchableOpacity onPress={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}>
                 <MaterialIcons name='close'
                   size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
               </TouchableOpacity>

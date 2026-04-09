@@ -14,6 +14,7 @@ export const runMigrations = async () => {
       CREATE TABLE IF NOT EXISTS files (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name TEXT,
+displayName TEXT,
 size INTEGER,
 lastModified INTEGER,
 folderId INTEGER,           -- 🔥 relation to folders

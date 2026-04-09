@@ -8,10 +8,11 @@ export const FileLocalService = {
 
     await db.executeSql(
   `INSERT INTO files 
-   (name, size, lastModified, folderId, isSynced, isDeleted, updatedAt)
-   VALUES (?, ?, ?, ?, ?, ?, ?)`,
+   (name,displayName, size, lastModified, folderId, isSynced, isDeleted, updatedAt)
+   VALUES (?, ?, ?, ?,?, ?, ?, ?)`,
   [
     file.name,
+    file.displayName,
     file.size,
     file.lastModified,
     file.folderId,        // 🔥 relation value
@@ -67,12 +68,16 @@ return {
   async updateFile(id: number, updates: any) {
     const db = await getDB();
 
+    console.log('id====',id);
+    console.log('id updates====',updates);
+    
     await db.executeSql(
       `UPDATE files 
-       SET name = ?, size = ?, lastModified = ?, isSynced = 0, updatedAt = ?
+       SET name = ?, displayName = ?, size = ?, lastModified = ?, isSynced = 0, updatedAt = ?
        WHERE id = ?`,
       [
         updates.name,
+        updates.displayName,
         updates.size,
         updates.lastModified,
         Date.now(),
@@ -113,6 +118,23 @@ return {
 
     return res[0].rows.raw();
   },
+  
+  async getFilesByIds(fileIds: number[]) {
+  const db = await getDB();
+
+  if (!fileIds || fileIds.length === 0) return [];
+
+  const placeholders = fileIds.map(() => '?').join(',');
+
+  const res = await db.executeSql(
+    `SELECT * FROM files 
+     WHERE id IN (${placeholders}) 
+     AND isDeleted = 0`,
+    fileIds
+  );
+
+  return res[0].rows.raw();
+},
 
 async resetFilesTable() {
   const db = await getDB();
@@ -123,6 +145,7 @@ async resetFilesTable() {
     CREATE TABLE IF NOT EXISTS files (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
+      displayName TEXT,
       size INTEGER,
       lastModified INTEGER,
       folderId INTEGER,
