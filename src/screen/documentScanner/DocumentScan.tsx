@@ -274,67 +274,71 @@ const copyFilesToDirectory = async () => {
 
     await RNFS.mkdir(destinationPath);
 
-    // 🔥 Single timestamp for entire operation
-    const baseTimestamp = Date.now();
+    const folderDisplayName =
+      folderName?.trim() || 'New Folder';
 
-    // 👉 First image (for cover)
+    // 👉 First image for cover
     const firstFileName = images[0]?.split('/').pop() || '';
-    const firstExtension = firstFileName?.includes('.')
+    const firstExtension = firstFileName.includes('.')
       ? firstFileName.split('.').pop()
       : 'jpg';
 
-    const coverUri = `${baseTimestamp}_0.${firstExtension}`;
+    const coverUri = `${folderDisplayName}_0.${firstExtension}`;
 
-    console.log('coverUri:', coverUri);
-
-    // 1. Create folder with cover image
-    const folderDisplayName =
-      folderName?.length > 0 ? folderName : 'New Folder';
-
+    // 1. Create folder
     const folder = await FolderLocalService.createFolder(
       folderDisplayName,
       coverUri
     );
 
     const folderId = folder.id;
-    console.log('folderId:', folderId);
 
-    // 2. Process all images
+    // 2. Process images
     for (let i = 0; i < images.length; i++) {
       const uri = images[i];
 
       const originalFileName = uri.split('/').pop() || '';
-      const extension = originalFileName?.includes('.')
+      const extension = originalFileName.includes('.')
         ? originalFileName.split('.').pop()
         : 'jpg';
 
-      // 🔥 Same timestamp used here
-      const uniqueName = `${baseTimestamp}_${i}.${extension}`;
-      const destinationFilePath = `${destinationPath}/${uniqueName}`;
+      // ✅ SINGLE SOURCE NAME
+      let finalName = `${folderDisplayName}_${i}.${extension}`;
+      let destinationFilePath = `${destinationPath}/${finalName}`;
 
-      console.log('Copying:', uri);
-      console.log('Saving as:', destinationFilePath);
+      // ✅ handle duplicate safely
+      let count = 1;
+      while (await RNFS.exists(destinationFilePath)) {
+        finalName = `${folderDisplayName}_${i}_${count}.${extension}`;
+        destinationFilePath = `${destinationPath}/${finalName}`;
+        count++;
+      }
+
+      console.log('Saving as:', finalName);
 
       // Copy file
       await RNFS.copyFile(uri, destinationFilePath);
 
-      // Save file in DB
+      // ✅ SAME NAME IN DB
       await FileLocalService.createFile({
-        name: uniqueName,
-        displayName:uniqueName,
-        size: 0, // you can calculate later if needed
+        name: finalName, // exact match with FS
+        displayName: finalName.replace(/\.[^/.]+$/, ''), // without extension
+        size: 0,
         lastModified: Date.now(),
         folderId: folderId,
       });
     }
 
-    console.log('✅ All files copied successfully');
-   const updatedFolders= await FolderLocalService.getAllFolders()
-   setData(updatedFolders)
-    setIsShowFolderNameModal(false)
-    setFolderName('')
+    console.log('✅ All files saved');
+
+    const updatedFolders = await FolderLocalService.getAllFolders();
+    setData(updatedFolders);
+
+    setIsShowFolderNameModal(false);
+    setFolderName('');
+
   } catch (error) {
-    console.log('❌ Error in copyFilesToDirectory:', error);
+    console.log('❌ Error:', error);
   }
 };
 const readFilesFromDirectory = async () => {
