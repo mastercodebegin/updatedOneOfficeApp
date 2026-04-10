@@ -140,14 +140,14 @@ function Dashboard({ navigation, route }) {
   const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
   const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn, loading, getFolderId, uploadImage } = useGoogleAuth();
+  const { user, accessToken, signIn,signOut, loading, getFolderId, uploadImage } = useGoogleAuth();
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
     try {
       const res = await signIn();
 
-      console.log('Result:', res);
+      // console.log('Result:', res);
 
       const token = res?.accessToken;
 
@@ -618,7 +618,11 @@ function Dashboard({ navigation, route }) {
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
               <View style={{ flex: 1, justifyContent: 'center' }}>
+                <View style={{flexDirection:'row'}}>
+
                 <Button title="Login with Google" onPress={handleLogin} />
+                <Button title="Logiout" onPress={async()=>{await signOut()}} />
+                </View>
 
                 {user && (
                   <Text>Welcome: {user.user?.name}</Text>

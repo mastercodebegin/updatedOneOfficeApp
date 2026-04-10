@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "898961170860",
+    "project_id": "docscan-66285",
+    "storage_bucket": "docscan-66285.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:898961170860:android:df38ffa9902890bbb85a09",
+        "android_client_info": {
+          "package_name": "com.shopax.pdfviewer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "898961170860-mvi34p33n1ap9oh0jb26alkffud5ansq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shopax.pdfviewer",
+            "certificate_hash": "83049feec165403cf6b2a38a4b0206de75470420"
+          }
+        },
+        {
+          "client_id": "898961170860-qa1tuih12i63ak1l2dj4n1uokqevmfh4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shopax.pdfviewer",
+            "certificate_hash": "97352f5f2a6dffa1cbf8b39674edc7f648827a29"
+          }
+        },
+        {
+          "client_id": "898961170860-3emi1itrum9s8fk35g6aruqnbqcpfb30.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8FXneqvibMAqMkcucH4boSnqE-mJtszM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "898961170860-3emi1itrum9s8fk35g6aruqnbqcpfb30.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
