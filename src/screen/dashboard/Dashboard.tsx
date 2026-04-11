@@ -64,6 +64,7 @@ import { getLocalData } from '../../utilies/storageService';
 import { FileLocalService } from '../../db/fileLocalService';
 import { testFolders } from '../../db/folderLocalService';
 import { FolderLocalService } from '../../db/folderLocalService';
+import { FirebaseService } from '../../service/FirebaseService';
 
 const pdfs = [
   {
@@ -101,6 +102,10 @@ function Dashboard({ navigation, route }) {
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
 
+
+
+
+  
   const [documents, setDocuments] = useState<DocumentTypes>({
     pdfFiles: [],
     wordFiles: [],
@@ -618,9 +623,11 @@ function Dashboard({ navigation, route }) {
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
               <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{flexDirection:'row'}}>
+                <View style={{flexDirection:'row',justifyContent:"space-between"}}>
 
-                <Button title="Login with Google" onPress={handleLogin} />
+                <Button title="Login" onPress={handleLogin} />
+                <Button title="Insert" onPress={async()=>FirebaseService.createFolder('test')} />
+                <Button title="Get" onPress={async()=>FirebaseService.getFolders()} />
                 <Button title="Logiout" onPress={async()=>{await signOut()}} />
                 </View>
 
