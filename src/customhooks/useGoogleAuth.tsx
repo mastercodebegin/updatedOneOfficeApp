@@ -104,7 +104,7 @@ GoogleSignin.configure({
 
       // ✅ If exists → return
       if (folderId) {
-        console.log('folderid', folderId);
+        console.log('folderid exist ', folderId);
 
         return folderId;
       }
@@ -117,7 +117,7 @@ GoogleSignin.configure({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "MyAppPhotos",
+          name: "One-Office",
           mimeType: "application/vnd.google-apps.folder",
         }),
       });
@@ -143,7 +143,7 @@ GoogleSignin.configure({
     }
   };
 
-  const uploadImage = async (fileUri: string, accessToken: string, folderId: string) => {
+  const uploadImage = async (fileUri: string, accessToken: string, GoogleDriveFolderId: string) => {
     try {
       const metadata = {
         name: `photo_${Date.now()}.jpg`,

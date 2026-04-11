@@ -2,25 +2,38 @@ import { getDB } from ".";
 
 export const FolderLocalService = {
   // CREATE
-async createFolder(name: string,coverUri:string) {
+async createFolder(name: string,coverUri:string,driveFolderId:string) {
   const db = await getDB();
-console.log('coverUri===',coverUri);
 
+
+const [res1] = await db.executeSql(`PRAGMA table_info(folders)`);
+
+// console.log('COLUMNS:', res1.rows.raw());
+console.log('coverUri===',coverUri);
+// await db.executeSql(
+//   `ALTER TABLE folders ADD COLUMN driveFolderId TEXT`
+// );
+
+// await db.executeSql(
+//   `ALTER TABLE folders ADD COLUMN isDeleted INTEGER DEFAULT 0`
+// );
   const timestamp = Date.now();
 
   const res = await db.executeSql(
-    `INSERT INTO folders (name, remoteId, updatedAt, coverUri)
-     VALUES (?, ?, ?, ?)`,
-    [name, null, timestamp, coverUri]
+    `INSERT INTO folders (name, remoteId, updatedAt, coverUri,driveFolderId,isSynced)
+     VALUES (?, ?, ?, ?,?,?)`,
+    [name, null, timestamp, coverUri,driveFolderId,0]
   );
 
   return {
-    id: res[0].insertId,
-    name,
-    // coverUri,
-    updatedAt: timestamp,
-    remoteId: null,
-  };
+  id: res[0].insertId,
+  name,
+  coverUri,
+  driveFolderId:driveFolderId,
+  isSynced: 0,
+  updatedAt: timestamp,
+  remoteId: null,
+};
 },
 
 async isFolderExists(name: string) {
@@ -106,7 +119,37 @@ async deleteFoldersWithFiles(folderIds: number[]) {
         resolve(true);
       }
     );
-  })}}
+  })},
+  async getUnsynced() {
+  const db = await getDB();
+
+   const [result] = await db.executeSql(
+    `SELECT * FROM folders 
+     WHERE isSynced = 0
+     ORDER BY updatedAt DESC`
+  );
+
+
+  return result.rows.raw();
+},
+async markAsSynced(localId: number, remoteId: string) {
+  const db = await getDB();
+
+  await db.executeSql(
+    `UPDATE folders
+     SET remoteId = ?, isSynced = 1
+     WHERE id = ?`,
+    [remoteId, localId]
+  );
+}
+
+}
+
+
+
+
+
+  
 export const testFolders = async () => {
   try {
     console.log('🚀 Testing folders...');
@@ -138,7 +181,9 @@ export const resetFoldersTable = async () => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT ,
       remoteId TEXT,
-      coverUri,
+      coverUri TEXT,
+      isSynced INTEGER,
+      driveFolderId TEXT,
       updatedAt INTEGER
     )
   `);

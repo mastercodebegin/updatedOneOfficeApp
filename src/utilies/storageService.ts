@@ -13,7 +13,6 @@ export const setLocalData = (key, value) => {
 export const getLocalData = (key) => {
   try {
     const value = storage.getString(key);
-    console.log('value,',value);
     
     return value ? JSON.parse(value) : null;
   } catch (e) {

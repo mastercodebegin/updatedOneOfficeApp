@@ -62,7 +62,7 @@ import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import WebView from 'react-native-webview';
 import { getLocalData } from '../../utilies/storageService';
 import { FileLocalService } from '../../db/fileLocalService';
-import { testFolders } from '../../db/folderLocalService';
+import { resetFoldersTable, testFolders } from '../../db/folderLocalService';
 import { FolderLocalService } from '../../db/folderLocalService';
 import { FirebaseService } from '../../service/FirebaseService';
 
@@ -104,8 +104,36 @@ function Dashboard({ navigation, route }) {
 
 
 
+const syncAll= async()=>{
+  console.log('unSyncdata stated',);
 
+const unSyncdata =await FolderLocalService.createFolder('voter','test','drive')
+// const unSyncdata =await resetFoldersTable()
+// const unSyncdata =await FolderLocalService.getAllFolders()
+// const unSyncFolders =await FolderLocalService.getUnsynced()
+// console.log('unSyncdata',unSyncFolders);
+// const folderId = await getFolderId(accessToken)
+console.log('unSyncdata',unSyncdata);
+
+// for(const folder of unSyncFolders){
+//   const isFolderCreatedOnFirebase = await FirebaseService.createFolder(folder.name)
+//   console.log('isFolderCreatedOnFirebase',isFolderCreatedOnFirebase);
   
+//   if(isFolderCreatedOnFirebase){
+  //   const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
+  // const isuploaded=  await uploadImage(uri,accessToken,folderId)
+  // console.log('isuploaded',isuploaded);
+  
+//     const updatedFolder= await FolderLocalService.markAsSynced(folder.id,'$234')
+//     console.log('updatedFolder',updatedFolder);
+//   }
+
+// }
+const Allfolders= await FolderLocalService.getAllFolders()
+console.log('updatedFolder',Allfolders);
+
+}
+
   const [documents, setDocuments] = useState<DocumentTypes>({
     pdfFiles: [],
     wordFiles: [],
@@ -579,7 +607,7 @@ function Dashboard({ navigation, route }) {
         console.log('localUri====', uri);
 
 
-        uploadImage(uri, accessToken, folderId)
+        // uploadImage(uri, accessToken, folderId)
       }
 
 
@@ -626,7 +654,7 @@ function Dashboard({ navigation, route }) {
                 <View style={{flexDirection:'row',justifyContent:"space-between"}}>
 
                 <Button title="Login" onPress={handleLogin} />
-                <Button title="Insert" onPress={async()=>FirebaseService.createFolder('test')} />
+                <Button title="Sync" onPress={syncAll} />
                 <Button title="Get" onPress={async()=>FirebaseService.getFolders()} />
                 <Button title="Logiout" onPress={async()=>{await signOut()}} />
                 </View>

@@ -41,15 +41,18 @@ FOREIGN KEY (folderId) REFERENCES folders(id)
   if (currentVersion < 3) {
     console.log('🚀 Running migration v3 (folders)');
 
-    await db.executeSql(`
-      CREATE TABLE IF NOT EXISTS folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        remoteId TEXT,
-        name TEXT,
-        coverUri TEXT,
-        updatedAt INTEGER
-        );
-        `);
+await db.executeSql(`
+  CREATE TABLE IF NOT EXISTS folders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    remoteId TEXT,
+    name TEXT,
+    coverUri TEXT,
+    driveFolderId TEXT,
+    isSynced INTEGER DEFAULT 0,
+    isDeleted INTEGER DEFAULT 0,
+    updatedAt INTEGER
+  )
+`);
 
     await db.executeSql(`PRAGMA user_version = 3;`);
 
