@@ -28,7 +28,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import Share from 'react-native-share';
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
+import { TabView, SceneMap, TabBar, SceneRendererProps } from 'react-native-tab-view';
 import CustomSpinner from '../../component/CustomSpinner';
 import VideoAddMob from '../../component/admob/VideoAdd';
 import { useIsFocused } from '@react-navigation/native';
@@ -60,11 +60,13 @@ import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import WebView from 'react-native-webview';
-import { getLocalData } from '../../utilies/storageService';
+import { getLocalData, setLocalData } from '../../utilies/storageService';
 import { FileLocalService } from '../../db/fileLocalService';
-import { resetFoldersTable, testFolders } from '../../db/folderLocalService';
+import { resetFoldersTable } from '../../db/folderLocalService';
 import { FolderLocalService } from '../../db/folderLocalService';
 import { FirebaseService } from '../../service/FirebaseService';
+import { GoogleDriveService } from '../../db/googleDriveService';
+import { AuthService } from '../../service/AuthService';
 
 const pdfs = [
   {
@@ -103,36 +105,236 @@ function Dashboard({ navigation, route }) {
   const [pdfData, setPdfData] = useState([]);
 
 
+  const createDoc = () => {
+    const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
+    // user logged in flow new user
+    accessToken
+    const folders = []
+  }
+  const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
+    try {
 
-const syncAll= async()=>{
-  console.log('unSyncdata stated',);
 
-const unSyncdata =await FolderLocalService.createFolder('voter','test','drive')
-// const unSyncdata =await resetFoldersTable()
-// const unSyncdata =await FolderLocalService.getAllFolders()
-// const unSyncFolders =await FolderLocalService.getUnsynced()
-// console.log('unSyncdata',unSyncFolders);
-// const folderId = await getFolderId(accessToken)
-console.log('unSyncdata',unSyncdata);
+      console.log('updatedFiles===', updatedFiles);
 
-// for(const folder of unSyncFolders){
-//   const isFolderCreatedOnFirebase = await FirebaseService.createFolder(folder.name)
-//   console.log('isFolderCreatedOnFirebase',isFolderCreatedOnFirebase);
-  
-//   if(isFolderCreatedOnFirebase){
-  //   const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
-  // const isuploaded=  await uploadImage(uri,accessToken,folderId)
-  // console.log('isuploaded',isuploaded);
-  
-//     const updatedFolder= await FolderLocalService.markAsSynced(folder.id,'$234')
-//     console.log('updatedFolder',updatedFolder);
-//   }
+      for (const file of updatedFiles as any) {
 
-// }
-const Allfolders= await FolderLocalService.getAllFolders()
-console.log('updatedFolder',Allfolders);
+        // 🗑️ delete file
+        if (file.isDeleted) {
+          await FileLocalService.deleteFile(file.driveFileId);
+          continue;
+        }
 
-}
+        // 🔍 check existing
+        const existingFile = await FileLocalService.getFileById(
+          file.driveFileId
+        );
+
+        // ➕ create
+        if (!existingFile) {
+          await FileLocalService.createFile(file);
+          console.log('➕ File created:', file.driveFileId);
+        }
+        // 🔄 update
+        else {
+          await FileLocalService.updateFile(file);
+          console.log('🔄 File updated:', file.driveFileId);
+        }
+      }
+
+    } catch (err) {
+      console.log('❌ File sync error:', err);
+    }
+  };
+  //  const syncAll = async () => {
+  //   console.log('syncAll started');
+
+  //   const folders:any = await FirebaseService.getNewOrUpdatedFolders(655757);
+  //   const updatedFiles = await FirebaseService.getNewOrUpdatedFiles(folders[0].folderId,656465);
+
+  //   for (const obj of folders as any) {
+
+  //     const existing = await FolderLocalService.getFolderByDriveId(
+  //       obj.driveFolderId
+  //     );
+
+  //     // 🗑️ delete folder
+  //     if (obj.isDeleted) {
+  //       await FolderLocalService.deleteFoldersWithFiles(obj.driveFolderId);
+  //       continue;
+  //     }
+
+  //     // ➕ create
+  //     if (!existing) {
+  //       await FolderLocalService.createFolder(
+  //         obj.name,
+  //         obj.id,
+  //         obj.coverUri,
+  //         obj.driveFolderId,
+  //         1
+  //       );
+  //     } 
+  //     // 🔄 update
+  //     else if (existing.name !== obj.name) {
+  //       await FolderLocalService.updateFolder(
+  //         existing.id,
+  //         obj.name,
+  //         obj.remoteId,
+  //         obj.coverUri,
+  //         obj.driveFolderId,
+  //         1
+  //       );
+  //     }
+
+  //     // 📂 sync files (separated logic)
+  //     await syncFilesForFolder(obj);
+  //   }
+  // };
+  const syncFirebaseToLocal = async () => {
+    // resetFoldersTable()
+    // return
+        const getAllFolders = await FolderLocalService.getAllFolders();
+        console.log('getAllFolders>>>', getAllFolders);
+// return
+    const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+    console.log('gooleDrivefolderName', gooleDrivefolderName);
+    let userId = await AuthService.getUserId()
+
+    console.log('userId', userId);
+
+    const firebaseFolders = await FirebaseService.getUpdatedFoldersByUserId()
+    console.log('firebaseFolders', firebaseFolders);
+
+    const localFolders = await FolderLocalService.getAllFolders();
+    console.log('localFolders', localFolders);
+
+    const localMap = new Map(
+      localFolders.map(local => [local.firebaseId, local])
+    );
+    console.log('localMap :', [...localMap.keys()]);
+
+
+
+    const firebaseIdSet = new Set(
+      firebaseFolders.map(f => f.firebaseId)
+    );
+    console.log('firebaseIdSet:', [...firebaseIdSet]);
+    // console.log('localMap entries:', [...localMap.entries()]);
+    // 🔄 Insert / Update
+    for (const remote of firebaseFolders as any) { // loop through each folder from Firebase
+      console.log('remote', remote);
+
+      const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
+      console.log('local', local);
+
+      if (!local) { // if folder does NOT exist in local DB
+        await FolderLocalService.createFolder(
+          userId, // current user id
+          remote.name, // folder name from Firebase
+          remote.firebaseId, // Firebase id → stored as firebaseId locally
+          remote.coverUri || '', // cover image (fallback to empty string)
+          remote.driveFolderId || '', // Drive folder id (fallback if missing)
+          1 // mark as synced (since coming from Firebase)
+        );
+
+      } else if (remote.updatedAt > local.updatedAt) { // if Firebase version is newer than local
+        await FolderLocalService.updateFolder({
+          name: remote.name, // update name
+          firebaseId: remote.firebaseId, // use Firebase id to identify local row
+          updatedAt: remote.updatedAt, // update timestamp from Firebase
+          coverUri: remote.coverUri || '', // update coverUri (fallback safe)
+          driveFolderId: remote.driveFolderId || '', // update drive folder id
+        });
+      }
+    }
+
+    // // 🗑️ Delete
+    // for (const local of localFolders) {
+    //   if (!firebaseIdSet.has(local.firebaseId)) {
+    //     await FolderLocalService.deleteFolderByFirebaseId(local.firebaseId);
+    //   }
+    // }
+
+    //Push to firebase
+    await pushFolders()
+
+    console.log('✅ Sync complete');
+  }
+
+  const pushFolders = async () => {
+    console.log('pushFolders started',);
+    const userId = await AuthService.getUserId()
+    const unSynced = await FolderLocalService.getUnsynced();
+    const getAllFolders = await FolderLocalService.getAllFolders();
+
+    console.log('getAllFolders', getAllFolders);
+    console.log('unsyn', unSynced);
+
+    for (const folder of unSynced as any) {
+      folder.userId = userId
+      try {
+        const docRef: any = await FirebaseService.createFolderInFirebase(folder);
+
+        await FolderLocalService.updateFirebaseId(
+          folder.id,
+          docRef.id
+        );
+
+      } catch (e) {
+        console.log('Push failed:', e);
+      }
+    }
+  }
+
+  const syncAll = async () => {
+    console.log('unSyncdata stated',);
+
+
+    // Que -user has already data but could not sync and upload 
+    // ans - will always sync data first then will push data to firebase
+
+    // const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+    // console.log('gooleDrivefolderName', gooleDrivefolderName);
+    // const userId = await AuthService.getUserId()
+    // console.log('userId', userId);
+    // console.log('userId', await AuthService.getUserId());
+    // const unSyncdata = await FolderLocalService.createFolder(userId, 'name-voter-1', 'firebaseId-test', 'coveruri', gooleDrivefolderName, 0)
+    // const unSyncdata =await resetFoldersTable()
+    // const unSyncdata =await FolderLocalService.getAllFolders()
+    // const unSyncFolders =await FolderLocalService.getUnsynced()
+    await syncFirebaseToLocal()
+
+    // const folderId = await getFolderId(accessToken)
+    // console.log('unSyncdata',unSyncFolders);
+    // console.log('unSyncdata[0].id',unSyncFolders[0].id);
+    // const id =unSyncFolders[0].id
+    // const updatedFolder= await FolderLocalService.markAsSynced(id,'$234')
+    // const updatedFolder= await FolderLocalService.getGoogleDriveFolderIdFromDB()
+    // console.log('updatedFolder',updatedFolder);
+    // const unSyncFolders = GoogleDriveService.
+    // const folder = await GoogleDriveService.deleteFolder(getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID))
+    // const folder = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+
+    // console.log('folder--is', unSyncdata);
+
+    // for(const folder of unSyncFolders){
+    //   const isFolderCreatedOnFirebase = await FirebaseService.createFolder(folder.name)
+    //   console.log('isFolderCreatedOnFirebase',isFolderCreatedOnFirebase);
+    //   console.log('folder.driveFolderId',folder.driveFolderId);
+
+    //   if(isFolderCreatedOnFirebase){
+    //    const isuploaded=  await uploadImage(uri,accessToken,folder.driveFolderId)
+    //    console.log('isuploaded',isuploaded);
+
+    //     const updatedFolder= await FolderLocalService.markAsSynced(folder.id,'$234')
+    //     console.log('updatedFolder',updatedFolder);
+    //   }
+
+    // }
+    // const Allfolders = await FolderLocalService.getAllFolders()
+    // console.log('updatedFolder', Allfolders);
+
+  }
 
   const [documents, setDocuments] = useState<DocumentTypes>({
     pdfFiles: [],
@@ -140,8 +342,7 @@ console.log('updatedFolder',Allfolders);
     xlsxFiles: [],
     pptFiles: [],
   });
-  const readPdfFileRef = React.useRef()
-  const readConvertedPdfFileRef = React.useRef()
+  const readPdfFileRef = React.useRef(null)
 
   const [convertedFiles, setConvertedFiles] = useState(
     []);
@@ -173,7 +374,7 @@ console.log('updatedFolder',Allfolders);
   const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
   const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn,signOut, loading, getFolderId, uploadImage } = useGoogleAuth();
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -184,14 +385,6 @@ console.log('updatedFolder',Allfolders);
 
       const token = res?.accessToken;
 
-      if (token) {
-        console.log('accessToken:', token);
-
-        await getFolderId(token); // ✅ use token here
-
-      } else {
-        console.log('access token is invalid', token);
-      }
 
     } catch (error) {
       console.log('Login error:', error);
@@ -213,12 +406,12 @@ console.log('updatedFolder',Allfolders);
 
   }
   useEffect(() => {
-    const res = fetch('https://api.jsonsilo.com/public/fb20cc0e-8ad8-4e0d-971b-a4e7cbba310c').then(res => res.json()).then(res => console.log()).catch(err => console.log('err', err))
-    console.log('api.jsonsilo=====', res);
-    (async()=>{
-      await getAllTables()
+    // const res = fetch('https://api.jsonsilo.com/public/fb20cc0e-8ad8-4e0d-971b-a4e7cbba310c').then(res => res.json()).then(res => console.log()).catch(err => console.log('err', err))
+    // console.log('api.jsonsilo=====', res);
+    // (async () => {
+    //   await getAllTables()
 
-    })()
+    // })()
     // dispatch(getBankList())
     getPermission()
   }, [])
@@ -336,7 +529,7 @@ console.log('updatedFolder',Allfolders);
 
 
 
-  const deleteFileHandler = async (item) => {
+  const deleteFileHandler = async (item: any) => {
     //@ts-ignore
     // console.log(item);
 
@@ -395,18 +588,18 @@ console.log('updatedFolder',Allfolders);
     setIsShowCardModal(true)
   }
 
-  const search = (data) => {
+  const search = (data: any) => {
     // sending search text to readsystemfile screen to filter data
     setSearchQuery(data)
 
 
   }
 
-  const convertedFilesearch = (data) => {
+  const convertedFilesearch = (data: any) => {
     setSearchQuery(data)
     console.log('value', data);
     // /console.log('pdfData--', pdfData);
-    const result = convertedFiles.filter((item) => item.name.toUpperCase().startsWith(data.toUpperCase()))
+    const result = convertedFiles.filter((item: any) => item.name.toUpperCase().startsWith(data.toUpperCase()))
     console.log('search-----', result);
     setConvertFilterData(result)
     //setFiles(result)
@@ -459,7 +652,12 @@ console.log('updatedFolder',Allfolders);
     }
   }
 
-  const renderScene = ({ route, jumpTo }) => {
+  const renderScene = ({
+    route,
+    jumpTo,
+  }: SceneRendererProps & {
+    route: { key: 'first' | 'second'; title: string };
+  }) => {
 
     switch (route.key) {
       case asyncStorageKeyName.PDF_FILES:
@@ -476,7 +674,7 @@ console.log('updatedFolder',Allfolders);
   };
 
 
-  const renderTabBar = props => (
+  const renderTabBar = (props: any) => (
     <TabBar
       {...props}
       indicatorStyle={{ backgroundColor: COLORS.THEME_COLOR, height: 1 }}
@@ -485,12 +683,15 @@ console.log('updatedFolder',Allfolders);
       inactiveColor='gray'
       lazy
       lalazyPreloadDistance={1}
-      onTabPress={({ route }) => {
-        // Do something when a tab is pressed, e.g., show its name
-        setScreenName(route.title)
+      onTabPress={({
+        route,
+      }: {
+        route: { key: string; title: string };
+      }) => {
+        setScreenName(route.title);
+
         setTimeout(() => {
           StatusBar.setBackgroundColor(getLinearColors()[0]);
-          //double tap to update color
         }, 50);
       }}
 
@@ -558,7 +759,7 @@ console.log('updatedFolder',Allfolders);
 
         <TouchableOpacity onPress={openFile}>
 
-        {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
+          {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
           <Feather name="folder" size={scaledSize(18)} color={COLORS.THEME_COLOR} />
         </TouchableOpacity>
 
@@ -593,7 +794,7 @@ console.log('updatedFolder',Allfolders);
 
 
     try {
-      const res = await DocumentPicker({ isMultipleSelection: false })
+      const res: any = await DocumentPicker({ isMultipleSelection: false })
       let fileExtension = ''
       let uri = ''
 
@@ -651,12 +852,18 @@ console.log('updatedFolder',Allfolders);
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
               <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{flexDirection:'row',justifyContent:"space-between"}}>
+                <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
 
-                <Button title="Login" onPress={handleLogin} />
-                <Button title="Sync" onPress={syncAll} />
-                <Button title="Get" onPress={async()=>FirebaseService.getFolders()} />
-                <Button title="Logiout" onPress={async()=>{await signOut()}} />
+                  <Button title="Login" onPress={handleLogin} />
+                  <Button title="Sync" onPress={syncAll} />
+                  <Button title="CREATE" onPress={async () => {
+                    const created = await FolderLocalService.createFolder
+                      ('', 'name-voter-1' + Math.random(),
+                        '', 'coveruri', 'gooleDrivefolderName', 0)
+                    console.log('created', created);
+
+                  }} />
+                  <Button title="Logout" onPress={async () => { await signOut() }} />
                 </View>
 
                 {user && (

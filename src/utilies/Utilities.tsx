@@ -316,7 +316,7 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
     console.log('Error:', error);
   } finally {
 
-    console.log('stoaring files in asyncstorage start=======', pdfFiles[0]);
+    // console.log('stoaring files in asyncstorage start=======', pdfFiles[0]);
     let sorted = []
     if (data > 0) {
       sorted = pdfFiles.sort((a, b) => new Date(b.mtime) - new Date(a.mtime)); // latest date

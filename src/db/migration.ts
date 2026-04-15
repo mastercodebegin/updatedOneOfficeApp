@@ -1,61 +1,75 @@
 import { getDB } from './index';
 
-export const runMigrations = async () => {
+export const initDB = async () => {
   const db = await getDB();
 
-  const res = await db.executeSql(`PRAGMA user_version;`);
-  const currentVersion = res[0].rows.item(0).user_version;
+  try {
+    console.log('🚀 Initializing DB (safe mode)');
 
-  console.log('DB Version:', currentVersion);
+    // 📂 FOLDERS TABLE
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS folders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-  // Version 1 → Initial setup
-  if (currentVersion < 1) {
+        userId TEXT,
+
+        name TEXT,
+        coverUri TEXT,
+
+        firebaseId TEXT UNIQUE,
+        driveFolderId TEXT,
+
+        isSynced INTEGER DEFAULT 0,
+        isDeleted INTEGER DEFAULT 0,
+
+        updatedAt INTEGER
+      )
+    `);
+
+    // 📄 FILES TABLE
     await db.executeSql(`
       CREATE TABLE IF NOT EXISTS files (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT,
-displayName TEXT,
-size INTEGER,
-lastModified INTEGER,
-folderId INTEGER,           -- 🔥 relation to folders
-remoteId TEXT,              -- 🔥 for sync
-isSynced INTEGER DEFAULT 0,
-isDeleted INTEGER DEFAULT 0,
-updatedAt INTEGER,
-FOREIGN KEY (folderId) REFERENCES folders(id)
-);
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        userId TEXT,
+
+        name TEXT,
+        displayName TEXT,
+        size INTEGER,
+        lastModified INTEGER,
+
+        folderId INTEGER,
+        firebaseId TEXT,
+
+        driveFileId TEXT,
+
+        isSynced INTEGER DEFAULT 0,
+        isDeleted INTEGER DEFAULT 0,
+
+        updatedAt INTEGER,
+
+        FOREIGN KEY (folderId) REFERENCES folders(id)
+      )
     `);
 
-    await db.executeSql(`PRAGMA user_version = 1;`);
-  }
-
-  // Version 2 → Future example
-  if (currentVersion < 2) {
+    // ⚡ Indexes (safe to run multiple times)
     await db.executeSql(`
-      ALTER TABLE files ADD COLUMN isFavorite INTEGER DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_folders_firebaseFolderId 
+      ON folders(firebaseId)
     `);
 
-    await db.executeSql(`PRAGMA user_version = 2;`);
-  }
+    await db.executeSql(`
+      CREATE INDEX IF NOT EXISTS idx_files_firebaseFolderId 
+      ON files(firebaseId)
+    `);
 
-  if (currentVersion < 3) {
-    console.log('🚀 Running migration v3 (folders)');
+    await db.executeSql(`
+      CREATE INDEX IF NOT EXISTS idx_files_userId 
+      ON files(userId)
+    `);
 
-await db.executeSql(`
-  CREATE TABLE IF NOT EXISTS folders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    remoteId TEXT,
-    name TEXT,
-    coverUri TEXT,
-    driveFolderId TEXT,
-    isSynced INTEGER DEFAULT 0,
-    isDeleted INTEGER DEFAULT 0,
-    updatedAt INTEGER
-  )
-`);
-
-    await db.executeSql(`PRAGMA user_version = 3;`);
-
-    console.log('✅ Migration v3 done');
+    console.log('✅ DB ready (no data loss)');
+  } catch (error) {
+    console.log('❌ DB Init Error:', error);
   }
 };

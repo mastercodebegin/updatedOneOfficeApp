@@ -1,176 +1,250 @@
 import { getDB } from ".";
 
 export const FolderLocalService = {
-  // CREATE
-async createFolder(name: string,coverUri:string,driveFolderId:string) {
-  const db = await getDB();
 
+  // ✅ CREATE
+  async createFolder(
+    userId: string,
+    name: string,
+    firebaseId: string,
+    coverUri: string,
+    driveFolderId: string,
+    isSynced: number
+  ) {
+    const db = await getDB();
+    const timestamp = Date.now();
 
-const [res1] = await db.executeSql(`PRAGMA table_info(folders)`);
+    const res = await db.executeSql(
+      `INSERT INTO folders 
+      (userId, name, firebaseId, coverUri, driveFolderId, isSynced, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, name, firebaseId, coverUri, driveFolderId, isSynced, timestamp]
+    );
 
-// console.log('COLUMNS:', res1.rows.raw());
-console.log('coverUri===',coverUri);
-// await db.executeSql(
-//   `ALTER TABLE folders ADD COLUMN driveFolderId TEXT`
-// );
+    return {
+      id: res[0].insertId,
+      userId,
+      name,
+      firebaseId,
+      driveFolderId,
+      isSynced,
+      updatedAt: timestamp
+    };
+  },
 
-// await db.executeSql(
-//   `ALTER TABLE folders ADD COLUMN isDeleted INTEGER DEFAULT 0`
-// );
-  const timestamp = Date.now();
+  // ✅ CHECK EXISTS (by firebaseId)
+  async isFolderExists(firebaseId: string) {
+    const db = await getDB();
 
-  const res = await db.executeSql(
-    `INSERT INTO folders (name, remoteId, updatedAt, coverUri,driveFolderId,isSynced)
-     VALUES (?, ?, ?, ?,?,?)`,
-    [name, null, timestamp, coverUri,driveFolderId,0]
-  );
+    const res = await db.executeSql(
+      `SELECT id FROM folders WHERE firebaseId = ? LIMIT 1`,
+      [firebaseId]
+    );
 
-  return {
-  id: res[0].insertId,
-  name,
-  coverUri,
-  driveFolderId:driveFolderId,
-  isSynced: 0,
-  updatedAt: timestamp,
-  remoteId: null,
-};
-},
+    return res[0].rows.length > 0;
+  },
+  async getUnsynced() {
+    try {
+      const db = await getDB();
 
-async isFolderExists(name: string) {
-  const db = await getDB();
+      const result = await db.executeSql(
+        `SELECT * FROM folders WHERE isSynced = 0`
+      );
 
-  const res = await db.executeSql(
-    `SELECT id FROM folders WHERE name = ? LIMIT 1`,
-    [name]
-  );
+      const rows = result[0].rows;
+      const data = [];
 
-  return res[0].rows.length > 0;
-},
-async updateFolder(
-  id: number,
-  name: string,
-  coverUri: string | null = null
-) {
-  const db = await getDB();
-  const timestamp = Date.now();
+      for (let i = 0; i < rows.length; i++) {
+        data.push(rows.item(i));
+      }
 
-  await db.executeSql(
-    `UPDATE folders
-     SET name = ?, coverUri = ?, updatedAt = ?
-     WHERE id = ?`,
-    [name, coverUri, timestamp, id]
-  );
+      return data;
 
-  return {
-    id,
+    } catch (error) {
+      console.error('getUnsynced error:', error);
+      throw error;
+    }
+  },
+
+  // ✅ GET BY FIREBASE ID (MAIN METHOD)
+  async getFolderByFirebaseId(firebaseId: string) {
+    const db = await getDB();
+
+    const result = await db.executeSql(
+      `SELECT * FROM folders WHERE firebaseId = ? LIMIT 1`,
+      [firebaseId]
+    );
+
+    return result[0].rows.length > 0 ? result[0].rows.item(0) : null;
+  },
+
+  // ✅ GET BY DRIVE ID (for upload mapping)
+  async getFolderByDriveId(driveFolderId: string) {
+    const db = await getDB();
+
+    const result = await db.executeSql(
+      `SELECT * FROM folders WHERE driveFolderId = ? LIMIT 1`,
+      [driveFolderId]
+    );
+
+    return result[0].rows.length > 0 ? result[0].rows.item(0) : null;
+  },
+
+  // ✅ UPDATE (FIXED)
+  async updateFolder({
     name,
+    firebaseId,
     coverUri,
-    updatedAt: timestamp,
-  };
-},
+    driveFolderId,
+    updatedAt,
+  }: {
+    name: string;
+    firebaseId: string;
+    coverUri: string;
+    driveFolderId: string;
+    updatedAt: number;
+  }) {
+    try {
+      const db = await getDB();
 
-  // READ (THIS ONE 👇)
+      await db.executeSql(
+        `UPDATE folders 
+       SET name = ?, 
+           coverUri = ?, 
+           driveFolderId = ?, 
+           updatedAt = ?, 
+           isSynced = 1
+       WHERE firebaseId = ?`,
+        [
+          name,
+          coverUri,
+          driveFolderId,
+          updatedAt,
+          firebaseId,
+        ]
+      );
+
+    } catch (error) {
+      console.error('updateFolder error:', error);
+      throw error;
+    }
+  },
+
+  // ✅ GET ALL
   async getAllFolders() {
     const db = await getDB();
 
     const res = await db.executeSql(`SELECT * FROM folders`);
     return res[0].rows.raw();
   },
-async getFolderById(id: number) {
-  const db = await getDB();
 
-  const res = await db.executeSql(
-    `SELECT * FROM folders WHERE id = ?`,
-    [id]
-  );
-
-  return res[0].rows.length > 0 ? res[0].rows.item(0) : null;
-},
-async deleteFoldersWithFiles(folderIds: number[]) {
-  const db = await getDB();
-
-  console.log('folders ids =====', folderIds);
-
-  if (!folderIds || folderIds.length === 0) return;
-
-  const placeholders = folderIds.map(() => '?').join(',');
-
-  return new Promise((resolve, reject) => {
-    db.transaction(
-      (tx) => {
-        // 1. Delete files
-        tx.executeSql(
-          `DELETE FROM files WHERE folderId IN (${placeholders})`,
-          folderIds
-        );
-
-        // 2. Delete folders
-        tx.executeSql(
-          `DELETE FROM folders WHERE id IN (${placeholders})`,
-          folderIds
-        );
-      },
-      (error) => {
-        console.log('❌ Transaction error:', error);
-        reject(error);
-      },
-      () => {
-        console.log('✅ Transaction success');
-        resolve(true);
-      }
-    );
-  })},
-  async getUnsynced() {
-  const db = await getDB();
-
-   const [result] = await db.executeSql(
-    `SELECT * FROM folders 
-     WHERE isSynced = 0
-     ORDER BY updatedAt DESC`
-  );
-
-
-  return result.rows.raw();
-},
-async markAsSynced(localId: number, remoteId: string) {
+  async updateFirebaseId(localId: number, firebaseId: string) {
   const db = await getDB();
 
   await db.executeSql(
-    `UPDATE folders
-     SET remoteId = ?, isSynced = 1
+    `UPDATE folders 
+     SET firebaseId = ?, isSynced = 1 
      WHERE id = ?`,
-    [remoteId, localId]
+    [firebaseId, localId]
   );
-}
+},
 
-}
+  // ✅ GET BY LOCAL ID
+  async getFolderById(id: number) {
+    const db = await getDB();
 
+    const res = await db.executeSql(
+      `SELECT * FROM folders WHERE id = ?`,
+      [id]
+    );
 
+    return res[0].rows.length > 0 ? res[0].rows.item(0) : null;
+  },
 
+  // ✅ DELETE USING FIREBASE ID (SYNC SAFE)
+  async deleteFolderByFirebaseId(firebaseId: string) {
+    const db = await getDB();
 
+    return new Promise((resolve, reject) => {
+      db.transaction(
+        (tx) => {
+          // delete files first
+          tx.executeSql(
+            `DELETE FROM files WHERE firebaseId = ?`,
+            [firebaseId]
+          );
 
-  
-export const testFolders = async () => {
-  try {
-    console.log('🚀 Testing folders...');
+          // delete folder
+          tx.executeSql(
+            `DELETE FROM folders WHERE firebaseId = ?`,
+            [firebaseId]
+          );
+        },
+        (error) => {
+          console.log('❌ Delete error:', error);
+          reject(error);
+        },
+        () => {
+          console.log('✅ Folder deleted');
+          resolve(true);
+        }
+      );
+    });
+  },
 
-    // ➕ Insert dummy data
-    await FolderLocalService.createFolder('Travel','');
-    await FolderLocalService.createFolder('Work','');
-    await FolderLocalService.createFolder('Personal','');
+  // ✅ GET UNSYNCED
+  async getUnsynced(userId: string) {
+    const db = await getDB();
 
-    console.log('✅ Inserted folders');
+    const [result] = await db.executeSql(
+      `SELECT * FROM folders 
+       WHERE isSynced = 0 AND userId = ?
+       ORDER BY updatedAt DESC`,
+      [userId]
+    );
 
-    // 📖 Fetch all
-    const folders = await FolderLocalService.getAllFolders();
+    return result.rows.raw();
+  },
 
-    console.log('📁 All Folders:', folders);
+  // ✅ MARK AS SYNCED
+  async markAsSynced(localFolderId: number, firebaseId: string) {
+    const db = await getDB();
 
-  } catch (error) {
-    console.error('❌ Folder test failed:', error);
+    await db.executeSql(
+      `UPDATE folders
+       SET firebaseId = ?, isSynced = 1
+       WHERE id = ?`,
+      [firebaseId, localFolderId]
+    );
+  },
+
+  async getGoogleDriveFolderFromDB() {
+    const db = await getDB();
+
+    try {
+      const result = await db.executeSql(
+        `SELECT driveFolderId 
+       FROM folders 
+       WHERE driveFolderId IS NOT NULL 
+       LIMIT 1`
+      );
+
+      const rows = result[0].rows;
+
+      if (rows.length > 0) {
+        return rows.item(0).driveFolderId;
+      }
+
+      return null;
+    } catch (error) {
+      console.log('❌ DB Error:', error);
+      return null;
+    }
   }
 };
 
+
+// ✅ RESET TABLE (UPDATED)
 export const resetFoldersTable = async () => {
   const db = await getDB();
 
@@ -179,14 +253,22 @@ export const resetFoldersTable = async () => {
   await db.executeSql(`
     CREATE TABLE IF NOT EXISTS folders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT ,
-      remoteId TEXT,
+
+      userId TEXT,
+
+      name TEXT,
       coverUri TEXT,
-      isSynced INTEGER,
+
+      firebaseId TEXT UNIQUE,
       driveFolderId TEXT,
+
+      isSynced INTEGER DEFAULT 0,
+      isDeleted INTEGER DEFAULT 0,
+
       updatedAt INTEGER
     )
   `);
 
   console.log('🧹 folders table reset');
 };
+

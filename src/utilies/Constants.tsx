@@ -98,7 +98,9 @@ export const asyncStorageKeyName = {
     SAVED_USERS: 'users1',
     ALL_FILES: 'allFiles',
     DOCUMENTS: 'documents',
-    DRIVE_FOLDER_ID:'drive_folder_id'
+    DRIVE_FOLDER_NAME:'one-office',
+    DRIVE_FOLDER_ID:'drive_folder_id',
+    LAST_SYNC_TIME : 'LAST_SYNC_TIME'
 }
 
 

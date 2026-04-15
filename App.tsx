@@ -38,7 +38,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
-import { initDB } from './src/db/init';
+import { initDB } from './src/db/migration';
 
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
