@@ -1,4 +1,4 @@
-import firestore, { addDoc } from '@react-native-firebase/firestore';
+import firestore, { addDoc, doc, updateDoc } from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { getLocalData, setLocalData } from '../utilies/storageService';
 import { asyncStorageKeyName } from '../utilies/Constants';
@@ -22,7 +22,7 @@ const getUserId = () => {
 
 export const FirebaseService = {
   // ✅ CREATE
- async createFolderInFirebase(folder: any) {
+  async createFolderInFirebase(folder: any) {
     try {
       const docRef = await addDoc(collection(db, 'folders'), {
         name: folder.name, // folder name
@@ -42,6 +42,34 @@ export const FirebaseService = {
       throw error;
     }
   },
+  // ✅ UPDATE (for rename, edits)
+async updateFolderInFirebase(folder: any) {
+  try {
+    const updateData: any = {
+      updatedAt: Date.now(), // always required
+    };
+
+    // 🔹 only include if present
+    if (folder.name !== undefined) {
+      updateData.name = folder.name;
+    }
+
+    if (folder.isDeleted !== undefined) {
+      updateData.isDeleted = folder.isDeleted;
+    }
+
+    await updateDoc(
+      doc(db, 'folders', folder.firebaseId),
+      updateData
+    );
+
+    return true;
+
+  } catch (error) {
+    console.error('❌ updateFolderInFirebase error:', error);
+    throw error;
+  }
+},
 
   // ✅ READ
   async getUpdatedFoldersByUserId() {

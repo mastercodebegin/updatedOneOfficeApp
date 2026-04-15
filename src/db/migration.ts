@@ -23,6 +23,7 @@ export const initDB = async () => {
         isDeleted INTEGER DEFAULT 0,
 
         updatedAt INTEGER
+        createdAt INTEGER
       )
     `);
 

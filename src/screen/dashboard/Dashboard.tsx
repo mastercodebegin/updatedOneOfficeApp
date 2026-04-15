@@ -195,7 +195,7 @@ function Dashboard({ navigation, route }) {
     // return
     const getAllFolders = await FolderLocalService.getAllFolders();
     console.log('getAllFolders>>>', getAllFolders);
-    // getAllFolders.map((v)=>console.log('name>>>',v))
+    getAllFolders.map((v)=>console.log('name>>>',v))
     // return
     const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
     console.log('gooleDrivefolderName', gooleDrivefolderName);
@@ -227,6 +227,10 @@ function Dashboard({ navigation, route }) {
 
       const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
       console.log('local', local);
+console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
+console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
+console.log('comparison:', remote.updatedAt > local.updatedAt);
+    const updatedAt = Date.now();
 
       if (!local) { // if folder does NOT exist in local DB
         await FolderLocalService.createFolder(
@@ -235,16 +239,18 @@ function Dashboard({ navigation, route }) {
           remote.firebaseId, // Firebase id → stored as firebaseId locally
           remote.coverUri || '', // cover image (fallback to empty string)
           remote.driveFolderId || '', // Drive folder id (fallback if missing)
-          1 // mark as synced (since coming from Firebase)
+          1 ,// mark as synced (since coming from Firebase)
+          updatedAt
         );
 
       } else if (remote.updatedAt > local.updatedAt) { // if Firebase version is newer than local
-        await FolderLocalService.updateFolder({
-          name: remote.name, // update name
-          firebaseId: remote.firebaseId, // use Firebase id to identify local row
-          updatedAt: remote.updatedAt, // update timestamp from Firebase
-          coverUri: remote.coverUri || '', // update coverUri (fallback safe)
-          driveFolderId: remote.driveFolderId || '', // update drive folder id
+
+        console.log('Else if>>>>>:',);
+
+        await FolderLocalService.updateFolderById({
+          id:local.id,
+          name: remote.name,
+          isDeleted:remote.isDeleted
         });
       }
     }
@@ -287,31 +293,53 @@ function Dashboard({ navigation, route }) {
   }
 
 
-  const pushFolders = async () => {
-    console.log('pushFolders started',);
-    const userId = await AuthService.getUserId()
-    const unSynced = await FolderLocalService.getUnsynced();
-    const getAllFolders = await FolderLocalService.getAllFolders();
+const pushFolders = async () => {
+  console.log('pushFolders started');
 
-    console.log('getAllFolders', getAllFolders);
-    console.log('unsyn', unSynced);
+  const userId = await AuthService.getUserId();
+  const unSynced = await FolderLocalService.getUnsynced();
 
-    for (const folder of unSynced as any) {
-      folder.userId = userId
-      try {
-        const docRef: any = await FirebaseService.createFolderInFirebase(folder);
+  console.log('unsyn', unSynced);
+
+  for (const folder of unSynced as any) {
+
+    try {
+      folder.userId = userId;
+
+      if (!folder.firebaseId) {
+        // 🔹 CREATE (new folder)
+        const doc = await FirebaseService.createFolderInFirebase(folder);
+
         await FolderLocalService.updateFirebaseId(
           folder.id,
-          docRef.firebaseId,
+          doc.firebaseId,
           userId
-
         );
 
-      } catch (e) {
-        console.log('Push failed:', e);
+      } else if (folder.isDeleted === 1) {
+        // 🔹 DELETE (soft delete in Firebase)
+        console.log('else DELETE here',folder);
+        await FirebaseService.updateFolderInFirebase({
+          firebaseId: folder.firebaseId,
+          isDeleted: 1,
+        });
+
+        await FolderLocalService.markAsSynced(folder.id);
+
+      } else {
+        // 🔹 UPDATE (rename or changes)
+        console.log('else update here',folder);
+        
+        await FirebaseService.updateFolderInFirebase(folder);
+
+        await FolderLocalService.markAsSynced(folder.id);
       }
+
+    } catch (e) {
+      console.log('Push failed:', e);
     }
   }
+};
 
   const syncAll = async () => {
     console.log('unSyncdata stated',);
@@ -884,13 +912,18 @@ function Dashboard({ navigation, route }) {
                   <Button title="Login" onPress={handleLogin} />
                   <Button title="Sync" onPress={syncAll} />
                   <Button title="CREATE" onPress={async () => {
+                    console.log('hi');
+                    
                     const created = await FolderLocalService.createFolder
                       ('', 'name-voter-1' + Math.random(),
-                        '', 'coveruri', 'gooleDrivefolderName', 0)
+                        null, 'coveruri', 'gooleDrivefolderName', 0)
                     console.log('created', created);
 
                   }} />
-                  <Button title="Logout" onPress={async () => { await signOut() }} />
+                  <Button title="Update" onPress={async () => {  
+                    await FolderLocalService.updateFolderById({id:1,name:Math.random().toString(),isDeleted:0})
+                   }} />
+                  {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
                 </View>
 
                 {user && (

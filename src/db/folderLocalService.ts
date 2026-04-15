@@ -3,23 +3,49 @@ import { getDB } from ".";
 export const FolderLocalService = {
 
   // ✅ CREATE
-  async createFolder(
-    userId: string,
-    name: string,
-    firebaseId: string,
-    coverUri: string,
-    driveFolderId: string,
-    isSynced: number
-  ) {
+async createFolder(
+  userId: string,
+  name: string,
+  firebaseId: string | null,
+  coverUri: string,
+  driveFolderId: string,
+  isSynced: number,
+  updatedAt?: number // 👈 optional
+
+) {
+  try {
+
     const db = await getDB();
+
     const timestamp = Date.now();
+        const finalUpdatedAt = updatedAt ?? timestamp;
+
+    console.log('📦 createFolder input:', {
+      userId,
+      name,
+      firebaseId,
+      coverUri,
+      driveFolderId,
+      isSynced,
+    });
 
     const res = await db.executeSql(
       `INSERT INTO folders 
-      (userId, name, firebaseId, coverUri, driveFolderId, isSynced, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, name, firebaseId, coverUri, driveFolderId, isSynced, timestamp]
+      (userId, name, firebaseId, coverUri, driveFolderId, isSynced, updatedAt, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        name,
+        firebaseId || null, // 🔥 important fix
+        coverUri,
+        driveFolderId,
+        Number(isSynced),   // 🔥 ensure number
+        finalUpdatedAt,
+        timestamp
+      ]
     );
+
+    console.log('✅ Insert success:', res);
 
     return {
       id: res[0].insertId,
@@ -28,10 +54,22 @@ export const FolderLocalService = {
       firebaseId,
       driveFolderId,
       isSynced,
-      updatedAt: timestamp
+      updatedAt: finalUpdatedAt,
+      createdAt: timestamp
     };
-  },
 
+  } catch (error: any) {
+    console.log('❌ Insert error:', error?.message || error);
+    console.log('❌ Full error object:', error);
+
+    // 🔥 Extra debugging (very useful)
+    if (error?.message?.includes('UNIQUE')) {
+      console.log('⚠️ Likely firebaseId duplicate issue');
+    }
+
+    throw error;
+  }
+},
   // ✅ CHECK EXISTS (by firebaseId)
   async isFolderExists(firebaseId: string) {
     const db = await getDB();
@@ -91,44 +129,60 @@ export const FolderLocalService = {
   },
 
   // ✅ UPDATE (FIXED)
-  async updateFolder({
-    name,
-    firebaseId,
-    coverUri,
-    driveFolderId,
-    updatedAt,
-  }: {
-    name: string;
-    firebaseId: string;
-    coverUri: string;
-    driveFolderId: string;
-    updatedAt: number;
-  }) {
-    try {
-      const db = await getDB();
+async updateFolderById({
+  id,
+  name,
+  isDeleted,
+}: {
+  id: number;
+  name?: string;
+  isDeleted?: number;
+}) {
+  try {
+    const db = await getDB();
 
-      await db.executeSql(
-        `UPDATE folders 
-       SET name = ?, 
-           coverUri = ?, 
-           driveFolderId = ?, 
-           updatedAt = ?, 
-           isSynced = 1
-       WHERE firebaseId = ?`,
-        [
-          name,
-          coverUri,
-          driveFolderId,
-          updatedAt,
-          firebaseId,
-        ]
-      );
+    const updates: string[] = [];
+    const values: any[] = [];
 
-    } catch (error) {
-      console.error('updateFolder error:', error);
-      throw error;
+    // 🔹 update name
+    if (name !== undefined) {
+      updates.push('name = ?');
+      values.push(name);
     }
-  },
+
+    // 🔹 update delete flag
+    if (isDeleted !== undefined) {
+      updates.push('isDeleted = ?');
+      values.push(isDeleted);
+    }
+
+    // 🔹 mark unsynced (local change)
+    updates.push('isSynced = 0');
+
+    values.push(id);
+
+    // 🔥 debug logs
+    console.log('🛠 updateFolderById:', {
+      id,
+      updates,
+      values,
+    });
+
+    await db.executeSql(
+      `UPDATE folders 
+       SET ${updates.join(', ')} 
+       WHERE id = ?`,
+      values
+    );
+
+    console.log('✅ Folder updated locally');
+
+  } catch (error: any) {
+    console.log('❌ updateFolderById error:', error?.message || error);
+    console.log('❌ Full error:', error);
+    throw error;
+  }
+},
 
   // ✅ GET ALL
   async getAllFolders() {
@@ -203,16 +257,20 @@ export const FolderLocalService = {
   // },
 
   // ✅ MARK AS SYNCED
-  async markAsSynced(localFolderId: number, firebaseId: string) {
-    const db = await getDB();
+async markAsSynced(localFolderId: number, firebaseId?: string) {
+  const db = await getDB();
 
-    await db.executeSql(
-      `UPDATE folders
-       SET firebaseId = ?, isSynced = 1
-       WHERE id = ?`,
-      [firebaseId, localFolderId]
-    );
-  },
+  const timestamp = Date.now();
+
+  await db.executeSql(
+    `UPDATE folders 
+     SET isSynced = 1,
+         updatedAt = ?,
+         firebaseId = COALESCE(?, firebaseId)
+     WHERE id = ?`,
+    [timestamp, firebaseId || null, localFolderId]
+  );
+},
 
   async getGoogleDriveFolderFromDB() {
     const db = await getDB();
@@ -260,8 +318,8 @@ export const resetFoldersTable = async () => {
 
       isSynced INTEGER DEFAULT 0,
       isDeleted INTEGER DEFAULT 0,
-
-      updatedAt INTEGER
+      updatedAt INTEGER,
+      createdAt INTEGER
     )
   `);
 
