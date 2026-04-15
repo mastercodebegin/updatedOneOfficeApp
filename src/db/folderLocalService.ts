@@ -138,17 +138,16 @@ export const FolderLocalService = {
     return res[0].rows.raw();
   },
 
-  async updateFirebaseId(localId: number, firebaseId: string) {
+  async updateFirebaseId(localId: number, firebaseId: string, userId: string) {
   const db = await getDB();
 
   await db.executeSql(
     `UPDATE folders 
-     SET firebaseId = ?, isSynced = 1 
+     SET firebaseId = ?, userId = ?, isSynced = 1 
      WHERE id = ?`,
-    [firebaseId, localId]
+    [firebaseId, userId, localId]
   );
 },
-
   // ✅ GET BY LOCAL ID
   async getFolderById(id: number) {
     const db = await getDB();
@@ -168,16 +167,13 @@ export const FolderLocalService = {
     return new Promise((resolve, reject) => {
       db.transaction(
         (tx) => {
-          // delete files first
-          tx.executeSql(
-            `DELETE FROM files WHERE firebaseId = ?`,
-            [firebaseId]
-          );
 
-          // delete folder
+          // 🔹 mark folder as deleted instead of removing
           tx.executeSql(
-            `DELETE FROM folders WHERE firebaseId = ?`,
-            [firebaseId]
+            `UPDATE folders 
+         SET isDeleted = 1, updatedAt = ? 
+         WHERE firebaseId = ?`,
+            [Date.now(), firebaseId]
           );
         },
         (error) => {
@@ -185,26 +181,26 @@ export const FolderLocalService = {
           reject(error);
         },
         () => {
-          console.log('✅ Folder deleted');
+          console.log('✅ Folder marked as deleted');
           resolve(true);
         }
       );
-    });
+    })
   },
 
   // ✅ GET UNSYNCED
-  async getUnsynced(userId: string) {
-    const db = await getDB();
+  // async getUnsynced(userId: string) {
+  //   const db = await getDB();
 
-    const [result] = await db.executeSql(
-      `SELECT * FROM folders 
-       WHERE isSynced = 0 AND userId = ?
-       ORDER BY updatedAt DESC`,
-      [userId]
-    );
+  //   const [result] = await db.executeSql(
+  //     `SELECT * FROM folders 
+  //      WHERE isSynced = 0 AND userId = ?
+  //      ORDER BY updatedAt DESC`,
+  //     [userId]
+  //   );
 
-    return result.rows.raw();
-  },
+  //   return result.rows.raw();
+  // },
 
   // ✅ MARK AS SYNCED
   async markAsSynced(localFolderId: number, firebaseId: string) {

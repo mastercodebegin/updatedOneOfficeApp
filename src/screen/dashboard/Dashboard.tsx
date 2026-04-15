@@ -193,9 +193,10 @@ function Dashboard({ navigation, route }) {
   const syncFirebaseToLocal = async () => {
     // resetFoldersTable()
     // return
-        const getAllFolders = await FolderLocalService.getAllFolders();
-        console.log('getAllFolders>>>', getAllFolders);
-// return
+    const getAllFolders = await FolderLocalService.getAllFolders();
+    console.log('getAllFolders>>>', getAllFolders);
+    // getAllFolders.map((v)=>console.log('name>>>',v))
+    // return
     const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
     console.log('gooleDrivefolderName', gooleDrivefolderName);
     let userId = await AuthService.getUserId()
@@ -203,10 +204,10 @@ function Dashboard({ navigation, route }) {
     console.log('userId', userId);
 
     const firebaseFolders = await FirebaseService.getUpdatedFoldersByUserId()
-    console.log('firebaseFolders', firebaseFolders);
+    // console.log('firebaseFolders', firebaseFolders);
 
     const localFolders = await FolderLocalService.getAllFolders();
-    console.log('localFolders', localFolders);
+    // console.log('localFolders', localFolders);
 
     const localMap = new Map(
       localFolders.map(local => [local.firebaseId, local])
@@ -248,18 +249,43 @@ function Dashboard({ navigation, route }) {
       }
     }
 
-    // // 🗑️ Delete
-    // for (const local of localFolders) {
-    //   if (!firebaseIdSet.has(local.firebaseId)) {
-    //     await FolderLocalService.deleteFolderByFirebaseId(local.firebaseId);
-    //   }
-    // }
+    // 🗑️ Delete
+    // 🔹 Create deleted set from Firebase
+    const deletedSet = new Set(
+      firebaseFolders
+        .filter((f: any) => f.isDeleted === 1) // only deleted items
+        .map(f => f.firebaseId)
+    );
+    console.log('deletedSet:', [...deletedSet]);
+    console.log('size:', deletedSet.size);
+    console.log('firebaseFolders.length:', firebaseFolders.length);
+    console.log('localFolders size:', localFolders.length);
+    console.log('localFolders data:', localFolders);
+    // 🔹 Apply delete to local
+    for (const local of localFolders) {
+      console.log('local size:', deletedSet.has(local.firebaseId));
+      if (deletedSet.has(local.firebaseId)) {
 
+        console.log('local size:', local);
+      }
+
+      if (!local.firebaseId) continue; // skip unsynced local folders
+
+      // 🔹 If Firebase marked it deleted AND local is not deleted yet
+      if (deletedSet.has(local.firebaseId) && local.isDeleted === 0) {
+        console.log('if>>>>>>.:', deletedSet.has(local.firebaseId));
+        console.log('delete started',);
+        console.log('delete started', deletedSet.has(local.firebaseId));
+
+        await FolderLocalService.deleteFolderByFirebaseId(local.firebaseId);
+      }
+    }
     //Push to firebase
     await pushFolders()
 
     console.log('✅ Sync complete');
   }
+
 
   const pushFolders = async () => {
     console.log('pushFolders started',);
@@ -274,10 +300,11 @@ function Dashboard({ navigation, route }) {
       folder.userId = userId
       try {
         const docRef: any = await FirebaseService.createFolderInFirebase(folder);
-
         await FolderLocalService.updateFirebaseId(
           folder.id,
-          docRef.id
+          docRef.firebaseId,
+          userId
+
         );
 
       } catch (e) {
