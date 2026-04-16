@@ -39,10 +39,14 @@ import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { getData, getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
 import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
 import { DateHelper } from '../../utilies/DateHelper';
 import { FileLocalService } from '../../db/fileLocalService';
+import { FirebaseService } from '../../service/FirebaseService';
+import { GoogleDriveService } from '../../db/googleDriveService';
+import { AuthService } from '../../service/AuthService';
+import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 
 const imagesURI = [{
   // Simplest usage.
@@ -76,32 +80,356 @@ export const DocumentScan = () => {
   const [isLocalDataFetch, setIsLocalDataFetch] = useState(false)
 
   const isFocused = useIsFocused();
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
 
 
- 
+
 
   useEffect(() => {
-  if (!isFocused) return;
+    if (!isFocused) return;
 
-  const fetchData = async () => {
+    const fetchData = async () => {
+      try {
+        const folders = await FolderLocalService.getActiveFolders();
+
+        console.log('folders=====', folders);
+
+        setData(folders);
+
+        setIsLocalDataFetch(true);
+      } catch (error) {
+        console.log('fetch error:', error);
+      }
+    };
+
+    fetchData();
+  }, [isFocused]);
+
+
+  const handleLogin = async () => {
     try {
-      const folders = await FolderLocalService.getAllFolders();
+      const res = await signIn();
 
-      console.log('folders=====', folders);
+      // console.log('Result:', res);
 
-      setData(folders);
+      const token = res?.accessToken;
 
-      setIsLocalDataFetch(true);
+
     } catch (error) {
-      console.log('fetch error:', error);
+      console.log('Login error:', error);
     }
   };
 
-  fetchData();
-}, [isFocused]);
+  const renderButton = () => {
+    return (<><Button title="Login" onPress={handleLogin} />
+      <Button title="Sync" onPress={syncAll} />
+      <Button title="CREATE" onPress={async () => {
+        console.log('hi');
+
+        const created = await FolderLocalService.createFolder
+          ('', 'name-voter-1' + Math.random(),
+            null, 'coveruri', 'gooleDrivefolderName', 0)
+        console.log('created', created);
+
+      }} />
+      <Button title="Update" onPress={async () => {
+        await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
+      }} />
+      {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
+    </>
+
+    )
+  }
+  const createDoc = () => {
+    const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
+    // user logged in flow new user
+    accessToken
+    const folders = []
+  }
+  const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
+    try {
 
 
-   
+      console.log('updatedFiles===', updatedFiles);
+
+      for (const file of updatedFiles as any) {
+
+        // 🗑️ delete file
+        if (file.isDeleted) {
+          await FileLocalService.deleteFile(file.driveFileId);
+          continue;
+        }
+
+        // 🔍 check existing
+        const existingFile = await FileLocalService.getFileById(
+          file.driveFileId
+        );
+
+        // ➕ create
+        if (!existingFile) {
+          await FileLocalService.createFile(file);
+          console.log('➕ File created:', file.driveFileId);
+        }
+        // 🔄 update
+        else {
+          await FileLocalService.updateFile(file);
+          console.log('🔄 File updated:', file.driveFileId);
+        }
+      }
+
+    } catch (err) {
+      console.log('❌ File sync error:', err);
+    }
+  };
+  //  const syncAll = async () => {
+  //   console.log('syncAll started');
+
+  //   const folders:any = await FirebaseService.getNewOrUpdatedFolders(655757);
+  //   const updatedFiles = await FirebaseService.getNewOrUpdatedFiles(folders[0].folderId,656465);
+
+  //   for (const obj of folders as any) {
+
+  //     const existing = await FolderLocalService.getFolderByDriveId(
+  //       obj.driveFolderId
+  //     );
+
+  //     // 🗑️ delete folder
+  //     if (obj.isDeleted) {
+  //       await FolderLocalService.deleteFoldersWithFiles(obj.driveFolderId);
+  //       continue;
+  //     }
+
+  //     // ➕ create
+  //     if (!existing) {
+  //       await FolderLocalService.createFolder(
+  //         obj.name,
+  //         obj.id,
+  //         obj.coverUri,
+  //         obj.driveFolderId,
+  //         1
+  //       );
+  //     } 
+  //     // 🔄 update
+  //     else if (existing.name !== obj.name) {
+  //       await FolderLocalService.updateFolder(
+  //         existing.id,
+  //         obj.name,
+  //         obj.remoteId,
+  //         obj.coverUri,
+  //         obj.driveFolderId,
+  //         1
+  //       );
+  //     }
+
+  //     // 📂 sync files (separated logic)
+  //     await syncFilesForFolder(obj);
+  //   }
+  // };
+  const syncFirebaseToLocal = async () => {
+    // resetFoldersTable()
+    // return
+    const getAllFolders = await FolderLocalService.getAllFolders();
+    console.log('getAllFolders>>>', getAllFolders);
+    getAllFolders.map((v) => console.log('name>>>', v))
+    // return
+    const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+    console.log('gooleDrivefolderName', gooleDrivefolderName);
+    let userId = await AuthService.getUserId()
+
+    console.log('userId', userId);
+
+    const firebaseFolders = await FirebaseService.getUpdatedFoldersByUserId()
+    // console.log('firebaseFolders', firebaseFolders);
+
+    const localFolders = await FolderLocalService.getAllFolders();
+    // console.log('localFolders', localFolders);
+
+    const localMap = new Map(
+      localFolders.map(local => [local.firebaseId, local])
+    );
+    console.log('localMap :', [...localMap.keys()]);
+
+
+
+    const firebaseIdSet = new Set(
+      firebaseFolders.map(f => f.firebaseId)
+    );
+    console.log('firebaseIdSet:', [...firebaseIdSet]);
+    // console.log('localMap entries:', [...localMap.entries()]);
+    // 🔄 Insert / Update
+    for (const remote of firebaseFolders as any) { // loop through each folder from Firebase
+      console.log('remote', remote);
+
+      const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
+      console.log('local', local);
+      console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
+      console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
+      console.log('comparison:', remote.updatedAt > local.updatedAt);
+      const updatedAt = Date.now();
+
+      if (!local) { // if folder does NOT exist in local DB
+        await FolderLocalService.createFolder(
+          userId, // current user id
+          remote.name, // folder name from Firebase
+          remote.firebaseId, // Firebase id → stored as firebaseId locally
+          remote.coverUri || '', // cover image (fallback to empty string)
+          remote.driveFolderId || '', // Drive folder id (fallback if missing)
+          1,// mark as synced (since coming from Firebase)
+          updatedAt
+        );
+
+      } else if (remote.updatedAt > local.updatedAt) { // if Firebase version is newer than local
+
+        console.log('Else if>>>>>:',);
+
+        await FolderLocalService.updateFolderById({
+          id: local.id,
+          name: remote.name,
+          isDeleted: remote.isDeleted
+        });
+      }
+    }
+
+    // 🗑️ Delete
+    // 🔹 Create deleted set from Firebase
+    const deletedSet = new Set(
+      firebaseFolders
+        .filter((f: any) => f.isDeleted === 1) // only deleted items
+        .map(f => f.firebaseId)
+    );
+    console.log('deletedSet:', [...deletedSet]);
+    console.log('size:', deletedSet.size);
+    console.log('firebaseFolders.length:', firebaseFolders.length);
+    console.log('localFolders size:', localFolders.length);
+    console.log('localFolders data:', localFolders);
+    // 🔹 Apply delete to local
+    for (const local of localFolders) {
+      console.log('local size:', deletedSet.has(local.firebaseId));
+      if (deletedSet.has(local.firebaseId)) {
+
+        console.log('local size:', local);
+      }
+
+      if (!local.firebaseId) continue; // skip unsynced local folders
+
+      // 🔹 If Firebase marked it deleted AND local is not deleted yet
+      if (deletedSet.has(local.firebaseId) && local.isDeleted === 0) {
+        console.log('if>>>>>>.:', deletedSet.has(local.firebaseId));
+        console.log('delete started',);
+        console.log('delete started', deletedSet.has(local.firebaseId));
+
+        await FolderLocalService.deleteFolderByFirebaseId(local.firebaseId);
+      }
+    }
+    //Push to firebase
+    await pushFolders()
+
+    console.log('✅ Sync complete');
+  }
+
+
+  const pushFolders = async () => {
+    console.log('pushFolders started');
+
+    const userId = await AuthService.getUserId();
+    const unSynced = await FolderLocalService.getUnsynced();
+
+    console.log('unsyn', unSynced);
+
+    for (const folder of unSynced as any) {
+
+      try {
+        folder.userId = userId;
+
+        if (!folder.firebaseId) {
+          // 🔹 CREATE (new folder)
+          const doc = await FirebaseService.createFolderInFirebase(folder);
+
+          await FolderLocalService.updateFirebaseId(
+            folder.id,
+            doc.firebaseId,
+            userId
+          );
+
+        } else if (folder.isDeleted === 1) {
+          // 🔹 DELETE (soft delete in Firebase)
+          console.log('else DELETE here', folder);
+          await FirebaseService.updateFolderInFirebase({
+            firebaseId: folder.firebaseId,
+            isDeleted: 1,
+          });
+
+          await FolderLocalService.markAsSynced(folder.id);
+
+        } else {
+          // 🔹 UPDATE (rename or changes)
+          console.log('else update here', folder);
+
+          await FirebaseService.updateFolderInFirebase(folder);
+
+          await FolderLocalService.markAsSynced(folder.id);
+          const folders = await FolderLocalService.getActiveFolders();
+
+          console.log('folders=====', folders);
+
+          setData(folders);
+        }
+
+      } catch (e) {
+        console.log('Push failed:', e);
+      }
+    }
+  };
+
+  const syncAll = async () => {
+    console.log('unSyncdata stated',);
+
+
+    // Que -user has already data but could not sync and upload 
+    // ans - will always sync data first then will push data to firebase
+
+    // const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+    // console.log('gooleDrivefolderName', gooleDrivefolderName);
+    // const userId = await AuthService.getUserId()
+    // console.log('userId', userId);
+    // console.log('userId', await AuthService.getUserId());
+    // const unSyncdata = await FolderLocalService.createFolder(userId, 'name-voter-1', 'firebaseId-test', 'coveruri', gooleDrivefolderName, 0)
+    // const unSyncdata =await resetFoldersTable()
+    // const unSyncdata =await FolderLocalService.getAllFolders()
+    // const unSyncFolders =await FolderLocalService.getUnsynced()
+    await syncFirebaseToLocal()
+
+    // const folderId = await getFolderId(accessToken)
+    // console.log('unSyncdata',unSyncFolders);
+    // console.log('unSyncdata[0].id',unSyncFolders[0].id);
+    // const id =unSyncFolders[0].id
+    // const updatedFolder= await FolderLocalService.markAsSynced(id,'$234')
+    // const updatedFolder= await FolderLocalService.getGoogleDriveFolderIdFromDB()
+    // console.log('updatedFolder',updatedFolder);
+    // const unSyncFolders = GoogleDriveService.
+    // const folder = await GoogleDriveService.deleteFolder(getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID))
+    // const folder = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+
+    // console.log('folder--is', unSyncdata);
+
+    // for(const folder of unSyncFolders){
+    //   const isFolderCreatedOnFirebase = await FirebaseService.createFolder(folder.name)
+    //   console.log('isFolderCreatedOnFirebase',isFolderCreatedOnFirebase);
+    //   console.log('folder.driveFolderId',folder.driveFolderId);
+
+    //   if(isFolderCreatedOnFirebase){
+    //    const isuploaded=  await uploadImage(uri,accessToken,folder.driveFolderId)
+    //    console.log('isuploaded',isuploaded);
+
+    //     const updatedFolder= await FolderLocalService.markAsSynced(folder.id,'$234')
+    //     console.log('updatedFolder',updatedFolder);
+    //   }
+
+    // }
+    // const Allfolders = await FolderLocalService.getAllFolders()
+    // console.log('updatedFolder', Allfolders);
+
+  }
 
   const getTestData = () => {
     const d = getLocalData(asyncStorageKeyName.DOCUMENTS)
@@ -185,23 +513,23 @@ export const DocumentScan = () => {
     resetFoldersTable()
   }
 
-   const getAndCreateFileData = async (isCreate: boolean, name: string) => {
+  const getAndCreateFileData = async (isCreate: boolean, name: string) => {
     let finalName = name
     if (isCreate) {
-        // file.name,
-        // file.path,
-        // file.size,
-        // file.lastModified,
+      // file.name,
+      // file.path,
+      // file.size,
+      // file.lastModified,
 
-        console.log('started file created===');
-        const obj={name:'p1',size:'20Mb',folderId:1,lastModified:Date.now()}
-        const res = await FileLocalService.createFile(obj)
-        console.log('file created===', res);
-        // if (res) {
-        //   const date = DateHelper.getDateByMomentFormat()
-        //   console.log('date===', date);
-        //   finalName = finalName+'-' + date
-        // }
+      console.log('started file created===');
+      const obj = { name: 'p1', size: '20Mb', folderId: 1, lastModified: Date.now() }
+      const res = await FileLocalService.createFile(obj)
+      console.log('file created===', res);
+      // if (res) {
+      //   const date = DateHelper.getDateByMomentFormat()
+      //   console.log('date===', date);
+      //   finalName = finalName+'-' + date
+      // }
     }
 
     else {
@@ -215,13 +543,13 @@ export const DocumentScan = () => {
     let finalName = name
     if (isCreate) {
       Math.random()
-        const res = await FolderLocalService.isFolderExists(name)
-        console.log('res===', res);
-        if (res) {
-          const date = DateHelper.getDateByMomentFormat()
-          console.log('date===', date);
-          finalName = finalName+'-' + date
-        }
+      const res = await FolderLocalService.isFolderExists(name)
+      console.log('res===', res);
+      if (res) {
+        const date = DateHelper.getDateByMomentFormat()
+        console.log('date===', date);
+        finalName = finalName + '-' + date
+      }
 
 
 
@@ -237,11 +565,11 @@ export const DocumentScan = () => {
     }
   }
 
-  const updateFolderNameHandler = async (name:string,id:number) => {
-    const existing=await FolderLocalService.getFolderById(1)
-   const update =  await FolderLocalService.updateFolder(id, existing.name,'testuri')
-   console.log('updated----',update);
-   
+  const updateFolderNameHandler = async (name: string, id: number) => {
+    const existing = await FolderLocalService.getFolderById(1)
+    const update = await FolderLocalService.updateFolder(id, existing.name, 'testuri')
+    console.log('updated----', update);
+
   }
 
   const scanDocument = async () => {
@@ -268,112 +596,117 @@ export const DocumentScan = () => {
 
 
 
-const copyFilesToDirectory = async () => {
-  try {
-    console.log('scanned images:', images);
+  const copyFilesToDirectory = async () => {
+    try {
+      console.log('scanned images:', images);
 
-    await RNFS.mkdir(destinationPath);
+      await RNFS.mkdir(destinationPath);
 
-    const folderDisplayName =
-      folderName?.trim() || 'New Folder';
+      const folderDisplayName =
+        folderName?.trim() || 'New Folder';
 
-    // 👉 First image for cover
-    const firstFileName = images[0]?.split('/').pop() || '';
-    const firstExtension = firstFileName.includes('.')
-      ? firstFileName.split('.').pop()
-      : 'jpg';
-
-    const coverUri = `${folderDisplayName}_0.${firstExtension}`;
-
-    // 1. Create folder
-    const folder = await FolderLocalService.createFolder(
-      folderDisplayName,
-      coverUri
-    );
-
-    const folderId = folder.id;
-
-    // 2. Process images
-    for (let i = 0; i < images.length; i++) {
-      const uri = images[i];
-
-      const originalFileName = uri.split('/').pop() || '';
-      const extension = originalFileName.includes('.')
-        ? originalFileName.split('.').pop()
+      // 👉 First image for cover
+      const firstFileName = images[0]?.split('/').pop() || '';
+      const firstExtension = firstFileName.includes('.')
+        ? firstFileName.split('.').pop()
         : 'jpg';
 
-      // ✅ SINGLE SOURCE NAME
-      let finalName = `${folderDisplayName}_${i}.${extension}`;
-      let destinationFilePath = `${destinationPath}/${finalName}`;
+      const coverUri = `${folderDisplayName}_0.${firstExtension}`;
 
-      // ✅ handle duplicate safely
-      let count = 1;
-      while (await RNFS.exists(destinationFilePath)) {
-        finalName = `${folderDisplayName}_${i}_${count}.${extension}`;
-        destinationFilePath = `${destinationPath}/${finalName}`;
-        count++;
+      // 1. Create folder
+      // const folder = await FolderLocalService.createFolder(
+      //   folderDisplayName,
+      //   coverUri
+      // );
+      const folder = await FolderLocalService.createFolder
+        ('', folderDisplayName,
+          null, 'coveruri', '', 0, 0)
+      console.log('created', folder);
+
+
+      const folderId = folder.id;
+
+      // 2. Process images
+      for (let i = 0; i < images.length; i++) {
+        const uri = images[i];
+
+        const originalFileName = uri.split('/').pop() || '';
+        const extension = originalFileName.includes('.')
+          ? originalFileName.split('.').pop()
+          : 'jpg';
+
+        // ✅ SINGLE SOURCE NAME
+        let finalName = `${folderDisplayName}_${i}.${extension}`;
+        let destinationFilePath = `${destinationPath}/${finalName}`;
+
+        // ✅ handle duplicate safely
+        let count = 1;
+        while (await RNFS.exists(destinationFilePath)) {
+          finalName = `${folderDisplayName}_${i}_${count}.${extension}`;
+          destinationFilePath = `${destinationPath}/${finalName}`;
+          count++;
+        }
+
+        console.log('Saving as:', finalName);
+
+        // Copy file
+        await RNFS.copyFile(uri, destinationFilePath);
+
+        // ✅ SAME NAME IN DB
+        await FileLocalService.createFile({
+          name: finalName, // exact match with FS
+          displayName: finalName.replace(/\.[^/.]+$/, ''), // without extension
+          size: 0,
+          lastModified: Date.now(),
+          folderId: folderId,
+        });
       }
 
-      console.log('Saving as:', finalName);
+      console.log('✅ All files saved');
 
-      // Copy file
-      await RNFS.copyFile(uri, destinationFilePath);
+      const updatedFolders = await FolderLocalService.getActiveFolders();
+      setData(updatedFolders);
 
-      // ✅ SAME NAME IN DB
-      await FileLocalService.createFile({
-        name: finalName, // exact match with FS
-        displayName: finalName.replace(/\.[^/.]+$/, ''), // without extension
-        size: 0,
-        lastModified: Date.now(),
-        folderId: folderId,
-      });
+      setIsShowFolderNameModal(false);
+      setFolderName('');
+
+    } catch (error) {
+      console.log('❌ Error:', error);
     }
+  };
+  const readFilesFromDirectory = async () => {
+    try {
+      console.log('Reading files from directory: ', destinationPath);
 
-    console.log('✅ All files saved');
+      const files = await RNFS.readDir(destinationPath);
+      // for (const file of files) {
+      //   if (file.isFile()) {
+      //     await RNFS.unlink(file.path);
+      //   }
+      // }
 
-    const updatedFolders = await FolderLocalService.getAllFolders();
-    setData(updatedFolders);
+      // console.log('✅ Files :', files);
+      console.log('✅ Files found:', files.length);
 
-    setIsShowFolderNameModal(false);
-    setFolderName('');
+    } catch (error) {
+      console.log('Error reading directory:', error);
+    }
+    // try {
+    //   const path = destinationPath
 
-  } catch (error) {
-    console.log('❌ Error:', error);
-  }
-};
-const readFilesFromDirectory = async () => {
-  try {
-    console.log('Reading files from directory: ', destinationPath);
+    //   const files = await RNFS.readDir(path);
 
-    const files = await RNFS.readDir(destinationPath);
-    // for (const file of files) {
-    //   if (file.isFile()) {
-    //     await RNFS.unlink(file.path);
+    //   for (const file of files) {
+    //     if (file.isFile()) {
+    //       await RNFS.unlink(file.path);
+    //     }
     //   }
+
+    //   console.log('All files deleted successfully');
+    // } catch (error) {
+    //   console.log('Error deleting files:', error);
     // }
-
-    // console.log('✅ Files :', files);
-    console.log('✅ Files found:', files.length);
-
-  } catch (error) {
-    console.log('Error reading directory:', error);
-  }
-  // try {
-  //   const path = destinationPath
-
-  //   const files = await RNFS.readDir(path);
-
-  //   for (const file of files) {
-  //     if (file.isFile()) {
-  //       await RNFS.unlink(file.path);
-  //     }
-  //   }
-
-  //   console.log('All files deleted successfully');
-  // } catch (error) {
-  //   console.log('Error deleting files:', error);
-  // }
-};
+  };
 
   const deleteKey = async () => {
     await AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
@@ -397,9 +730,11 @@ const readFilesFromDirectory = async () => {
   const renameFolder = async () => {
     setIsFolderNameChange(false);
 
-    let existingFolder = await FolderLocalService.getFolderById(folderId)
-    await FolderLocalService.updateFolder(folderId,folderName,existingFolder.coverUri)
-    const updatedFolder = await FolderLocalService.getAllFolders()
+    // let existingFolder = await FolderLocalService.getFolderById(folderId)
+    await FolderLocalService.updateFolderById({ id: folderId, name: folderName, isDeleted: 0 })
+
+    // await FolderLocalService.updateFolder(folderId, folderName, existingFolder.coverUri)
+    const updatedFolder = await FolderLocalService.getActiveFolders()
     console.log();
 
     // ✅ update UI
@@ -515,45 +850,44 @@ const readFilesFromDirectory = async () => {
     }
   };
 
-const deleteSingleFolder = async (obj: any) => {
-  try {
-    console.log('Deleting folder:', obj.id);
+  const deleteSingleFolder = async (obj: any) => {
+    try {
+      console.log('Deleting folder:', obj.id);
 
-    // 1. Get all files of this folder
-    // const files = data.photos.filter((item:any) => item.folderId === obj.id);
-    const files = await FileLocalService.getFilesByFolder(obj.id)
+      // 1. Get all files of this folder
+      // const files = data.photos.filter((item:any) => item.folderId === obj.id);
+      const files = await FileLocalService.getFilesByFolder(obj.id)
+      FolderLocalService.deleteFolderById(obj.id)
+      console.log('Files to delete:', files);
 
-    console.log('Files to delete:', files);
+      // 2. Delete files from storage
+      await Promise.all(
+        files.map(async (file: any) => {
+          const path = `${destinationPath}${file.name}`;
+          const exists = await RNFS.exists(path);
 
-    // 2. Delete files from storage
-    await Promise.all(
-      files.map(async (file:any) => {
-        const path = `${destinationPath}${file.name}`;
-        const exists = await RNFS.exists(path);
+          if (exists) {
+            await RNFS.unlink(path);
+          }
+        })
+      );
 
-        if (exists) {
-          await RNFS.unlink(path);
-        }
-      })
-    );
+      // 3. Delete files from DB
+      const updatedData = await FolderLocalService.getActiveFolders()
 
-    // 3. Delete files from DB
-    await FolderLocalService.deleteFoldersWithFiles([obj.id])
-    const updatedData=await FolderLocalService.getAllFolders()
-   
-    setData(updatedData);
-
+      setData(updatedData);
 
 
-    // Reset UI states
-    setSelectedFoldersId([]);
-    setMultidelete(false);
 
-    console.log('✅ Folder deleted successfully');
-  } catch (error) {
-    console.log('❌ Error deleting folder:', error);
-  }
-};
+      // Reset UI states
+      setSelectedFoldersId([]);
+      setMultidelete(false);
+
+      console.log('✅ Folder deleted successfully');
+    } catch (error) {
+      console.log('❌ Error deleting folder:', error);
+    }
+  };
 
   const deleteFilesFromFolder = async (photos: Array<any>) => {
     console.log('photos===', photos);
@@ -593,9 +927,9 @@ const deleteSingleFolder = async (obj: any) => {
       // const obj = data.find((v) => v.id === item.id)
       // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
-      const files = await FileLocalService.getFilesByFolder(item.id) 
-      navigateTo('DisplayMultipleDocumentImage', {folderName:item.name,folderId:item.id,files:files})
-console.log('files=======',files);
+      const files = await FileLocalService.getFilesByFolder(item.id)
+      navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
+      console.log('files=======', files);
 
     }
   }
@@ -621,7 +955,7 @@ console.log('files=======',files);
 
   }
 
-  const readDirectory=()=>{
+  const readDirectory = () => {
     readFilesFromDirectory
 
   }
@@ -650,7 +984,7 @@ console.log('files=======',files);
         {/* Thumbnail */}
         <View style={styles.thumbnailWrapper}>
           <Image
-            source={{ uri: getImageUriByOS(destinationPath+item?.coverUri) }}
+            source={{ uri: getImageUriByOS(destinationPath + item?.coverUri) }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
@@ -1118,13 +1452,13 @@ console.log('files=======',files);
       </Overlay>
 
 
-        <Image source={{ uri:  destinationPath+'1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
-        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
-
-          <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
-            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
-        </View>
-{/* 
+      <Image source={{ uri: destinationPath + '1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
+      <View style={{ height: scaledSize(50), width: '80%', flexDirection: 'row', justifyContent: "space-between" }}>
+        {renderButton()}
+        {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
+      </View>
+      {/* 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
 

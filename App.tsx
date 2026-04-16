@@ -54,8 +54,8 @@ export default function App(props) {
   const [result, setResult] = React.useState(false);
   const size = scaledSize(24)
   const screensData = [
-    { name: 'Documents', component: Dashboard, focus: <Ionicons name='documents' color={COLORS.THEME_COLOR} size={size} />, unFocus: <Ionicons name='documents' color={'gray'} size={size} /> },
     { name: 'Scan', component: DocumentScan, focus: <FontAwesome5 name='camera' color={COLORS.THEME_COLOR} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, unFocus: <FontAwesome5 name='camera' color={'gray'} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, },
+    { name: 'Documents', component: Dashboard, focus: <Ionicons name='documents' color={COLORS.THEME_COLOR} size={size} />, unFocus: <Ionicons name='documents' color={'gray'} size={size} /> },
     { name: 'Converter', component: ImagesToPdfConverter, focus: <FontAwesome name='refresh' color={COLORS.THEME_COLOR} size={size} />, unFocus: <FontAwesome name='refresh' color={'gray'} size={size} />, },
 
   ]

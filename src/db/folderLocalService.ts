@@ -188,9 +188,32 @@ async updateFolderById({
   async getAllFolders() {
     const db = await getDB();
 
-    const res = await db.executeSql(`SELECT * FROM folders`);
+    const res = await db.executeSql(`SELECT * FROM folders `);
+    // const res = await db.executeSql(`SELECT * FROM folders where isDeleted = 0 ORDER BY updatedAt DESC`);
     return res[0].rows.raw();
   },
+  async getActiveFolders() {
+  try {
+    const db = await getDB();
+
+    const result = await db.executeSql(
+      `SELECT * FROM folders WHERE isDeleted = 0`
+    );
+
+    const rows = result[0].rows;
+    const data = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      data.push(rows.item(i));
+    }
+
+    return data;
+
+  } catch (error) {
+    console.error('getActiveFolders error:', error);
+    throw error;
+  }
+},
 
   async updateFirebaseId(localId: number, firebaseId: string, userId: string) {
   const db = await getDB();
@@ -215,32 +238,40 @@ async updateFolderById({
   },
 
   // ✅ DELETE USING FIREBASE ID (SYNC SAFE)
-  async deleteFolderByFirebaseId(firebaseId: string) {
-    const db = await getDB();
+async deleteFolderById(id: number) {
+  const db = await getDB();
 
-    return new Promise((resolve, reject) => {
-      db.transaction(
-        (tx) => {
+  return new Promise((resolve, reject) => {
+    db.transaction(
+      (tx) => {
 
-          // 🔹 mark folder as deleted instead of removing
-          tx.executeSql(
-            `UPDATE folders 
-         SET isDeleted = 1, updatedAt = ? 
-         WHERE firebaseId = ?`,
-            [Date.now(), firebaseId]
-          );
-        },
-        (error) => {
-          console.log('❌ Delete error:', error);
-          reject(error);
-        },
-        () => {
-          console.log('✅ Folder marked as deleted');
-          resolve(true);
-        }
-      );
-    })
-  },
+        // 🔹 mark folder as deleted
+        tx.executeSql(
+          `UPDATE folders 
+           SET isDeleted = 1, isSynced = 0 
+           WHERE id = ?`,
+          [id]
+        );
+
+        // 🔥 ALSO mark all files inside folder as deleted
+        tx.executeSql(
+          `UPDATE files 
+           SET isDeleted = 1, isSynced = 0 
+           WHERE folderId = ?`,
+          [id]
+        );
+      },
+      (error) => {
+        console.log('❌ Delete error:', error);
+        reject(error);
+      },
+      () => {
+        console.log('✅ Folder & files marked deleted (local)');
+        resolve(true);
+      }
+    );
+  });
+},
 
   // ✅ GET UNSYNCED
   // async getUnsynced(userId: string) {

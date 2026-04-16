@@ -90,16 +90,16 @@ export const BANK_LOGOS = {
 };
 
 export const asyncStorageKeyName = {
-    PDF_FILES: 'pdfFiles',
-    WORD_FILES: 'wordFiles',
-    XLSX_FILES: 'xlsxFiles',
-    PPT_FILES: 'pptFiles',
-    CONVERTED_PDF_FILES: 'convertedPdfFiles',
-    SAVED_USERS: 'users1',
-    ALL_FILES: 'allFiles',
-    DOCUMENTS: 'documents',
-    DRIVE_FOLDER_NAME:'one-office',
-    DRIVE_FOLDER_ID:'drive_folder_id',
+    PDF_FILES: 'PDF_FILES',
+    WORD_FILES: 'WORD_FILES',
+    XLSX_FILES: 'XLSX_FILES',
+    PPT_FILES: 'PPT_FILES',
+    CONVERTED_PDF_FILES: 'CONVERTED_PDF_FILES',
+    SAVED_USERS: 'USERS1',
+    ALL_FILES: 'ALL_FILES',
+    DOCUMENTS: 'DOCUMENTS',
+    DRIVE_FOLDER_NAME:'ONE-OFFICE',
+    DRIVE_FOLDER_ID:'DRIVE_FOLDER_ID',
     LAST_SYNC_TIME : 'LAST_SYNC_TIME'
 }
 
