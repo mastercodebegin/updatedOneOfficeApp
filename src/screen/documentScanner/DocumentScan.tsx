@@ -225,7 +225,7 @@ export const DocumentScan = () => {
   //     await syncFilesForFolder(obj);
   //   }
   // };
-    const syncAll = async () => {
+  const syncAll = async () => {
     //     removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
 
     // console.log('unSyncdata stated',);
@@ -244,16 +244,16 @@ export const DocumentScan = () => {
 
     await syncFirebaseToLocal()
 
- 
+
 
   }
   const syncFirebaseToLocal = async () => {
     // resetFoldersTable()
-//     const lastSyncTime =  getLocalData(asyncStorageKeyName.LAST_SYNC_TIME);
-//     console.log('lastSyncTime', lastSyncTime);
-//    const removed = removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
-//     console.log('removed', removed);
-// return
+    //     const lastSyncTime =  getLocalData(asyncStorageKeyName.LAST_SYNC_TIME);
+    //     console.log('lastSyncTime', lastSyncTime);
+    //    const removed = removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+    //     console.log('removed', removed);
+    // return
     const getAllFolders = await FolderLocalService.getAllFolders();
     console.log('getAllFolders>>>', getAllFolders);
     getAllFolders.map((v) => console.log('name>>>', v))
@@ -303,18 +303,23 @@ export const DocumentScan = () => {
           remote.updatedAt
         );
 
-      } else if (remote.updatedAt > local.updatedAt) { // if Firebase version is newer than local
+      } else {
 
-        console.log('Else if>>>>>:',);
+        // 🔥 first protect local data
+        if (local.isSynced === 0) {
+          continue;
+        }
 
-        await FolderLocalService.updateFolderById({
-          id: local.id,
-          name: remote.name,
-          isDeleted: remote.isDeleted
-        });
+        // 🔥 then compare timestamps
+        if (remote.updatedAt > local.updatedAt) {
+          await FolderLocalService.updateFolderById({
+            id: local.id,
+            name: remote.name,
+            isDeleted: remote.isDeleted
+          });
+        }
       }
     }
-
     // 🗑️ Delete
     // 🔹 Create deleted set from Firebase
     const deletedSet = new Set(
@@ -329,19 +334,17 @@ export const DocumentScan = () => {
     console.log('localFolders data:', localFolders);
     // 🔹 Apply delete to local
     for (const local of localFolders) {
-      console.log('local size:', deletedSet.has(local.firebaseId));
-      if (deletedSet.has(local.firebaseId)) {
 
-        console.log('local size:', local);
+      if (!local.firebaseId) continue;
+
+      // 🔥 skip local changes (VERY IMPORTANT)
+      if (local.isSynced === 0) {
+        console.log('⛔ skip delete, local not synced:', local.firebaseId);
+        continue;
       }
 
-      if (!local.firebaseId) continue; // skip unsynced local folders
-
-      // 🔹 If Firebase marked it deleted AND local is not deleted yet
       if (deletedSet.has(local.firebaseId) && local.isDeleted === 0) {
-        console.log('if>>>>>>.:', deletedSet.has(local.firebaseId));
-        console.log('delete started',);
-        console.log('delete started', deletedSet.has(local.firebaseId));
+        console.log('🗑️ deleting locally:', local.firebaseId);
 
         await FolderLocalService.deleteFolderById(local.id);
       }
@@ -357,8 +360,8 @@ export const DocumentScan = () => {
       ...firebaseFolders.map((f: any) => f.updatedAt || 0),
       lastsyncTime || 0
     );
-    console.log('maxUpdatedAt',maxUpdatedAt);
-    
+    console.log('maxUpdatedAt', maxUpdatedAt);
+
 
     setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAt);
     const folders = await FolderLocalService.getActiveFolders();
