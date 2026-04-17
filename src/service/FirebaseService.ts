@@ -76,19 +76,21 @@ async updateFolderInFirebase(folder: any) {
     try {
       const userId = getUserId();
       const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      console.log(' LastsyncTime get:', lastsyncTime);
       console.log(' LastsyncTime get:', typeof lastsyncTime);
+
+      const q = query(
+        collection(db, 'folders'),
+        where('userId', '==', userId),
+        where('updatedAt', '>', lastsyncTime || 0),
+        orderBy('updatedAt', 'desc')
+      );
 
       // const q = query(
       //   collection(db, 'folders'),
       //   where('userId', '==', userId),
-      //   where('updatedAt', '>', lastsyncTime || 0),
       //   orderBy('updatedAt', 'desc')
       // );
-      const q = query(
-        collection(db, 'folders'),
-        where('userId', '==', userId),
-        orderBy('updatedAt', 'desc')
-      );
 
       const snapshot = await getDocs(q);
 
@@ -96,8 +98,6 @@ async updateFolderInFirebase(folder: any) {
         firebaseId: doc.id,
         ...doc.data(),
       }));
-      const lastSyncTime = Date.now();
-      setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, lastSyncTime)
       return data;
     } catch (e) {
       console.log('❌ Fetch error:', e);

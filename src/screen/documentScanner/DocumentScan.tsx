@@ -225,9 +225,35 @@ export const DocumentScan = () => {
   //     await syncFilesForFolder(obj);
   //   }
   // };
+    const syncAll = async () => {
+    //     removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+
+    // console.log('unSyncdata stated',);
+    // const firebaseFolders = await FirebaseService.getUpdatedFoldersByUserId()
+    // console.log('firebaseFolders', firebaseFolders);
+    // return
+    //         FileLocalService.resetFilesTable()
+    //             const unSyncdata =await resetFoldersTable()
+
+    //         FileLocalService.getAllFiles().then((res) => console.log('getAllFiles after reset', res));
+    // return
+
+
+    // Que -user has already data but could not sync and upload 
+    // ans - will always sync data first then will push data to firebase
+
+    await syncFirebaseToLocal()
+
+ 
+
+  }
   const syncFirebaseToLocal = async () => {
     // resetFoldersTable()
-    // return
+//     const lastSyncTime =  getLocalData(asyncStorageKeyName.LAST_SYNC_TIME);
+//     console.log('lastSyncTime', lastSyncTime);
+//    const removed = removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+//     console.log('removed', removed);
+// return
     const getAllFolders = await FolderLocalService.getAllFolders();
     console.log('getAllFolders>>>', getAllFolders);
     getAllFolders.map((v) => console.log('name>>>', v))
@@ -262,10 +288,9 @@ export const DocumentScan = () => {
 
       const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
       console.log('local', local);
+      console.log('local', local);
       console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
-      console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
-      console.log('comparison:', remote.updatedAt > local.updatedAt);
-      const updatedAt = Date.now();
+      console.log('local.updatedAt:', local?.updatedAt, typeof local?.updatedAt);
 
       if (!local) { // if folder does NOT exist in local DB
         await FolderLocalService.createFolder(
@@ -275,7 +300,7 @@ export const DocumentScan = () => {
           remote.coverUri || '', // cover image (fallback to empty string)
           remote.driveFolderId || '', // Drive folder id (fallback if missing)
           1,// mark as synced (since coming from Firebase)
-          updatedAt
+          remote.updatedAt
         );
 
       } else if (remote.updatedAt > local.updatedAt) { // if Firebase version is newer than local
@@ -318,13 +343,30 @@ export const DocumentScan = () => {
         console.log('delete started',);
         console.log('delete started', deletedSet.has(local.firebaseId));
 
-        await FolderLocalService.deleteFolderByFirebaseId(local.firebaseId);
+        await FolderLocalService.deleteFolderById(local.id);
       }
     }
     //Push to firebase
     await pushFolders()
 
-    console.log('✅ Sync complete');
+    // ✅ use max Firebase time
+    const lastsyncTime = Number(
+      (await getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)) || 0
+    );
+    const maxUpdatedAt = Math.max(
+      ...firebaseFolders.map((f: any) => f.updatedAt || 0),
+      lastsyncTime || 0
+    );
+    console.log('maxUpdatedAt',maxUpdatedAt);
+    
+
+    setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAt);
+    const folders = await FolderLocalService.getActiveFolders();
+
+    console.log('folders=====', folders);
+
+    setData(folders);
+
   }
 
 
@@ -368,11 +410,6 @@ export const DocumentScan = () => {
           await FirebaseService.updateFolderInFirebase(folder);
 
           await FolderLocalService.markAsSynced(folder.id);
-          const folders = await FolderLocalService.getActiveFolders();
-
-          console.log('folders=====', folders);
-
-          setData(folders);
         }
 
       } catch (e) {
@@ -381,55 +418,7 @@ export const DocumentScan = () => {
     }
   };
 
-  const syncAll = async () => {
-    console.log('unSyncdata stated',);
 
-
-    // Que -user has already data but could not sync and upload 
-    // ans - will always sync data first then will push data to firebase
-
-    // const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
-    // console.log('gooleDrivefolderName', gooleDrivefolderName);
-    // const userId = await AuthService.getUserId()
-    // console.log('userId', userId);
-    // console.log('userId', await AuthService.getUserId());
-    // const unSyncdata = await FolderLocalService.createFolder(userId, 'name-voter-1', 'firebaseId-test', 'coveruri', gooleDrivefolderName, 0)
-    // const unSyncdata =await resetFoldersTable()
-    // const unSyncdata =await FolderLocalService.getAllFolders()
-    // const unSyncFolders =await FolderLocalService.getUnsynced()
-    await syncFirebaseToLocal()
-
-    // const folderId = await getFolderId(accessToken)
-    // console.log('unSyncdata',unSyncFolders);
-    // console.log('unSyncdata[0].id',unSyncFolders[0].id);
-    // const id =unSyncFolders[0].id
-    // const updatedFolder= await FolderLocalService.markAsSynced(id,'$234')
-    // const updatedFolder= await FolderLocalService.getGoogleDriveFolderIdFromDB()
-    // console.log('updatedFolder',updatedFolder);
-    // const unSyncFolders = GoogleDriveService.
-    // const folder = await GoogleDriveService.deleteFolder(getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID))
-    // const folder = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
-
-    // console.log('folder--is', unSyncdata);
-
-    // for(const folder of unSyncFolders){
-    //   const isFolderCreatedOnFirebase = await FirebaseService.createFolder(folder.name)
-    //   console.log('isFolderCreatedOnFirebase',isFolderCreatedOnFirebase);
-    //   console.log('folder.driveFolderId',folder.driveFolderId);
-
-    //   if(isFolderCreatedOnFirebase){
-    //    const isuploaded=  await uploadImage(uri,accessToken,folder.driveFolderId)
-    //    console.log('isuploaded',isuploaded);
-
-    //     const updatedFolder= await FolderLocalService.markAsSynced(folder.id,'$234')
-    //     console.log('updatedFolder',updatedFolder);
-    //   }
-
-    // }
-    // const Allfolders = await FolderLocalService.getAllFolders()
-    // console.log('updatedFolder', Allfolders);
-
-  }
 
   const getTestData = () => {
     const d = getLocalData(asyncStorageKeyName.DOCUMENTS)
