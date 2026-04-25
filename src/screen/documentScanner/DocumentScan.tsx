@@ -48,6 +48,7 @@ import { GoogleDriveService } from '../../db/googleDriveService';
 import { AuthService } from '../../service/AuthService';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import { syncAll } from './SyncFolderAndFiles';
+import CustomSpinner from '../../component/CustomSpinner';
 
 const imagesURI = [{
   // Simplest usage.
@@ -123,10 +124,20 @@ export const DocumentScan = () => {
 
   const renderButton = () => {
     return (<><Button title="Login" onPress={handleLogin} />
-      <Button title="Sync" onPress={async()=>{
-       const folders = await syncAll()
-       setData(folders)
-        }} />
+      <Button title="Sync" onPress={async () => {
+    if (isLoading) return; // 🔥 prevent double click
+    try {
+      setIsLoading(true);
+
+      const folders = await syncAll();
+
+      setData(folders);
+    } catch (e) {
+      console.log('Sync error:', e);
+    } finally {
+      setIsLoading(false); // 🔥 ALWAYS runs
+    }
+  }} />
       <Button title="CREATE" onPress={async () => {
         console.log('hi');
 
@@ -185,7 +196,7 @@ export const DocumentScan = () => {
       console.log('❌ File sync error:', err);
     }
   };
-  
+
 
   const requestCameraPermission = async () => {
     try {
@@ -236,70 +247,13 @@ export const DocumentScan = () => {
     };
   }, []);
 
- 
+
 
   const resetDB = async () => {
     resetFoldersTable()
   }
 
-  const getAndCreateFileData = async (isCreate: boolean, name: string) => {
-    let finalName = name
-    if (isCreate) {
-      // file.name,
-      // file.path,
-      // file.size,
-      // file.lastModified,
 
-      console.log('started file created===');
-      const obj = { name: 'p1', size: '20Mb', folderId: 1, lastModified: Date.now() }
-      const res = await FileLocalService.createFile(obj)
-      console.log('file created===', res);
-      // if (res) {
-      //   const date = DateHelper.getDateByMomentFormat()
-      //   console.log('date===', date);
-      //   finalName = finalName+'-' + date
-      // }
-    }
-
-    else {
-      const folders = await FileLocalService.getAllFiles()
-      console.log('files folders-----', folders);
-
-    }
-  }
-
-  const getAndCreateFolderData = async (isCreate: boolean, name: string) => {
-    let finalName = name
-    if (isCreate) {
-      Math.random()
-      const res = await FolderLocalService.isFolderExists(name)
-      console.log('res===', res);
-      if (res) {
-        const date = DateHelper.getDateByMomentFormat()
-        console.log('date===', date);
-        finalName = finalName + '-' + date
-      }
-
-
-
-      const cname = await FolderLocalService.createFolder(finalName)
-      console.log('name===', cname);
-
-    }
-
-    else {
-      const folders = await FolderLocalService.getAllFolders()
-      console.log(' folders id -----', folders);
-
-    }
-  }
-
-  const updateFolderNameHandler = async (name: string, id: number) => {
-    const existing = await FolderLocalService.getFolderById(1)
-    const update = await FolderLocalService.updateFolder(id, existing.name, 'testuri')
-    console.log('updated----', update);
-
-  }
 
   const scanDocument = async () => {
     // start the document scanner
@@ -408,38 +362,15 @@ export const DocumentScan = () => {
       console.log('Reading files from directory: ', destinationPath);
 
       const files = await RNFS.readDir(destinationPath);
-      // for (const file of files) {
-      //   if (file.isFile()) {
-      //     await RNFS.unlink(file.path);
-      //   }
-      // }
 
-      // console.log('✅ Files :', files);
       console.log('✅ Files found:', files.length);
 
     } catch (error) {
       console.log('Error reading directory:', error);
     }
-    // try {
-    //   const path = destinationPath
 
-    //   const files = await RNFS.readDir(path);
-
-    //   for (const file of files) {
-    //     if (file.isFile()) {
-    //       await RNFS.unlink(file.path);
-    //     }
-    //   }
-
-    //   console.log('All files deleted successfully');
-    // } catch (error) {
-    //   console.log('Error deleting files:', error);
-    // }
   };
 
-  const deleteKey = async () => {
-    await AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
-  }
 
   const checkIsEditable = (id: number) => {
     // console.log(id, 'id');
@@ -457,14 +388,11 @@ export const DocumentScan = () => {
     }
   }
   const renameFolder = async () => {
-    setIsFolderNameChange(false);
 
-    // let existingFolder = await FolderLocalService.getFolderById(folderId)
     await FolderLocalService.updateFolderById({ id: folderId, name: folderName, isDeleted: 0 })
 
     // await FolderLocalService.updateFolder(folderId, folderName, existingFolder.coverUri)
     const updatedFolder = await FolderLocalService.getActiveFolders()
-    console.log();
 
     // ✅ update UI
     setData(updatedFolder);
@@ -472,16 +400,7 @@ export const DocumentScan = () => {
 
   };
 
-  const deleteFolder = async () => {
-    const updatedData = [...data]
-    updatedData.forEach((item, index) => {
-      if (item.id === folderId) {
-        updatedData.splice(index, 1)
-      }
-    })
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
-  }
+
   const checkisFolderSelected = (id: number) => {
     // console.log('selectedfolder', selectedFoldersId);
 
@@ -1179,7 +1098,7 @@ export const DocumentScan = () => {
 
         </View>
       </Overlay>
-
+<CustomSpinner isLoading={isLoading} />
 
       <Image source={{ uri: destinationPath + '1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
       <View style={{ height: scaledSize(50), width: '80%', flexDirection: 'row', justifyContent: "space-between" }}>

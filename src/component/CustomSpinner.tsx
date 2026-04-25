@@ -1,4 +1,4 @@
-import { View, Text,StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import React, { useEffect } from 'react'
 import Spinner from 'react-native-loading-spinner-overlay';
 import { COLORS } from '../utilies/GlobalColors';
@@ -18,22 +18,19 @@ export default function CustomSpinner(props: S) {
       customIndicator={
         <View style={styles.container}>
           <View style={styles.box}>
-            <View>
-            <Spinner
-            indicatorStyle={{bottom:scaledSize(20)}}
-              visible={true}
-              size={scaledSize(36)}
-
-              overlayColor="transparent"
-              color={COLORS.THEME_COLOR}
+            <View style={{marginTop: scaledSize(20)}}>
+              <ActivityIndicator
+                size="large"
+                color={COLORS.THEME_COLOR}
               />
-              </View>
-              <View>
 
-            <Text style={styles.text}>
-              {props.text || 'Loading files...'}
-            </Text>
-              </View>
+            </View>
+            <View>
+
+              <Text style={styles.text}>
+                {props.text || 'Loading files...'}
+              </Text>
+            </View>
           </View>
         </View>
       }
@@ -53,7 +50,7 @@ const styles = StyleSheet.create({
     borderRadius: scaledSize(12),
     backgroundColor: '#fff',
     alignItems: 'center',
-    height:scaledSize(150),
+    height: scaledSize(150),
 
     // Android shadow
     elevation: 5,
@@ -65,9 +62,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
   },
   text: {
-    marginTop: scaledSize(70),
+    marginTop: scaledSize(35),
     fontSize: scaledSize(12),
-    letterSpacing:1,
+    letterSpacing: 1,
     color: '#000',
   },
 });
