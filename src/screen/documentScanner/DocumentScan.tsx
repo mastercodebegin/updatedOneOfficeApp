@@ -8,7 +8,7 @@ import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constan
 import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
-import Elevations from 'react-native-elevation'
+// import Elevations from 'react-native-elevation'
 import { COLORS, FONTS } from '../../utilies/GlobalColors';
 import CustomMenu from '../../component/Menu';
 import Icon from 'react-native-vector-icons/Feather';
@@ -80,12 +80,16 @@ export const DocumentScan = () => {
   const isPermissionFunctionCalled = useRef(false); // Use a ref instead of state
   const refForDocShare = useRef<BottomSheetModal>(null);
   const [isLocalDataFetch, setIsLocalDataFetch] = useState(false)
-
+  const [localFiles, setLocalFiles] = useState([])
   const isFocused = useIsFocused();
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
 
 
-
+  const getfiles = async () => {
+    const files = await FileLocalService.getAllFiles()
+    console.log('files====', files);
+    setLocalFiles(files);
+  }
 
   useEffect(() => {
     if (!isFocused) return;
@@ -99,6 +103,7 @@ export const DocumentScan = () => {
         setData(folders);
 
         setIsLocalDataFetch(true);
+        getfiles()
       } catch (error) {
         console.log('fetch error:', error);
       }
@@ -124,20 +129,24 @@ export const DocumentScan = () => {
 
   const renderButton = () => {
     return (<><Button title="Login" onPress={handleLogin} />
+
       <Button title="Sync" onPress={async () => {
-    if (isLoading) return; // 🔥 prevent double click
-    try {
-      setIsLoading(true);
+        if (isLoading) return; // 🔥 prevent double click
+        try {
+          setIsLoading(true);
 
-      const folders = await syncAll();
+          const folders = await syncAll();
+          const files = await FileLocalService.getAllFiles()
+          console.log('files-------', files);
 
-      setData(folders);
-    } catch (e) {
-      console.log('Sync error:', e);
-    } finally {
-      setIsLoading(false); // 🔥 ALWAYS runs
-    }
-  }} />
+          setLocalFiles(files);
+          setData(folders);
+        } catch (e) {
+          console.log('Sync error document scanner:', e);
+        } finally {
+          setIsLoading(false); // 🔥 ALWAYS runs
+        }
+      }} />
       <Button title="CREATE" onPress={async () => {
         console.log('hi');
 
@@ -724,7 +733,7 @@ export const DocumentScan = () => {
 
   const getFiles = () => {
     // getting search value from dashboard and filtering it
-    console.log('data getFiles======', data);
+    // console.log('data getFiles======', data);
     if (isLocalDataFetch) {
 
       if (searchQuery.length > 0) {
@@ -733,7 +742,7 @@ export const DocumentScan = () => {
         );
       } else {
         // return []
-        console.log('log==', data.folders);
+        // console.log('log==', data.folders);
 
         return data;
       }
@@ -1002,6 +1011,14 @@ export const DocumentScan = () => {
         }
 
       </View>
+      <View style={{
+        height: scaledSize(50), position: "absolute", left: scaledSize(20),
+        top: heightFromPercentage(72)
+      }}>
+        {localFiles.map((item) => (
+          <Text key={item.id}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
+        ))}
+      </View>
 
       <View style={{
         height: scaledSize(50), position: "absolute", left: scaledSize(270),
@@ -1098,7 +1115,7 @@ export const DocumentScan = () => {
 
         </View>
       </Overlay>
-<CustomSpinner isLoading={isLoading} />
+      <CustomSpinner isLoading={isLoading} />
 
       <Image source={{ uri: destinationPath + '1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
       <View style={{ height: scaledSize(50), width: '80%', flexDirection: 'row', justifyContent: "space-between" }}>

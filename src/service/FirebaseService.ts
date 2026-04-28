@@ -1,8 +1,10 @@
-import firestore, { addDoc, doc, updateDoc } from '@react-native-firebase/firestore';
+import firestore, { addDoc, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { getLocalData, setLocalData } from '../utilies/storageService';
 import { asyncStorageKeyName } from '../utilies/Constants';
 import { getApp } from '@react-native-firebase/app';
+import { serverTimestamp } from '@react-native-firebase/firestore';
+
 import {
   getFirestore,
   collection,
@@ -11,6 +13,19 @@ import {
   orderBy,
   getDocs,
 } from '@react-native-firebase/firestore';
+import { CreateFileInput } from 'src/db/fileLocalService';
+
+const returnDataHandler = (docSnap: any) => {
+  if (!docSnap.exists()) return null;
+
+  const data = docSnap.data();
+
+  return {
+    firebaseId: docSnap.id,
+    ...data,
+    updatedAt: data.updatedAt?.toMillis?.() || 0   // 🔥 important
+  };
+};
 
 export const db = getFirestore(getApp());
 const getUserId = () => {
@@ -24,18 +39,18 @@ export const FirebaseService = {
   // ✅ CREATE
   async createFolderInFirebase(folder: any) {
     try {
-      const docRef = await addDoc(collection(db, 'folders'), {
+      const ref = await addDoc(collection(db, 'folders'), {
         name: folder.name, // folder name
         userId: folder.userId, // user id
         coverUri: folder.coverUri || '', // optional cover
         driveFolderId: folder.driveFolderId || '', // drive id
-        updatedAt: Date.now(), // 🔥 important for sync
+        updatedAt: serverTimestamp(), // 🔥 important for sync
         isDeleted: 0, // default not deleted
       });
 
-      return {
-        firebaseId: docRef.id, // return Firebase doc id
-      };
+      const docSnap = await getDoc(ref);
+      return returnDataHandler(docSnap);
+
 
     } catch (error) {
       console.error('❌ createFolderInFirebase error:', error);
@@ -43,41 +58,42 @@ export const FirebaseService = {
     }
   },
   // ✅ UPDATE (for rename, edits)
-async updateFolderInFirebase(folder: any) {
-  try {
-    const updateData: any = {
-      updatedAt: Date.now(), // always required
-    };
+  async updateFolderInFirebase(folder: any) {
+    try {
+      const updateData: any = {
+        updatedAt: serverTimestamp(), // always required
+      };
 
-    // 🔹 only include if present
-    if (folder.name !== undefined) {
-      updateData.name = folder.name;
+      // 🔹 only include if present
+      if (folder.name !== undefined) {
+        updateData.name = folder.name;
+      }
+
+      if (folder.isDeleted !== undefined) {
+        updateData.isDeleted = folder.isDeleted;
+      }
+
+      const ref = await updateDoc(
+        doc(db, 'folders', folder.firebaseId),
+        updateData
+      );
+
+      const docSnap = await getDoc(ref);
+      return returnDataHandler(docSnap);
+
+    } catch (error) {
+      console.error('❌ updateFolderInFirebase error:', error);
+      throw error;
     }
-
-    if (folder.isDeleted !== undefined) {
-      updateData.isDeleted = folder.isDeleted;
-    }
-
-    await updateDoc(
-      doc(db, 'folders', folder.firebaseId),
-      updateData
-    );
-
-    return true;
-
-  } catch (error) {
-    console.error('❌ updateFolderInFirebase error:', error);
-    throw error;
-  }
-},
+  },
 
   // ✅ READ
+
   async getUpdatedFoldersByUserId() {
     try {
       const userId = getUserId();
       const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
       console.log(' LastsyncTime get:', lastsyncTime);
-      console.log(' LastsyncTime get:', typeof lastsyncTime);
 
       const q = query(
         collection(db, 'folders'),
@@ -104,50 +120,143 @@ async updateFolderInFirebase(folder: any) {
       throw e;
     }
   },
+  // ************************ File started*********************
+  async createFile(file: CreateFileInput) {
+    try {
+      const newFile = {
+        name: file.name,
+        displayName: file.name,
+        size: file.size || 0,
+        lastModified: Date.now(),
+        folderId: file.folderId,
+        isSynced: 0,
+        isDeleted: 0,
+        firebaseFolderId: file.folderFirebaseId || '',
+        userId: file.userId,
+        updatedAt: serverTimestamp(),
+        driveFileId: file.driveFileId || '',
+      }
 
-  async getNewOrUpdatedFolders(lastSyncTime: number) {
+      const docRef = await addDoc(collection(db, 'files'), newFile);
+      const docSnap = await getDoc(docRef);
+      return returnDataHandler(docSnap);
+
+
+    } catch (error) {
+      console.error('❌ createFile error:', error);
+      throw error;
+    }
+  },
+  async getUpdatedFilesByUserId() {
     try {
       const userId = getUserId();
+      const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      console.log(' LastsyncTime get:', lastsyncTime);
+      console.log(' LastsyncTime get:', typeof lastsyncTime);
 
-      const snapshot = await firestore()
-        .collection('folders')
-        .where('userId', '==', userId)
-        .where('updatedAt', '>', lastSyncTime) // 👈 key change
-        .get();
+      const q = query(
+        collection(db, 'files'),
+        where('userId', '==', userId),
+        where('updatedAt', '>', lastsyncTime || 0),
+        orderBy('updatedAt', 'desc')
+      );
 
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const snapshot = await getDocs(q);
 
-      return data;
-    } catch (e) {
-      console.log('❌ Sync error:', e);
+      const data = snapshot.docs.map(doc => {
+        const d = doc.data();
+        console.log('d======', d);
+
+        return {
+          firebaseId: doc.id,
+          ...d,
+          updatedAt: d.updatedAt?.toMillis?.() || 0   // ✅ convert here
+        };
+      });
+      return data
+    }
+    catch (e) {
+      console.log('❌ Fetch error:', e);
       throw e;
     }
   },
 
-  async getNewOrUpdatedFiles(folderId: string, lastSyncTime: number,) {
+  async updateFileInFirebase(file: any) {
     try {
-      const userId = getUserId();
+      const ref = doc(db, 'files', file.firebaseId);
 
-      const snapshot = await firestore()
-        .collection('files')
-        .where('folderId', '==', folderId)
-        .where('updatedAt', '>', lastSyncTime) // 👈 key change
-        .get();
+      const updateData: any = {
+        updatedAt: serverTimestamp(),
+      };
 
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      if (file.name !== undefined) {
+        updateData.name = file.name;
+      }
+      if (file.displayName !== undefined) {
+        updateData.displayName = file.displayName;
+      }
 
-      return data;
-    } catch (e) {
-      console.log('❌ Sync files error:', e);
-      throw e;
+      if (file.isDeleted !== undefined) {
+        updateData.isDeleted = file.isDeleted;
+      }
+
+      // 🔥 update
+      await updateDoc(ref, updateData);
+
+      // 🔥 fetch updated doc
+      const docSnap = await getDoc(ref);
+
+      return returnDataHandler(docSnap);
+
+    } catch (error) {
+      console.error('❌ updateFileInFirebase error:', error);
+      throw error;
     }
   },
+
+  // async getNewOrUpdatedFolders(lastSyncTime: number) {
+  //   try {
+  //     const userId = getUserId();
+
+  //     const snapshot = await firestore()
+  //       .collection('folders')
+  //       .where('userId', '==', userId)
+  //       .where('updatedAt', '>', lastSyncTime) // 👈 key change
+  //       .get();
+
+  //     const data = snapshot.docs.map(doc => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+
+  //     return data;
+  //   } catch (e) {
+  //     console.log('❌ Sync error:', e);
+  //     throw e;
+  //   }
+  // },
+
+  // async getNewOrUpdatedFiles(folderId: string, lastSyncTime: number,) {
+  //   try {
+  //     const userId = getUserId();
+
+  //     const snapshot = await firestore()
+  //       .collection('files')
+  //       .where('folderId', '==', folderId)
+  //       .where('updatedAt', '>', lastSyncTime) // 👈 key change
+  //       .get();
+
+  //     const data = snapshot.docs.map(doc => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+
+  //     return data;
+  //   } catch (e) {
+  //     console.log('❌ Sync files error:', e);
+  //     throw e;
+  //   }
+  // },
   // ✅ DELETE (soft delete)
   async deleteFolder(id: string) {
     try {
@@ -156,7 +265,7 @@ async updateFolderInFirebase(folder: any) {
         .doc(id)
         .update({
           isDeleted: 1,
-          updatedAt: Date.now(),
+          updatedAt: serverTimestamp(),
         });
 
       console.log('🗑️ Deleted:', id);

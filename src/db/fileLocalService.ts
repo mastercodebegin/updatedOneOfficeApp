@@ -1,16 +1,37 @@
 import { getDB } from './index';
 
+export interface CreateFileInput {
+  id?:number,
+  name: string;
+  displayName?: string;
+
+  size?: number;
+  lastModified?: number;
+
+  folderId: number;              // local folder id
+  folderFirebaseId?: string;     // firebase folder id
+
+  firebaseId?: string;           // for sync (optional during create)
+  driveFileId?: string;
+
+  userId?: string | null;
+
+  isSynced?: number;             // 0 | 1
+  isDeleted?: number;            // 0 | 1
+
+  updatedAt?: number;
+}
+
 export const FileLocalService = {
 
   // ➕ CREATE
-  async createFile(file: any) {
+  async createFile(file: CreateFileInput) {
     const db = await getDB();
-    const timestamp = Date.now();
 
     await db.executeSql(
       `INSERT INTO files 
-      (userId, name, displayName, size, lastModified, folderId, firebaseId, driveFileId, isSynced, isDeleted, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (userId, name, displayName, size, lastModified, folderId, firebaseId, driveFileId, isSynced, isDeleted, updatedAt, folderFirebaseId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         file.userId,
         file.name,
@@ -19,10 +40,11 @@ export const FileLocalService = {
         file.lastModified,
         file.folderId,               // local mapping
         file.firebaseId,       // 🔑 sync mapping
-        file.driveFileId || null,    // 🔑 Drive ID
+        file.driveFileId || '',    // 🔑 Drive ID
         0,
         0,
-        timestamp,
+        file.updatedAt || 0,
+        file.folderFirebaseId || null,
       ]
     );
 
@@ -30,9 +52,46 @@ export const FileLocalService = {
       ...file,
       isSynced: 0,
       isDeleted: 0,
-      updatedAt: timestamp,
+      updatedAt: 0,
     };
   },
+    async getUnsynced() {
+    try {
+      const db = await getDB();
+
+      const result = await db.executeSql(
+        `SELECT * FROM files WHERE isSynced = 0`
+      );
+
+      const rows = result[0].rows;
+      const data = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        data.push(rows.item(i));
+      }
+
+      return data;
+
+    } catch (error) {
+      console.error('getUnsynced error:', error);
+      throw error;
+    }
+  },
+
+  async markAsSynced(localFileId: number, firebaseId?: string,updatedAt?: number) {
+  const db = await getDB();
+
+  // const timestamp = Date.now();
+
+  await db.executeSql(
+    `UPDATE files 
+     SET isSynced = 1,
+         updatedAt = ?,
+         firebaseId = COALESCE(?, firebaseId)
+     WHERE id = ?`,
+    [updatedAt, firebaseId || null, localFileId]
+  );
+},
 
   // 📖 READ
   async getAllFiles() {
@@ -83,7 +142,6 @@ export const FileLocalService = {
   // 🔄 UPDATE
   async updateFile(id: number, updates: any) {
     const db = await getDB();
-    const timestamp = Date.now();
 
     await db.executeSql(
       `UPDATE files 
@@ -93,6 +151,7 @@ export const FileLocalService = {
            lastModified = ?, 
            firebaseId = ?, 
            driveFileId = ?, 
+           folderFirebaseId = ?,
            isSynced = 0, 
            updatedAt = ?
        WHERE id = ?`,
@@ -103,11 +162,29 @@ export const FileLocalService = {
         updates.lastModified,
         updates.firebaseId,
         updates.driveFileId,
-        timestamp,
+        updates.folderFirebaseId,
+        updates.updatedAt,
         id,
       ]
     );
   },
+
+    async updateFirebaseId(localId: number, firebaseId: string, userId: string,updatedAt: number) {
+  const db = await getDB();
+console.log('updatedAt updateFirebaseId:', updatedAt);
+console.log({
+  firebaseId,
+  userId,
+  updatedAt,
+  localId
+});
+await db.executeSql(
+  `UPDATE files 
+   SET firebaseId = ?, userId = ?, isSynced = 1 , updatedAt = ?
+   WHERE id = ?`,
+  [firebaseId, userId, updatedAt, localId]   // ✅ correct order
+);
+},
 
   // ✅ MARK SYNCED
   async markSynced(id: number, driveFileId?: string) {
@@ -202,6 +279,7 @@ export const FileLocalService = {
 
         folderId INTEGER,
         firebaseId TEXT,
+        folderFirebaseId TEXT,
 
         driveFileId TEXT,
 

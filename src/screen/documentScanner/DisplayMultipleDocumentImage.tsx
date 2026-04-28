@@ -441,6 +441,9 @@ export default function DisplayMultipleDocumentImage(props: any) {
           size: 0,
           lastModified: Date.now(),
           folderId: folderId,
+          isSynced: 0,
+          isDeleted: 0,
+          folderFirebaseId: '',
         });
       }
 

@@ -10,7 +10,7 @@ export const GoogleDriveService = {
 
 
 
-    async getOrCreateGDriveFolder(name: string) {
+    async getOrCreateGDriveFolderName(name: string) {
         return await this.withAuthRetry(async (token) => {
             const existing = await FolderLocalService.getGoogleDriveFolderFromDB();
             console.log('existing', existing);

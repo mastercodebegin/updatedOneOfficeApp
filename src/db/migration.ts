@@ -41,6 +41,7 @@ export const initDB = async () => {
 
         folderId INTEGER,
         firebaseId TEXT,
+        folderFirebaseId TEXT,
 
         driveFileId TEXT,
 
