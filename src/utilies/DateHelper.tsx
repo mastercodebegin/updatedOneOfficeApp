@@ -36,7 +36,16 @@ import { DateFormat } from "../utilies/Constants"
     }
 }
 
+function getMillis(ts: any): number {
+
+  console.log('Invalid timestamp format:', ts);
+  
+
+  const time =  ts.updatedAt.seconds * 1000 + Math.floor(ts.updatedAt.nanoseconds / 1e6);
+  return time;
+}
 export const DateHelper= {
     getDateFromString,
-    getDateByMomentFormat
+    getDateByMomentFormat,
+    getMillis
 }

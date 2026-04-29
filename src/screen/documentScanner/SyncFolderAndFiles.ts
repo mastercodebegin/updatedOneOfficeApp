@@ -30,7 +30,9 @@ export const syncAll = async () => {
 
   // return[]
   const folders = await syncFoldersFromFirebaseToLocal()
-
+  console.log('folders updatedAt=========',folders);
+  
+  // setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAt);
   // const files = await syncFilesFromFirebaseToLocal()
   // console.log('Synced folders:', folders);
   // console.log('Synced files:', files);
@@ -341,14 +343,14 @@ const syncFoldersFromFirebaseToLocal = async () => {
   console.log('folder firebaseIdSet:', [...firebaseIdSet]);
   // 🔄 Insert / Update firebase update into local database
   const insertOrupdateRes = await insertOrUpdateFolder(localMap, firebaseFolders, userId)
-  console.log('insertOrUpdateFolder', insertOrupdateRes);
-
+  
   // 🗑️ Delete
   // 🔄 Insert / Update firebase update into local database
   const deleteSyncRes = await deleteSyncFolders(localFolders, firebaseFolders);
-  console.log('deleteSyncFolders', deleteSyncRes);
   //Push updates from local to firebase
   const data = await pushFoldersToFirebase()
+  console.log('insertOrUpdateFolder', insertOrupdateRes);
+  console.log('deleteSyncFolders', deleteSyncRes);
   console.log('pushFoldersToFirebase response', data);
 
   // ✅ use max Firebase time
@@ -364,13 +366,7 @@ const syncFoldersFromFirebaseToLocal = async () => {
   );
   console.log('maxUpdatedAt', maxUpdatedAt);
 
-
-  // setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAt);
-  const folders = await FolderLocalService.getActiveFolders();
-
-  console.log('folders=====', folders);
-
-  return folders;
+  return maxUpdatedAt;
 
 }
 
@@ -385,9 +381,9 @@ const insertOrUpdateFolder = async (localFoldersMap: Map<string, any>, firebaseF
     console.log('local.updatedAt:', local?.updatedAt, typeof local?.updatedAt);
 
     if (!local) { // if folder does NOT exist in local DB
-          const updatedAt = remote.updatedAt.seconds * 1000 + Math.floor(remote.updatedAt
-        .nanoseconds / 1e6);
-     const createdFolder =  await FolderLocalService.createFolder(
+      const updatedAt = DateHelper.getMillis(remote);
+      console.log('updatedAt for new folder:', updatedAt);
+      const createdFolder = await FolderLocalService.createFolder(
         userId, // current user id
         remote.name, // folder name from Firebase
         remote.firebaseId, // Firebase id → stored as firebaseId locally
@@ -396,9 +392,9 @@ const insertOrUpdateFolder = async (localFoldersMap: Map<string, any>, firebaseF
         1,// mark as synced (since coming from Firebase)
         updatedAt
       );
-      console.log('createdFolder************************',createdFolder );
-  
-        console.log('max updated before ', updatedAt);
+      console.log('createdFolder************************', createdFolder);
+
+      console.log('max updated before ', updatedAt);
       if (updatedAt > maxUpdatedAt) {
         maxUpdatedAt = updatedAt;
         console.log('max updated ', maxUpdatedAt);
@@ -462,17 +458,20 @@ const deleteSyncFolders = async (localFolders: any, firebaseFolders: any) => {
 
     if (deletedSet.has(local.firebaseId) && local.isDeleted === 0) {
       console.log('🗑️ deleting locally:', local.firebaseId);
-      firebaseFolders.forEach((f: any) => {
-        if (f.firebaseId === local.firebaseId) {
-          console.log('deleted folder from firebase', f);
-          if (f.updatedAt > maxUpdatedAt) {
-            maxUpdatedAt = f.updatedAt;
-          }
-        }
-      }
-      )
 
-      // await FolderLocalService.deleteFolderById(local.id);
+      const match = firebaseFolders.find((f: any) => f.firebaseId === local.firebaseId);
+
+      if (match) {
+        const updatedAt = DateHelper.getMillis(match);
+        console.log('updatedAt:', updatedAt);
+
+        if (updatedAt > maxUpdatedAt) {
+          maxUpdatedAt = updatedAt;
+        }
+        console.log('Found matching Firebase folder for deletion:', maxUpdatedAt);
+      }
+
+      await FolderLocalService.deleteFolderById(local.id);
     }
   }
   return { updatedAt: maxUpdatedAt }
