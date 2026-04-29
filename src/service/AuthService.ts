@@ -1,6 +1,12 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import auth from '@react-native-firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithCredential,
+  signOut as firebaseSignOut,
+} from '@react-native-firebase/auth';
 
+// 🔹 Configure Google Sign-In
 GoogleSignin.configure({
   webClientId: '898961170860-3emi1itrum9s8fk35g6aruqnbqcpfb30.apps.googleusercontent.com',
   scopes: ['https://www.googleapis.com/auth/drive.file'],
@@ -8,36 +14,62 @@ GoogleSignin.configure({
 });
 
 export const AuthService = {
+  // 🔹 Sign In
   async signIn() {
-    await GoogleSignin.hasPlayServices();
+    try {
+      await GoogleSignin.hasPlayServices();
 
-    const userInfo = await GoogleSignin.signIn();
-    const tokens = await GoogleSignin.getTokens();
+      const userInfo = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
 
-    console.log('userInfo======',userInfo);
-    
-    return {
-      user: userInfo,
-      accessToken: tokens.accessToken,
-      idToken: tokens.idToken,
-    };
+      // 🔥 Connect to Firebase Auth
+      const auth = getAuth();
+      const credential = GoogleAuthProvider.credential(tokens.idToken);
+
+      const userCredential = await signInWithCredential(auth, credential);
+
+      console.log('✅ Firebase User:', userCredential.user);
+
+      return {
+        user: userCredential.user,
+        accessToken: tokens.accessToken,
+        idToken: tokens.idToken,
+      };
+    } catch (e) {
+      console.log('❌ SignIn Error:', e);
+      throw e;
+    }
   },
 
+  // 🔹 Sign Out
   async signOut() {
-    await GoogleSignin.revokeAccess();
-    await GoogleSignin.signOut();
+    try {
+      const auth = getAuth();
+
+      await firebaseSignOut(auth);     // Firebase logout
+      await GoogleSignin.revokeAccess();
+      await GoogleSignin.signOut();
+
+      console.log('✅ Signed out');
+    } catch (e) {
+      console.log('❌ SignOut Error:', e);
+      throw e;
+    }
   },
 
+  // 🔹 Get Access Token (Google API)
   async getAccessToken() {
     const tokens = await GoogleSignin.getTokens();
-    // console.log('token',tokens);
-    
     return tokens.accessToken;
   },
-  async getUserId  () {
-  return auth().currentUser?.uid || '';
-},
 
+  // 🔹 Get Firebase User ID
+  async getUserId() {
+    const auth = getAuth();
+    return auth.currentUser?.uid || '';
+  },
+
+  // 🔹 Refresh Token
   async refreshAccessToken() {
     try {
       await GoogleSignin.signInSilently();
@@ -54,5 +86,5 @@ export const AuthService = {
 
       return tokens.accessToken;
     }
-  }
+  },
 };

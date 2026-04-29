@@ -22,7 +22,7 @@ export const initDB = async () => {
         isSynced INTEGER DEFAULT 0,
         isDeleted INTEGER DEFAULT 0,
 
-        updatedAt INTEGER
+        updatedAt INTEGER,
         createdAt INTEGER
       )
     `);

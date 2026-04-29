@@ -26,6 +26,7 @@ export const FileLocalService = {
 
   // ➕ CREATE
   async createFile(file: CreateFileInput) {
+
     const db = await getDB();
 
     await db.executeSql(
@@ -41,7 +42,7 @@ export const FileLocalService = {
         file.folderId,               // local mapping
         file.firebaseId,       // 🔑 sync mapping
         file.driveFileId || '',    // 🔑 Drive ID
-        0,
+        file.isSynced || 0,
         0,
         file.updatedAt || 0,
         file.folderFirebaseId || null,
@@ -50,9 +51,7 @@ export const FileLocalService = {
 
     return {
       ...file,
-      isSynced: 0,
-      isDeleted: 0,
-      updatedAt: 0,
+
     };
   },
     async getUnsynced() {
@@ -140,36 +139,94 @@ export const FileLocalService = {
   },
 
   // 🔄 UPDATE
-  async updateFile(id: number, updates: any) {
-    const db = await getDB();
+ async renameFile(id: number, updates: any) {
+  const db = await getDB();
 
-    await db.executeSql(
-      `UPDATE files 
-       SET name = ?, 
-           displayName = ?, 
-           size = ?, 
-           lastModified = ?, 
-           firebaseId = ?, 
-           driveFileId = ?, 
-           folderFirebaseId = ?,
-           isSynced = 0, 
-           updatedAt = ?
-       WHERE id = ?`,
-      [
-        updates.name,
-        updates.displayName,
-        updates.size,
-        updates.lastModified,
-        updates.firebaseId,
-        updates.driveFileId,
-        updates.folderFirebaseId,
-        updates.updatedAt,
-        id,
-      ]
-    );
-  },
+  const fields: string[] = [];
+  const values: any[] = [];
 
-    async updateFirebaseId(localId: number, firebaseId: string, userId: string,updatedAt: number) {
+  if (updates.displayName !== undefined) {
+    fields.push("displayName = ?");
+    values.push(updates.displayName);
+  }
+
+
+
+  if (updates.isDeleted !== undefined) {
+    fields.push("isDeleted = ?");
+    values.push(updates.isDeleted);
+  }
+
+  // always update sync flags
+  fields.push("isSynced = 0");
+
+  if (updates.updatedAt !== undefined) {
+    fields.push("updatedAt = ?");
+    values.push(updates.updatedAt);
+  }
+
+  // nothing to update → exit early
+  if (fields.length === 1) return; // only isSynced added, no real change
+
+  values.push(id);
+
+  const query = `
+    UPDATE files 
+    SET ${fields.join(", ")}
+    WHERE id = ?
+  `;
+
+  await db.executeSql(query, values);
+},
+
+async updateFile(id: number, updates: any) {
+  const db = await getDB();
+
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  // only update what is passed
+
+  if (updates.name !== undefined) {
+    fields.push("name = ?");
+    values.push(updates.name);
+  }
+
+  if (updates.isDeleted !== undefined) {
+    fields.push("isDeleted = ?");
+    values.push(updates.isDeleted);
+  }
+
+  if (updates.folderId !== undefined) {
+    fields.push("folderId = ?");
+    values.push(updates.folderId);
+  }
+
+  if (updates.updatedAt !== undefined) {
+    fields.push("updatedAt = ?");
+    values.push(updates.updatedAt);
+  }
+
+  if (updates.isSynced !== undefined) {
+    fields.push("isSynced = ?");
+    values.push(updates.isSynced);
+  }
+
+  // nothing to update
+  if (fields.length === 0) return;
+
+  values.push(id);
+
+  const query = `
+    UPDATE files
+    SET ${fields.join(", ")}
+    WHERE id = ?
+  `;
+
+  await db.executeSql(query, values);
+},
+
+    async updateFirebaseId(localId: number, firebaseId: string, userId: string,updatedAt: number,folderFirebaseId: string) {
   const db = await getDB();
 console.log('updatedAt updateFirebaseId:', updatedAt);
 console.log({
@@ -180,9 +237,13 @@ console.log({
 });
 await db.executeSql(
   `UPDATE files 
-   SET firebaseId = ?, userId = ?, isSynced = 1 , updatedAt = ?
+   SET firebaseId = ?, 
+       userId = ?, 
+       folderFirebaseId = ?, 
+       isSynced = 1, 
+       updatedAt = ?
    WHERE id = ?`,
-  [firebaseId, userId, updatedAt, localId]   // ✅ correct order
+  [firebaseId, userId, updatedAt, localId,folderFirebaseId]
 );
 },
 

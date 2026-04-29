@@ -1,4 +1,4 @@
-import firestore, { addDoc, doc, getDoc, updateDoc } from '@react-native-firebase/firestore';
+import firestore, { addDoc, doc, getDoc, Timestamp, updateDoc } from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
 import { getLocalData, setLocalData } from '../utilies/storageService';
 import { asyncStorageKeyName } from '../utilies/Constants';
@@ -73,12 +73,12 @@ export const FirebaseService = {
         updateData.isDeleted = folder.isDeleted;
       }
 
-      const ref = await updateDoc(
-        doc(db, 'folders', folder.firebaseId),
-        updateData
-      );
+      const ref = doc(db, 'folders', folder.firebaseId); // ✅ create ref
 
-      const docSnap = await getDoc(ref);
+      await updateDoc(ref, updateData);                  // ✅ update
+
+      const docSnap = await getDoc(ref);                 // ✅ fetch
+
       return returnDataHandler(docSnap);
 
     } catch (error) {
@@ -98,7 +98,11 @@ export const FirebaseService = {
       const q = query(
         collection(db, 'folders'),
         where('userId', '==', userId),
-        where('updatedAt', '>', lastsyncTime || 0),
+        where(
+          'updatedAt',
+          '>',
+          Timestamp.fromMillis(lastsyncTime || 0)   // ✅ FIX
+        ),
         orderBy('updatedAt', 'desc')
       );
 
@@ -131,7 +135,7 @@ export const FirebaseService = {
         folderId: file.folderId,
         isSynced: 0,
         isDeleted: 0,
-        firebaseFolderId: file.folderFirebaseId || '',
+        folderFirebaseId: file.folderFirebaseId || '',
         userId: file.userId,
         updatedAt: serverTimestamp(),
         driveFileId: file.driveFileId || '',
@@ -157,7 +161,11 @@ export const FirebaseService = {
       const q = query(
         collection(db, 'files'),
         where('userId', '==', userId),
-        where('updatedAt', '>', lastsyncTime || 0),
+        where(
+          'updatedAt',
+          '>',
+          Timestamp.fromMillis(lastsyncTime || 0)
+        ),
         orderBy('updatedAt', 'desc')
       );
 

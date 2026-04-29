@@ -27,6 +27,7 @@ async createFolder(
       coverUri,
       driveFolderId,
       isSynced,
+      updatedAt
     });
 
     const res = await db.executeSql(
@@ -40,7 +41,7 @@ async createFolder(
         coverUri,
         driveFolderId,
         Number(isSynced),   // 🔥 ensure number
-        finalUpdatedAt,
+        updatedAt,
         timestamp
       ]
     );

@@ -1,5 +1,10 @@
-import { useState,useEffect } from 'react';
-import auth from '@react-native-firebase/auth';
+import { useState, useEffect } from 'react';
+import {
+  getAuth,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
 import { AuthService } from '../service/AuthService';
 
 export const useGoogleAuth = () => {
@@ -8,37 +13,38 @@ export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-  const unsubscribe = auth().onAuthStateChanged((firebaseUser) => {
-    if (firebaseUser) {
-      // console.log('firebaseUser---',firebaseUser);
-      
-      setUser(firebaseUser); // ✅ restore user
-    } else {
-            // console.log('firebaseUser else---',firebaseUser);
+    const auth = getAuth();
 
-      setUser(null);
-    }
-  });
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        setUser(null);
+      }
+    });
 
-  return unsubscribe;
-}, []);
+    return unsubscribe;
+  }, []);
 
   const signIn = async () => {
     try {
       setLoading(true);
 
-      const { user, accessToken, idToken } = await AuthService.signIn();
+      const { accessToken, idToken } = await AuthService.signIn();
 
-      const googleCredential =
-        auth.GoogleAuthProvider.credential(idToken);
+      const auth = getAuth();
 
-      const firebaseUser =
-        await auth().signInWithCredential(googleCredential);
+      const credential = GoogleAuthProvider.credential(idToken);
+
+      const firebaseUser = await signInWithCredential(auth, credential);
 
       setUser(firebaseUser.user);
       setAccessToken(accessToken);
 
       return { user: firebaseUser.user, accessToken };
+    } catch (e) {
+      console.log('SignIn error:', e);
+      throw e;
     } finally {
       setLoading(false);
     }

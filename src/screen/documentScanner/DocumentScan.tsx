@@ -135,9 +135,10 @@ export const DocumentScan = () => {
         try {
           setIsLoading(true);
 
-          const folders = await syncAll();
+          await syncAll();
           const files = await FileLocalService.getAllFiles()
-          console.log('files-------', files);
+          const folders = await FolderLocalService.getActiveFolders()
+          console.log('folders-------', folders);
 
           setLocalFiles(files);
           setData(folders);
@@ -158,6 +159,13 @@ export const DocumentScan = () => {
       }} />
       <Button title="Update" onPress={async () => {
         await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
+      }} />
+      <Button title="Reset" onPress={async () => {
+  await FileLocalService.resetFilesTable ()
+  await resetFoldersTable ()
+  FolderLocalService.getActiveFolders().then(res=>setData(res)).catch(e=>console.log(e))
+  removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+
       }} />
       {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
     </>
@@ -1016,7 +1024,7 @@ export const DocumentScan = () => {
         top: heightFromPercentage(72)
       }}>
         {localFiles.map((item) => (
-          <Text key={item.id}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
+          <Text key={item.id} style={{color:'black'}}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
         ))}
       </View>
 

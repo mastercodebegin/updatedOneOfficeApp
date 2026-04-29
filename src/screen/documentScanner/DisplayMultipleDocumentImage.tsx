@@ -101,9 +101,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
     console.log('existing file', existingFile);
 
     let existingFileTemp = await FileLocalService.getFileById(existingFile.id)
+    console.log('existingFileTemp', existingFileTemp);
+    
     existingFileTemp.displayName = fileName + '.jpg'
-    await FileLocalService.updateFile(existingFile.id, existingFileTemp)
-    const updatedFolder = await FileLocalService.getFilesByFolder(folderId)
+    await FileLocalService.renameFile(existingFile.id, existingFileTemp)
+    console.log('updateFile' );
+    const updatedFolder = await FileLocalService.getFilesByFolder(existingFileTemp.folderId)
     setData(updatedFolder)
 
     setIsShowFileNameModal(false)
@@ -545,7 +548,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         </View>
 
         {/* File Name */}
-        <Text style={styles.fileName} numberOfLines={1}>
+        <Text style={{...styles.fileName, color: 'black'}} numberOfLines={1}>
           {item.displayName?.replace(/\.[^/.]+$/, '')}
         </Text>
       </TouchableOpacity>
