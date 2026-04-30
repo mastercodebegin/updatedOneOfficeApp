@@ -2,7 +2,7 @@ import { createMMKV } from 'react-native-mmkv'
 
 export const storage = createMMKV()
 
-export const setLocalData = (key, value) => {
+export const setLocalData = (key: string, value: any) => {
   try {
     storage.set(key, JSON.stringify(value));
   } catch (e) {
@@ -10,12 +10,12 @@ export const setLocalData = (key, value) => {
   }
 };
 
-export const getLocalData = (key) => {
+export const getLocalData = (key:string) => {
   try {
     const value = storage.getString(key);
     console.log('getLocalData',value);
     
-    return value ? JSON.parse(value) : null;
+    return value ;
   } catch (e) {
     console.log('MMKV get error:', e);
     return null;

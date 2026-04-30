@@ -160,11 +160,17 @@ export const DocumentScan = () => {
       <Button title="Update" onPress={async () => {
         await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
       }} />
-      <Button title="Reset" onPress={async () => {
-  await FileLocalService.resetFilesTable ()
-  await resetFoldersTable ()
-  FolderLocalService.getActiveFolders().then(res=>setData(res)).catch(e=>console.log(e))
-  removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      <Button title="Reset" 
+      onPress={async () => {
+  await FileLocalService.resetFilesTable()
+  await resetFoldersTable()
+  await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+
+  // ⛔ wait before fetching
+  const folders = await FolderLocalService.getActiveFolders()
+  const files = await FileLocalService.getAllFiles()
+  setData(folders)
+  setLocalFiles(files)
 
       }} />
       {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}

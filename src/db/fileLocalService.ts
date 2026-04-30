@@ -180,6 +180,9 @@ export const FileLocalService = {
 },
 
 async updateFile(id: number, updates: any) {
+
+  console.log('updates', updates);
+  
   const db = await getDB();
 
   const fields: string[] = [];
@@ -191,6 +194,10 @@ async updateFile(id: number, updates: any) {
     fields.push("name = ?");
     values.push(updates.name);
   }
+  if (updates.displayName !== undefined) {
+  fields.push("displayName = ?");
+  values.push(updates.displayName);
+}
 
   if (updates.isDeleted !== undefined) {
     fields.push("isDeleted = ?");
@@ -243,8 +250,9 @@ await db.executeSql(
        isSynced = 1, 
        updatedAt = ?
    WHERE id = ?`,
-  [firebaseId, userId, updatedAt, localId,folderFirebaseId]
+  [firebaseId, userId, folderFirebaseId, updatedAt, localId]
 );
+return {success: true};
 },
 
   // ✅ MARK SYNCED

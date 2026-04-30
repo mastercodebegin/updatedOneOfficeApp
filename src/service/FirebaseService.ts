@@ -14,6 +14,7 @@ import {
   getDocs,
 } from '@react-native-firebase/firestore';
 import { CreateFileInput } from 'src/db/fileLocalService';
+import { DateHelper } from '../../src/utilies/DateHelper';
 
 const returnDataHandler = (docSnap: any) => {
   if (!docSnap.exists()) return null;
@@ -94,6 +95,11 @@ export const FirebaseService = {
       const userId = getUserId();
       const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
       console.log(' LastsyncTime get:', lastsyncTime);
+      const lastsyncTimeNum = Number(lastsyncTime);
+
+      const safeTime = isNaN(lastsyncTimeNum) ? 0 : lastsyncTimeNum;
+      const time = Timestamp.fromMillis(safeTime);
+      console.log('time>>>>', time);
 
       const q = query(
         collection(db, 'folders'),
@@ -101,7 +107,7 @@ export const FirebaseService = {
         where(
           'updatedAt',
           '>',
-          Timestamp.fromMillis(lastsyncTime || 0)   // ✅ FIX
+          time
         ),
         orderBy('updatedAt', 'desc')
       );
@@ -154,7 +160,8 @@ export const FirebaseService = {
   async getUpdatedFilesByUserId() {
     try {
       const userId = getUserId();
-      const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      const lastsyncTime = DateHelper.getFirebaseTimeStampByMillis();
+      console.log(' getUpdatedFilesByUserId');
       console.log(' LastsyncTime get:', lastsyncTime);
       console.log(' LastsyncTime get:', typeof lastsyncTime);
 
@@ -164,7 +171,7 @@ export const FirebaseService = {
         where(
           'updatedAt',
           '>',
-          Timestamp.fromMillis(lastsyncTime || 0)
+          lastsyncTime
         ),
         orderBy('updatedAt', 'desc')
       );
