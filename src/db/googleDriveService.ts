@@ -87,67 +87,69 @@ export const GoogleDriveService = {
             throw e;
         }
     },
-async uploadImage(fileUri: string, accessToken: string, folderId: string) {
+    async uploadImage(fileUri: string, accessToken: string, folderId: string) {
 
-  console.log('fileUri>>>>>>>>>>>>>>', fileUri);
-  console.log('accessToken>>>>>>>>>>>>>>', accessToken);
-  console.log('folderId>>>>>>>>>>>>>>', folderId);
+        console.log('fileUri>>>>>>>>>>>>>>', fileUri);
+        console.log('accessToken>>>>>>>>>>>>>>', accessToken);
+        console.log('folderId>>>>>>>>>>>>>>', folderId);
 
-  return await this.withAuthRetry(accessToken, async (token) => {
-    try {
-      const metadata = {
-        name: `photo_${Date.now()}.jpg`,
-        parents: [folderId],
-      };
+        return await this.withAuthRetry(accessToken, async (accessToken) => {
+            try {
+                const metadata = {
+                    name: `photo_${Date.now()}.jpg`,
+                    parents: [folderId],
+                };
 
-      const formData = new FormData();
+                const formData = new FormData();
 
-      // ✅ FIXED
-      formData.append("metadata", JSON.stringify(metadata));
+                formData.append("metadata", {
+                    string: JSON.stringify(metadata),
+                    type: "application/json",
+                });
 
-      formData.append("file", {
-        uri: fileUri,
-        type: "image/jpeg",
-        name: "photo.jpg",
-      } as any);
 
-      const res = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        }
-      );
+                formData.append("file", {
+                    uri: fileUri,
+                    type: "image/jpeg",
+                    name: "photo.jpg",
+                });
 
-      const data = await res.json();
+                const res = await fetch(
+                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: formData,
+                    }
+                );
 
-      console.log("Upload response:", data);
+                const data = await res.json();
 
-      if (!data?.id) {
-        throw new Error("No driveId returned");
-      }
+                console.log("Upload response:", data);
 
-      return data.id;
+                if (!data?.id) {
+                    throw new Error("No driveId returned");
+                }
 
-    } catch (error) {
-      console.log("Upload error:", error);
-      throw error;
-    }
-  });
-},
+                return data.id;
+
+            } catch (error) {
+                console.log("Upload error:", error);
+                throw error;
+            }
+        });
+    },
 
     async deleteFolder(accessToken: string, folderId: string) {
-        return await this.withAuthRetry(accessToken, async (token) => {
+        return await this.withAuthRetry(accessToken, async (accessToken) => {
             const res = await fetch(
                 `https://www.googleapis.com/drive/v3/files/${folderId}`,
                 {
                     method: "DELETE",
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${accessToken}`,
                     },
                 }
             );

@@ -134,7 +134,7 @@ export const DocumentScan = () => {
         if (isLoading) return; // 🔥 prevent double click
         try {
           setIsLoading(true);
-console.log('Syncing all files...', accessToken);
+          console.log('Syncing all files...', accessToken);
 
           await syncAll(accessToken);
           const files = await FileLocalService.getAllFiles()
@@ -161,19 +161,19 @@ console.log('Syncing all files...', accessToken);
       <Button title="Update" onPress={async () => {
         await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
       }} />
-      <Button title="Reset" 
-      onPress={async () => {
-  await FileLocalService.resetFilesTable()
-  await resetFoldersTable()
-  await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      <Button title="Reset"
+        onPress={async () => {
+          await FileLocalService.resetFilesTable()
+          await resetFoldersTable()
+          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
 
-  // ⛔ wait before fetching
-  const folders = await FolderLocalService.getActiveFolders()
-  const files = await FileLocalService.getAllFiles()
-  setData(folders)
-  setLocalFiles(files)
+          // ⛔ wait before fetching
+          const folders = await FolderLocalService.getActiveFolders()
+          const files = await FileLocalService.getAllFiles()
+          setData(folders)
+          setLocalFiles(files)
 
-      }} />
+        }} />
       <Button title="Logout" onPress={async () => { await signOut() }} />
     </>
 
@@ -872,18 +872,57 @@ console.log('Syncing all files...', accessToken);
 
 
   }
+  // const openFile = async () => {
+  //   try {
+  //     const res = await DocumentPicker.pickSingle({
+  //       copyTo: 'cachesDirectory',
+  //       type: [DocumentPicker.types.zip,]
+  //     })
+  //     // console.log('response-----', res);
+  //     // i want a file extension
+  //     const fileExtension = res.name.split('.').pop()
+  //     console.log('fileExtension--------------', res);
+  //     console.log('fileExtension--------------', fileExtension);
+  //     // importBackup(res)
+
+
+  //   }
+  //   catch (error) {
+  //     console.log('openFile error-----', error);
+  //   }
+  // }
+
   const openFile = async () => {
+    console.log('open file===');
+
+
     try {
-      const res = await DocumentPicker.pickSingle({
-        copyTo: 'cachesDirectory',
-        type: [DocumentPicker.types.zip,]
-      })
-      // console.log('response-----', res);
-      // i want a file extension
-      const fileExtension = res.name.split('.').pop()
-      console.log('fileExtension--------------', res);
+      const res = await DocumentPicker({ isMultipleSelection: false })
+      let fileExtension = ''
+      let uri = ''
+
+      if (res) {
+        console.log('name--------------', res[0].localUri);
+        fileExtension = res[0].localUri.split('.').pop()
+        uri = res[0].localUri
+        console.log('uri', uri);
+
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
+        const folderId = await GoogleDriveService.getOrCreateGDriveFolderName(accessToken, asyncStorageKeyName.DRIVE_FOLDER_NAME)
+        await GoogleDriveService.uploadImage(uri, accessToken, folderId)
+        console.log('accesstoken', accessToken);
+        console.log('folderId', folderId);
+        console.log('localUri====', uri);
+
+
+      }
+
+
       console.log('fileExtension--------------', fileExtension);
-      importBackup(res)
+      console.log('uri--------------', uri);
+
+
+
 
 
     }
@@ -990,7 +1029,9 @@ console.log('Syncing all files...', accessToken);
               width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
               alignItems: 'center', marginLeft: scaledSize(10), right: 14,
             }}>
-              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)} color={'white'} onPress={() => setIsShowbackupMessage(true)} />
+              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)}
+                color={'white'} onPress={() => openFile()} />
+              {/* color={'white'} onPress={() => setIsShowbackupMessage(true)} /> */}
             </View>
           </LinearGradient>
         }
@@ -1031,7 +1072,7 @@ console.log('Syncing all files...', accessToken);
         top: heightFromPercentage(72)
       }}>
         {localFiles.map((item) => (
-          <Text key={item.id} style={{color:'black'}}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
+          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
         ))}
       </View>
 
@@ -1133,7 +1174,18 @@ console.log('Syncing all files...', accessToken);
       <CustomSpinner isLoading={isLoading} />
 
       <Image source={{ uri: destinationPath + '1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
-      <View style={{ height: scaledSize(50), width: '80%', flexDirection: 'row', justifyContent: "space-between" }}>
+      <View style={{
+        height: scaledSize(100), width: '80%', backgroundColor: 'red',
+        flexDirection: 'row', justifyContent: "space-between"
+      }}>
+        <Image
+          resizeMode="contain"
+          // resizeMethod='auto'
+          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg') }}
+          style={{
+            height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
+          }}
+        />
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
@@ -1156,7 +1208,6 @@ console.log('Syncing all files...', accessToken);
           <CustomeButton onPress={() => FileLocalService.resetFilesTable()} name={'Reset-file'}
             buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
         </View>
-        <Image source={{ uri: getImageUriByOS(destinationPath+'1775636794547_0.jpg') }} style={{ height: 30, width: 30 }} />
       </View> */}
       {/* <View style={{ flexDirection: 'row' }}>
         <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
