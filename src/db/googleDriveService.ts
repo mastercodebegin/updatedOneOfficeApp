@@ -5,6 +5,7 @@ import { AuthService } from "../service/AuthService";
 import axios from 'axios'
 import { FolderLocalService } from "./folderLocalService";
 import { getImageUriByOS } from "../../src/utilies/Utilities";
+import  RNFetchBlob  from "rn-fetch-blob";
 
 
 export const GoogleDriveService = {
@@ -13,12 +14,12 @@ export const GoogleDriveService = {
 
     async getOrCreateGDriveFolderName() {
         const name = CONSTANT.DRIVE_FOLDER_NAME
-        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
+        // const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
         const driveFolderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID) || ''
         console.log('getOrCreateGDriveFolderName driveFolderId', driveFolderId);
-        console.log('getOrCreateGDriveFolderName', accessToken);
+        // console.log('getOrCreateGDriveFolderName', accessToken);
 
-        return await this.withAuthRetry(accessToken, async (accessToken: string) => {
+        return await this.withAuthRetry(async (accessToken: string) => {
             const existing = await FolderLocalService.getGoogleDriveFolderFromDB();
             console.log('existing', existing);
 
@@ -49,16 +50,16 @@ export const GoogleDriveService = {
                 setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files[0].id)
                 const allFolders = await FolderLocalService.getAllFolders()
                 console.log('allFolders>>>', allFolders)
-                if(allFolders.length > 0) {
-                    console.log('updated folder drive id ======',{id:allFolders[0].id, driveFolderId: data.files[0].id});
-                    
-                    await FolderLocalService.updateFolderById({id:allFolders[0].id, driveFolderId: data.files[0].id})
+                if (allFolders.length > 0) {
+                    console.log('updated folder drive id ======', { id: allFolders[0].id, driveFolderId: data.files[0].id });
+
+                    await FolderLocalService.updateFolderById({ id: allFolders[0].id, driveFolderId: data.files[0].id })
 
                 }
                 return data.files[0].id;
             }
             console.log('DRIVE_FOLDER_ID>>>>>>>>>.', data);
-            if(!data?.files?.[0]?.id) {
+            if (!data?.files?.[0]?.id) {
                 setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files.id)
                 return data.files.id
             }
@@ -88,35 +89,51 @@ export const GoogleDriveService = {
         });
     },
 
-    async withAuthRetry(accessToken: string, apiCall: (token: string) => Promise<any>
-    ) {
-        try {
-            console.log('accessToken in withAuthRetry', accessToken);
+    async downloadFile(fileId: string) {
+        console.log('drivefiled====', fileId);
 
-            return await apiCall(accessToken);
+        return await this.withAuthRetry(async (accessToken) => {
+            try {
+                const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
 
-        } catch (e: any) {
-            if (e?.response?.status === 401) {
-                // optional: refresh if you implement it later
-                console.log('Token expired, refreshing token...');
-                const newToken = await AuthService.refreshAccessToken();
-                return await apiCall(newToken);
+                // ✅ ensure folder exists
+                const exists = await RNFetchBlob.fs.isDir(dir);
+                if (!exists) {
+                    await RNFetchBlob.fs.mkdir(dir);
+                }
+
+                const fileName = `file_${Date.now()}.jpg`;
+                const path = `${dir}/${fileName}`;
+
+                const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+
+                const res = await RNFetchBlob.config({
+                    fileCache: true,
+                    path: path,
+                }).fetch("GET", url, {
+                    Authorization: `Bearer ${accessToken}`,
+                });
+
+                console.log("FILE DOWNLOADED");
+                console.log("Saved at:", res.path());
+
+                return res.path();
+
+            } catch (error) {
+                console.log("Download error:", error);
             }
-
-            throw e;
-        }
+        })
     },
+
     async uploadImage(file: { name: string }, folderId: string) {
 
         console.log('fileUri>>>>>>>>>>>>>>', file);
         const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
-        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
 
         console.log('fileUri>>>>>>>>>>>>>>', fileUri);
-        console.log('accessToken>>>>>>>>>>>>>>', accessToken);
         console.log('folderId>>>>>>>>>>>>>>', folderId);
 
-        return await this.withAuthRetry(accessToken, async (accessToken) => {
+        return await this.withAuthRetry(async (accessToken) => {
             try {
                 const metadata = {
                     name: `${file.name}`,
@@ -166,7 +183,7 @@ export const GoogleDriveService = {
     },
 
     async deleteFolder(accessToken: string, folderId: string) {
-        return await this.withAuthRetry(accessToken, async (accessToken) => {
+        return await this.withAuthRetry(async (accessToken) => {
             const res = await fetch(
                 `https://www.googleapis.com/drive/v3/files/${folderId}`,
                 {
@@ -183,6 +200,25 @@ export const GoogleDriveService = {
             removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
             console.log("🗑️ Folder deleted from Drive:", folderId);
         });
-    }
+    },
+
+
+    async withAuthRetry(apiCall: (token: string) => Promise<any>) {
+        try {
+            const accessToken: any = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
+            console.log('withAuthRetry accessToken', accessToken);
+            return await apiCall(accessToken);
+
+        } catch (e: any) {
+            if (e?.response?.status === 401) {
+                // optional: refresh if you implement it later
+                console.log('Token expired, refreshing token...');
+                const newToken = await AuthService.refreshAccessToken();
+                return await apiCall(newToken);
+            }
+
+            throw e;
+        }
+    },
 
 }

@@ -1081,7 +1081,7 @@ export const DocumentScan = () => {
         top: heightFromPercentage(72)
       }}>
         {localFiles.map((item) => (
-          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'       ' + item?.isSynced}{'   ' + item?.isDeleted}</Text>
+          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.driveFileId}</Text>
         ))}
       </View>
 

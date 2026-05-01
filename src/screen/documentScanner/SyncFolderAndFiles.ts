@@ -21,9 +21,9 @@ export const syncAll = async () => {
   // await resetFoldersTable ()
   // console.log('-------');
 
-
+await pullFilesFromGoogleDrive()
+  return []
   await pushFilesToGoogleDrive()
-  // return []
   const time = DateHelper.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()
@@ -58,8 +58,8 @@ const pushFilesToGoogleDrive = async () => {
       // if (!driveFileId) throw new Error('No driveFileId returned');
 
       // 🔹 update local DB
-      // const updated = await FileLocalService.updateFile(file.id, { driveFileId: driveFileId});
-      // console.log('updated filre', updated);
+      const updated = await FileLocalService.updateFile(file.id, { driveFileId: driveFileId});
+      console.log('updated filre', updated);
 
       console.log('Uploaded:', file.name, driveFileId);
 
@@ -69,6 +69,33 @@ const pushFilesToGoogleDrive = async () => {
     }
   }
 }
+const pullFilesFromGoogleDrive = async () => {
+  // const googleFolderId = await GoogleDriveService.getOrCreateGDriveFolderName()
+  const files = await FileLocalService.getAllFiles()
+  console.log('files to upload', files);
+
+  for (const file of files) {
+    try {
+
+      // 🔹 call your existing util
+      const downloadedPath = await GoogleDriveService.downloadFile(file.driveFileId);
+
+      console.log('drivefile downloadedPath >>>>>>>', downloadedPath);
+      // if (!driveFileId) throw new Error('No driveFileId returned');
+
+      // 🔹 update local DB
+      // const updated = await FileLocalService.updateFile(file.id, { driveFileId: driveFileId});
+      // console.log('updated filre', updated);
+
+      console.log('Uploaded:', file.name, downloadedPath);
+
+    } catch (err) {
+      console.log('Upload failed:', file.name, err);
+      // optional: mark failed
+    }
+  }
+}
+
 const syncFilesFromFirebaseToLocal = async () => {
   // await pushFilesToFirebase()
   // await FileLocalService.resetFilesTable ()
