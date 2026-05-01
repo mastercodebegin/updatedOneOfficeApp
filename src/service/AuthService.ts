@@ -79,13 +79,14 @@ export const AuthService = {
       const tokens = await GoogleSignin.getTokens();
 
       console.log('🔄 Token refreshed');
-
+setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, tokens.accessToken); // Update stored tokens
       return tokens.accessToken;
     } catch (e) {
       console.log('❌ Silent refresh failed → forcing login');
 
       await GoogleSignin.signIn();
       const tokens = await GoogleSignin.getTokens();
+setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, tokens.accessToken); // Update stored tokens
 
       return tokens.accessToken;
     }

@@ -214,6 +214,11 @@ async updateFile(id: number, updates: any) {
     values.push(updates.updatedAt);
   }
 
+  if (updates.driveFileId !== undefined) {
+    fields.push("driveFileId = ?");
+    values.push(updates.driveFileId);
+  }
+
   if (updates.isSynced !== undefined) {
     fields.push("isSynced = ?");
     values.push(updates.isSynced);
@@ -231,6 +236,7 @@ async updateFile(id: number, updates: any) {
   `;
 
   await db.executeSql(query, values);
+  return updates;
 },
 
     async updateFirebaseId(localId: number, firebaseId: string, userId: string,updatedAt: number,folderFirebaseId: string) {

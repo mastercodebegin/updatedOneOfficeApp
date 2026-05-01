@@ -1,16 +1,20 @@
 import { useGoogleAuth } from "src/customhooks/useGoogleAuth";
-import { asyncStorageKeyName } from "../utilies/Constants";
+import { asyncStorageKeyName, CONSTANT } from "../utilies/Constants";
 import { getLocalData, removeLocalData, setLocalData } from "../utilies/storageService";
 import { AuthService } from "../service/AuthService";
 import axios from 'axios'
 import { FolderLocalService } from "./folderLocalService";
+import { getImageUriByOS } from "../../src/utilies/Utilities";
 
 
 export const GoogleDriveService = {
 
 
 
-    async getOrCreateGDriveFolderName(accessToken: string, name: string) {
+    async getOrCreateGDriveFolderName( name: string) {
+          const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
+          const driveFolderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)||''
+        console.log('getOrCreateGDriveFolderName driveFolderId', driveFolderId);
         console.log('getOrCreateGDriveFolderName', accessToken);
 
         return await this.withAuthRetry(accessToken, async (accessToken: string) => {
@@ -41,9 +45,13 @@ export const GoogleDriveService = {
 
             // Step 3: If folder exists → return ID
             if (data.files?.length > 0) {
+            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files[0].id)
 
                 return data.files[0].id;
             }
+            console.log('DRIVE_FOLDER_ID', data.files.id);
+            
+            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files.id)
 
             // Step 4: Create folder
             const createRes = await axios.post(
@@ -62,7 +70,7 @@ export const GoogleDriveService = {
             const createData = createRes.data;
 
             console.log("createData--", createData);
-            // setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, createData.id)
+            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, createData.id)
 
             // axios automatically throws error for non-2xx
             return createData.id;
@@ -87,7 +95,11 @@ export const GoogleDriveService = {
             throw e;
         }
     },
-    async uploadImage(fileUri: string, accessToken: string, folderId: string) {
+    async uploadImage(file:{name: string}, folderId: string) {
+
+        console.log('fileUri>>>>>>>>>>>>>>', file);
+        const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
 
         console.log('fileUri>>>>>>>>>>>>>>', fileUri);
         console.log('accessToken>>>>>>>>>>>>>>', accessToken);
@@ -96,7 +108,7 @@ export const GoogleDriveService = {
         return await this.withAuthRetry(accessToken, async (accessToken) => {
             try {
                 const metadata = {
-                    name: `photo_${Date.now()}.jpg`,
+                    name: `${file.name}`,
                     parents: [folderId],
                 };
 

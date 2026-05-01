@@ -30,7 +30,9 @@ export const CONSTANT = {
     MEDIA_PERMISSION_TITLE: 'To access your media files, please allow the app to access your media location.',
     CAMERA_PERMISSION_TITLE: 'To access your camera, please allow the app to access your camera.',
     ANDROID_SHARE_LINK: `https://play.google.com/store/apps/details?id=com.shopax.pdfviewer`,
-    IOS_SHARE_LINK: 'https://play.google.com/store/apps'
+    IOS_SHARE_LINK: 'https://play.google.com/store/apps',
+    DRIVE_FOLDER_NAME:'ONE-OFFICE',
+
 
 
 }
@@ -98,7 +100,6 @@ export const asyncStorageKeyName = {
     SAVED_USERS: 'USERS1',
     ALL_FILES: 'ALL_FILES',
     DOCUMENTS: 'DOCUMENTS',
-    DRIVE_FOLDER_NAME:'ONE-OFFICE',
     DRIVE_FOLDER_ID:'DRIVE_FOLDER_ID',
     LAST_SYNC_TIME : 'LAST_SYNC_TIME',
     GOOGLE_ACCESS_TOKEN: 'GOOGLE_ACCESS_TOKEN',

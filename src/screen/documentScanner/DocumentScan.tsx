@@ -902,9 +902,11 @@ export const DocumentScan = () => {
       let uri = ''
 
       if (res) {
-        console.log('name--------------', res[0].localUri);
-        fileExtension = res[0].localUri.split('.').pop()
-        uri = res[0].localUri
+        // console.log('name--------------', res[0].localUri);
+        // fileExtension = res[0].localUri.split('.').pop()
+        // uri = res[0].localUri
+       const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
+        
         console.log('uri', uri);
 
         const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
@@ -1173,19 +1175,17 @@ export const DocumentScan = () => {
       </Overlay>
       <CustomSpinner isLoading={isLoading} />
 
-      <Image source={{ uri: destinationPath + '1775636939365_0.jpg' }} style={{ height: 100, width: 100, }} />
       <View style={{
         height: scaledSize(100), width: '80%', backgroundColor: 'red',
         flexDirection: 'row', justifyContent: "space-between"
       }}>
-        <Image
+        {/* <Image
           resizeMode="contain"
-          // resizeMethod='auto'
           source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg') }}
           style={{
             height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
           }}
-        />
+        /> */}
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}

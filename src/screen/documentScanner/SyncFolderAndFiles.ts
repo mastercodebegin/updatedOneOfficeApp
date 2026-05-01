@@ -14,42 +14,43 @@ import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 import { getImageUriByOS } from '../../utilies/Utilities';
 
 
-export const syncAll = async (accessToken: string) => {
+export const syncAll = async () => {
 
-  
+
   // await FileLocalService.resetFilesTable ()
   // await resetFoldersTable ()
   // console.log('-------');
-  const gToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
-  console.log('gtoken',gToken);
-  
+  const googleFolderId = await GoogleDriveService.getOrCreateGDriveFolderName(CONSTANT.DRIVE_FOLDER_NAME)
   const files = await FileLocalService.getFilesToUpload()
-  const gDRiveName = await GoogleDriveService.getOrCreateGDriveFolderName(gToken,asyncStorageKeyName.DRIVE_FOLDER_NAME)
+
+console.log('files====',files);
 
   for (const file of files) {
     try {
-      console.log('Uploading file:', CONSTANT.SAVED_DOCUMENTS_PATH+file.name);
+      console.log('Uploading file:', CONSTANT.SAVED_DOCUMENTS_PATH + file.name);
 
       // 🔹 call your existing util
-      const driveId = await GoogleDriveService.uploadImage(getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name), gToken, gDRiveName);
+      const driveFileId = await GoogleDriveService.uploadImage(file, googleFolderId);
 
-      if (!driveId) throw new Error('No driveId returned');
+      console.log('drivefile Id>>>>>>>', driveFileId);
+      if (!driveFileId) throw new Error('No driveFileId returned');
 
       // 🔹 update local DB
-      await FileLocalService.updateFile(file.id, {
-        driveFileId: driveId
+     const updated = await FileLocalService.updateFile(file.id, {
+        driveFileId: driveFileId
       });
+console.log('updated filre',updated);
 
-      console.log('Uploaded:', file.name, driveId);
+      console.log('Uploaded:', file.name, driveFileId);
 
     } catch (err) {
       console.log('Upload failed:', file.name, err);
       // optional: mark failed
     }
   }
-console.log('files to upload',files);
+  console.log('files to upload', files);
 
-  return[]
+  return []
   const time = DateHelper.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()
@@ -118,17 +119,17 @@ const syncFilesFromFirebaseToLocal = async () => {
 
   console.log('Sync deletedData', deletedData);
   console.log('Sync pushedData', pushedData);
-    const lastSyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME) || 0;
+  const lastSyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME) || 0;
   console.log('lastSyncTime++', lastSyncTime);
-  
+
   const maxUpdatedAt = Math.max(
     0,
-    insertData?insertData:0,
-    deletedData?deletedData:0,
-    pushedData?pushedData:0,
-    Number(lastSyncTime?lastSyncTime:0)
+    insertData ? insertData : 0,
+    deletedData ? deletedData : 0,
+    pushedData ? pushedData : 0,
+    Number(lastSyncTime ? lastSyncTime : 0)
   );
-  
+
   console.log('maxUpdatedAt file Time++', maxUpdatedAt);
 
   return maxUpdatedAt;
@@ -168,10 +169,10 @@ const insertOrUpdateFiles = async (
     console.log('folderLocalId>>>>>>>>>>', folderLocalId);
     console.log('max updated before ', updatedAt);
 
-      if (updatedAt > maxUpdatedAt) {
-        maxUpdatedAt = updatedAt;
-        console.log('max updated ', maxUpdatedAt);
-      }
+    if (updatedAt > maxUpdatedAt) {
+      maxUpdatedAt = updatedAt;
+      console.log('max updated ', maxUpdatedAt);
+    }
 
     if (!folderLocalId) {
       console.log('⛔ Folder not found, skip:', remote.firebaseId);
@@ -196,7 +197,7 @@ const insertOrUpdateFiles = async (
         folderFirebaseId: remote.folderFirebaseId || ''
       });
 
-      
+
       console.log('Created local folder for Firebase folder:', remote.name);
 
       continue;
@@ -259,7 +260,7 @@ const deleteSyncFiles = async (localFiles: any, firebaseFiles: any) => {
       const deletedFile = firebaseFiles
         .filter((f: any) => f.firebaseId === local.firebaseId)
       const updatedAt = deletedFile
-      data =updatedAt
+      data = updatedAt
       console.log('updatedAt:', updatedAt);
 
 
