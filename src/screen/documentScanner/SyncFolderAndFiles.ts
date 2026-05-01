@@ -11,25 +11,45 @@ import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constan
 import { folder } from 'jszip';
 import firebase from '@react-native-firebase/app';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
+import { getImageUriByOS } from '../../utilies/Utilities';
 
 
-export const syncAll = async () => {
-  //  const dummyFile = {
-  //   userId: "user_123",
-  //   name: "photo.jpg",
-  //   displayName: "photo",          // without extension
-  //   size: 204800,                 // in bytes (200 KB)
-  //   lastModified: Date.now(),
-  //   folderId: 1,                 // local folder id
-  //   firebaseId: "file_abc123",    // firebase file id
-  //   driveFileId: "drive_xyz789",  // optional
-  //   folderFirebaseId: "folder_abc123" // firebase folder id
-  // };
+export const syncAll = async (accessToken: string) => {
+
+  
   // await FileLocalService.resetFilesTable ()
   // await resetFoldersTable ()
   // console.log('-------');
+  const gToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
+  console.log('gtoken',gToken);
+  
+  const files = await FileLocalService.getFilesToUpload()
+  const gDRiveName = await GoogleDriveService.getOrCreateGDriveFolderName(gToken,asyncStorageKeyName.DRIVE_FOLDER_NAME)
 
-  // return[]
+  for (const file of files) {
+    try {
+      console.log('Uploading file:', CONSTANT.SAVED_DOCUMENTS_PATH+file.name);
+
+      // 🔹 call your existing util
+      const driveId = await GoogleDriveService.uploadImage(getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name), gToken, gDRiveName);
+
+      if (!driveId) throw new Error('No driveId returned');
+
+      // 🔹 update local DB
+      await FileLocalService.updateFile(file.id, {
+        driveFileId: driveId
+      });
+
+      console.log('Uploaded:', file.name, driveId);
+
+    } catch (err) {
+      console.log('Upload failed:', file.name, err);
+      // optional: mark failed
+    }
+  }
+console.log('files to upload',files);
+
+  return[]
   const time = DateHelper.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()

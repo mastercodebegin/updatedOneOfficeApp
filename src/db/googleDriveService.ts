@@ -10,8 +10,10 @@ export const GoogleDriveService = {
 
 
 
-    async getOrCreateGDriveFolderName(name: string) {
-        return await this.withAuthRetry(async (token) => {
+    async getOrCreateGDriveFolderName(accessToken: string, name: string) {
+        console.log('getOrCreateGDriveFolderName', accessToken);
+
+        return await this.withAuthRetry(accessToken, async (accessToken: string) => {
             const existing = await FolderLocalService.getGoogleDriveFolderFromDB();
             console.log('existing', existing);
 
@@ -30,7 +32,7 @@ export const GoogleDriveService = {
                 {
                     params: { q: query }, // axios will encode automatically ✅
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${accessToken}`,
                     },
                 }
             );
@@ -39,7 +41,7 @@ export const GoogleDriveService = {
 
             // Step 3: If folder exists → return ID
             if (data.files?.length > 0) {
-                
+
                 return data.files[0].id;
             }
 
@@ -52,7 +54,7 @@ export const GoogleDriveService = {
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${accessToken}`,
                     },
                 }
             );
@@ -67,74 +69,79 @@ export const GoogleDriveService = {
         });
     },
 
-    async withAuthRetry(apiCall: (token: string) => Promise<any>) {
-        console.log('withAuthRetry started-------');
-
+    async withAuthRetry(accessToken: string, apiCall: (token: string) => Promise<any>
+    ) {
         try {
-            const token = await AuthService.getAccessToken();
-            // console.log("TOKEN RECEIVED:", token); // ✅ correct place
+            console.log('accessToken in withAuthRetry', accessToken);
 
-            return await apiCall(token);
+            return await apiCall(accessToken);
 
         } catch (e: any) {
-            console.log('error-------', e);
-            
-            // Axios error status is inside e.response.status
             if (e?.response?.status === 401) {
-                console.log('error 401-------', e);
+                // optional: refresh if you implement it later
+                console.log('Token expired, refreshing token...');
                 const newToken = await AuthService.refreshAccessToken();
                 return await apiCall(newToken);
             }
 
-            console.log("withAuthRetry err", e);
             throw e;
         }
     },
+async uploadImage(fileUri: string, accessToken: string, folderId: string) {
 
-    async uploadImage(fileUri: string, accessToken: string, GoogleDriveFolderId: string) {
-        try {
-            const metadata = {
-                name: `photo_${Date.now()}.jpg`,
-                parents: [GoogleDriveFolderId],
-            };
+  console.log('fileUri>>>>>>>>>>>>>>', fileUri);
+  console.log('accessToken>>>>>>>>>>>>>>', accessToken);
+  console.log('folderId>>>>>>>>>>>>>>', folderId);
 
-            const formData = new FormData();
+  return await this.withAuthRetry(accessToken, async (token) => {
+    try {
+      const metadata = {
+        name: `photo_${Date.now()}.jpg`,
+        parents: [folderId],
+      };
 
-            formData.append("metadata", {
-                string: JSON.stringify(metadata),
-                type: "application/json",
-            });
+      const formData = new FormData();
 
-            formData.append("file", {
-                uri: fileUri,
-                type: "image/jpeg",
-                name: "photo.jpg",
-            });
+      // ✅ FIXED
+      formData.append("metadata", JSON.stringify(metadata));
 
-            const res = await fetch(
-                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: formData,
-                }
-            );
+      formData.append("file", {
+        uri: fileUri,
+        type: "image/jpeg",
+        name: "photo.jpg",
+      } as any);
 
-            const data = await res.json();
-
-            console.log("Upload response:", data);
-
-            return data.id;
-
-        } catch (error) {
-            console.log("Upload error:", error);
+      const res = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          body: formData,
         }
-    },
+      );
 
-    async deleteFolder(folderId: string) {
-        return await this.withAuthRetry(async (token) => {
+      const data = await res.json();
+
+      console.log("Upload response:", data);
+
+      if (!data?.id) {
+        throw new Error("No driveId returned");
+      }
+
+      return data.id;
+
+    } catch (error) {
+      console.log("Upload error:", error);
+      throw error;
+    }
+  });
+},
+
+    async deleteFolder(accessToken: string, folderId: string) {
+        return await this.withAuthRetry(accessToken, async (token) => {
             const res = await fetch(
                 `https://www.googleapis.com/drive/v3/files/${folderId}`,
                 {

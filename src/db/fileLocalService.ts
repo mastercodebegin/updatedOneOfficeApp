@@ -328,7 +328,49 @@ return {success: true};
 
     return res[0].rows.raw();
   },
+async getFilesToUpload(limit = 20) {
+  const db = await getDB();
 
+  const res = await db.executeSql(
+    `SELECT * FROM files 
+     WHERE (driveFileId IS NULL OR driveFileId = '')
+     AND (name IS NOT NULL AND name != '')
+     AND isDeleted = 0
+     LIMIT ?`,
+    [limit]
+  );
+
+  return res[0].rows.raw();
+},
+
+async  getFilesToDownload(limit = 20) {
+  const db = await getDB();
+
+  const res = await db.executeSql(
+    `SELECT * FROM files 
+     WHERE driveFileId IS NOT NULL
+     AND localPath IS NULL
+     AND isDeleted = 0
+     LIMIT ?`,
+    [limit]
+  );
+
+  return res[0].rows.raw();
+},
+async  getFilesToRetry(limit = 50) {
+  const db = await getDB();
+
+  const res = await db.executeSql(
+    `SELECT * FROM files 
+     WHERE driveFileId IS NOT NULL
+     AND localPath IS NULL
+     AND isDeleted = 0
+     LIMIT ?`,
+    [limit]
+  );
+
+  return res[0].rows.raw();
+},
   // 🔧 RESET (manual)
   async resetFilesTable() {
     const db = await getDB();

@@ -134,8 +134,9 @@ export const DocumentScan = () => {
         if (isLoading) return; // 🔥 prevent double click
         try {
           setIsLoading(true);
+console.log('Syncing all files...', accessToken);
 
-          await syncAll();
+          await syncAll(accessToken);
           const files = await FileLocalService.getAllFiles()
           const folders = await FolderLocalService.getActiveFolders()
           console.log('folders-------', folders);
@@ -173,7 +174,7 @@ export const DocumentScan = () => {
   setLocalFiles(files)
 
       }} />
-      {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
+      <Button title="Logout" onPress={async () => { await signOut() }} />
     </>
 
     )
@@ -891,7 +892,7 @@ export const DocumentScan = () => {
     }
   }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'gray' }}>
       <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
