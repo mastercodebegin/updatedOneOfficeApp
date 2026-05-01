@@ -134,10 +134,14 @@ async updateFolderById({
   id,
   name,
   isDeleted,
+  driveFolderId,
+  coverUri
 }: {
   id: number;
   name?: string;
   isDeleted?: number;
+  driveFolderId?: string;
+  coverUri?: string;
 }) {
   try {
     const db = await getDB();
@@ -149,6 +153,15 @@ async updateFolderById({
     if (name !== undefined) {
       updates.push('name = ?');
       values.push(name);
+    }
+
+    if (coverUri !== undefined) {
+      updates.push('coverUri = ?');
+      values.push(coverUri);
+    }
+    if (driveFolderId !== undefined) {
+      updates.push('driveFolderId = ?');
+      values.push(driveFolderId);
     }
 
     // 🔹 update delete flag

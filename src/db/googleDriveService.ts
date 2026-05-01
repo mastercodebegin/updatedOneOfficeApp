@@ -11,9 +11,10 @@ export const GoogleDriveService = {
 
 
 
-    async getOrCreateGDriveFolderName( name: string) {
-          const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
-          const driveFolderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)||''
+    async getOrCreateGDriveFolderName() {
+        const name = CONSTANT.DRIVE_FOLDER_NAME
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
+        const driveFolderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID) || ''
         console.log('getOrCreateGDriveFolderName driveFolderId', driveFolderId);
         console.log('getOrCreateGDriveFolderName', accessToken);
 
@@ -23,9 +24,7 @@ export const GoogleDriveService = {
 
             if (existing) {
                 console.log('return from local');
-
                 return existing; // ✅ fast, no API call
-
             }
 
             const query = `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
@@ -40,18 +39,30 @@ export const GoogleDriveService = {
                     },
                 }
             );
+            console.log('folder created on gdrive ====', res);
 
             const data = res.data; // axios already parses JSON
+            console.log('folder data ====', data);
 
             // Step 3: If folder exists → return ID
             if (data.files?.length > 0) {
-            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files[0].id)
+                setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files[0].id)
+                const allFolders = await FolderLocalService.getAllFolders()
+                console.log('allFolders>>>', allFolders)
+                if(allFolders.length > 0) {
+                    console.log('updated folder drive id ======',{id:allFolders[0].id, driveFolderId: data.files[0].id});
+                    
+                    await FolderLocalService.updateFolderById({id:allFolders[0].id, driveFolderId: data.files[0].id})
 
+                }
                 return data.files[0].id;
             }
-            console.log('DRIVE_FOLDER_ID', data.files.id);
-            
-            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files.id)
+            console.log('DRIVE_FOLDER_ID>>>>>>>>>.', data);
+            if(!data?.files?.[0]?.id) {
+                setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files.id)
+                return data.files.id
+            }
+
 
             // Step 4: Create folder
             const createRes = await axios.post(
@@ -95,11 +106,11 @@ export const GoogleDriveService = {
             throw e;
         }
     },
-    async uploadImage(file:{name: string}, folderId: string) {
+    async uploadImage(file: { name: string }, folderId: string) {
 
         console.log('fileUri>>>>>>>>>>>>>>', file);
         const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
-        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN)||''
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
 
         console.log('fileUri>>>>>>>>>>>>>>', fileUri);
         console.log('accessToken>>>>>>>>>>>>>>', accessToken);

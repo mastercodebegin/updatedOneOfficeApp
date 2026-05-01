@@ -166,6 +166,7 @@ export const DocumentScan = () => {
           await FileLocalService.resetFilesTable()
           await resetFoldersTable()
           await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
 
           // ⛔ wait before fetching
           const folders = await FolderLocalService.getActiveFolders()
@@ -327,7 +328,7 @@ export const DocumentScan = () => {
       // );
       const folder = await FolderLocalService.createFolder
         ('', folderDisplayName,
-          null, 'coveruri', '', 0, 0)
+          null, '', '', 0, 0)
       console.log('created', folder);
 
 
@@ -368,7 +369,12 @@ export const DocumentScan = () => {
           folderId: folderId,
         });
       }
+      const files = await FileLocalService.getFilesByFolder(folderId)
+      console.log('files=======',files);
+      
+      const updatedFolder= await FolderLocalService.updateFolderById({id:folderId,coverUri:files[0].name})
 
+      console.log('updatedFolder cover uri', updatedFolder);
       console.log('✅ All files saved');
 
       const updatedFolders = await FolderLocalService.getActiveFolders();
@@ -670,6 +676,7 @@ export const DocumentScan = () => {
                 {capitalizeFirstLetter(item?.name || '')}
               </Text>
               <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
+              {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
             </>
           ) : (
             <>
