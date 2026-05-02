@@ -134,9 +134,9 @@ export const DocumentScan = () => {
         if (isLoading) return; // 🔥 prevent double click
         try {
           setIsLoading(true);
-          console.log('Syncing all files...', accessToken);
+          console.log('Syncing all files... started', accessToken);
 
-          await syncAll(accessToken);
+          await syncAll();
           const files = await FileLocalService.getAllFiles()
           const folders = await FolderLocalService.getActiveFolders()
           console.log('folders-------', folders);
@@ -359,10 +359,9 @@ export const DocumentScan = () => {
 
         // Copy file
         await RNFS.copyFile(uri, destinationFilePath);
-
         // ✅ SAME NAME IN DB
         await FileLocalService.createFile({
-          name: finalName, // exact match with FS
+          name: Date.now() + finalName, // exact match with FS
           displayName: finalName.replace(/\.[^/.]+$/, ''), // without extension
           size: 0,
           lastModified: Date.now(),
@@ -940,7 +939,7 @@ export const DocumentScan = () => {
     }
   }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'gray' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
       <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
@@ -1081,7 +1080,7 @@ export const DocumentScan = () => {
         top: heightFromPercentage(72)
       }}>
         {localFiles.map((item) => (
-          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.driveFileId}</Text>
+          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.name}</Text>
         ))}
       </View>
 

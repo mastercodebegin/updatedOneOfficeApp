@@ -4,7 +4,10 @@ export const storage = createMMKV()
 
 export const setLocalData = (key: string, value: any) => {
   try {
-    storage.set(key, JSON.stringify(value));
+    if(value)
+    {
+      storage.set(key, JSON.stringify(value));
+    }
   } catch (e) {
     console.log('MMKV set error:', e);
   }
@@ -13,7 +16,7 @@ export const setLocalData = (key: string, value: any) => {
 export const getLocalData = (key:string) => {
   try {
     const value = storage.getString(key);
-    console.log('getLocalData',value);
+    // console.log('getLocalData',value);
     
     return value ;
   } catch (e) {

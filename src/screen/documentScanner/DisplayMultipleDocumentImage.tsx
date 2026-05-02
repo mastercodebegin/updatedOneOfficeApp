@@ -424,7 +424,10 @@ export default function DisplayMultipleDocumentImage(props: any) {
           ? fileName.trim()
           : `${baseTimestamp}`;
 
-        let finalName = `${baseName}.${extension}`;
+        let displayName = `${baseName}`;
+        console.log('display name',displayName);
+        
+        let finalName = `${Date.now() + baseName}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ if already exists → add random
@@ -439,8 +442,8 @@ export default function DisplayMultipleDocumentImage(props: any) {
         await RNFS.copyFile(uri, destinationFilePath);
 
         await FileLocalService.createFile({
-          name: finalName,
-          displayName: fileName,
+          name:  finalName,
+          displayName: displayName,
           size: 0,
           lastModified: Date.now(),
           folderId: folderId,

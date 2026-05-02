@@ -103,6 +103,18 @@ export const FileLocalService = {
     return res[0].rows.raw();
   },
 
+ async getFilesToPullFromGdrive() {
+    const db = await getDB();
+
+const res = await db.executeSql(
+  `SELECT * FROM files 
+   WHERE (name IS NULL OR name = '')
+   AND driveFileId IS NOT NULL
+   AND isDeleted = 0`
+);
+
+    return res[0].rows.raw();
+  },
   async getFileById(id: number) {
     const db = await getDB();
 

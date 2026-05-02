@@ -21,17 +21,17 @@ export const syncAll = async () => {
   // await resetFoldersTable ()
   // console.log('-------');
 
-await pullFilesFromGoogleDrive()
-  return []
   await pushFilesToGoogleDrive()
+  return []
   const time = DateHelper.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()
   console.log('folders maxUpdatedAt finish=========', maxUpdatedAt);
-
+  
   const maxUpdatedAtFileTime = await syncFilesFromFirebaseToLocal()
   console.log('maxUpdatedAtFileTime: finish', maxUpdatedAtFileTime);
   setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime);
+  await pullFilesFromGoogleDrive()
   // setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime ? maxUpdatedAtFileTime : maxUpdatedAt);
   // console.log('Synced files:', files);
   // await FileLocalService.createFile(dummyFile)
@@ -45,6 +45,8 @@ await pullFilesFromGoogleDrive()
 }
 const pushFilesToGoogleDrive = async () => {
   const googleFolderId = await GoogleDriveService.getOrCreateGDriveFolderName()
+  console.log('googleFolderId',googleFolderId);
+  
   const files = await FileLocalService.getFilesToUpload()
   console.log('files to upload', files);
 
@@ -59,7 +61,7 @@ const pushFilesToGoogleDrive = async () => {
 
       // 🔹 update local DB
       const updated = await FileLocalService.updateFile(file.id, { driveFileId: driveFileId});
-      console.log('updated filre', updated);
+      console.log('updated file', updated);
 
       console.log('Uploaded:', file.name, driveFileId);
 
@@ -72,13 +74,13 @@ const pushFilesToGoogleDrive = async () => {
 const pullFilesFromGoogleDrive = async () => {
   // const googleFolderId = await GoogleDriveService.getOrCreateGDriveFolderName()
   const files = await FileLocalService.getAllFiles()
-  console.log('files to upload', files);
+  console.log('files to pull', files);
 
   for (const file of files) {
     try {
 
       // 🔹 call your existing util
-      const downloadedPath = await GoogleDriveService.downloadFile(file.driveFileId);
+      const downloadedPath = await GoogleDriveService.downloadFile(file);
 
       console.log('drivefile downloadedPath >>>>>>>', downloadedPath);
       // if (!driveFileId) throw new Error('No driveFileId returned');

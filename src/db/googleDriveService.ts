@@ -5,7 +5,7 @@ import { AuthService } from "../service/AuthService";
 import axios from 'axios'
 import { FolderLocalService } from "./folderLocalService";
 import { getImageUriByOS } from "../../src/utilies/Utilities";
-import  RNFetchBlob  from "rn-fetch-blob";
+import RNFetchBlob from "rn-fetch-blob";
 
 
 export const GoogleDriveService = {
@@ -13,78 +13,93 @@ export const GoogleDriveService = {
 
 
     async getOrCreateGDriveFolderName() {
-        const name = CONSTANT.DRIVE_FOLDER_NAME
-        // const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
-        const driveFolderId = getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID) || ''
-        console.log('getOrCreateGDriveFolderName driveFolderId', driveFolderId);
-        // console.log('getOrCreateGDriveFolderName', accessToken);
+        const name = CONSTANT.DRIVE_FOLDER_NAME;
+        const driveFolderId =
+            getLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID) || '';
 
-        return await this.withAuthRetry(async (accessToken: string) => {
+        console.log('getOrCreateGDriveFolderName driveFolderId', driveFolderId);
+
+        return await this.withAuthRetry(async (token: string) => {
             const existing = await FolderLocalService.getGoogleDriveFolderFromDB();
-            console.log('existing', existing);
 
             if (existing) {
                 console.log('return from local');
-                return existing; // ✅ fast, no API call
+                return existing;
             }
 
+            // ✅ Build query manually (fetch does NOT support params)
             const query = `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
+                query
+            )}`;
+
             console.log('query=====', query);
 
-            const res = await axios.get(
-                "https://www.googleapis.com/drive/v3/files",
-                {
-                    params: { q: query }, // axios will encode automatically ✅
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                }
-            );
-            console.log('folder created on gdrive ====', res);
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-            const data = res.data; // axios already parses JSON
+            console.log('res=====', res);
+            // 🔥 fetch doesn't throw on error
+            if (res.status === 401) {
+                console.log('res=====from status', res);
+                throw res
+            }
+
+            const data = await res.json();
+
             console.log('folder data ====', data);
 
-            // Step 3: If folder exists → return ID
+            // ✅ Folder exists
             if (data.files?.length > 0) {
-                setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files[0].id)
-                const allFolders = await FolderLocalService.getAllFolders()
-                console.log('allFolders>>>', allFolders)
+                const folderId = data.files[0].id;
+
+                setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, folderId);
+
+                const allFolders = await FolderLocalService.getAllFolders();
+
                 if (allFolders.length > 0) {
-                    console.log('updated folder drive id ======', { id: allFolders[0].id, driveFolderId: data.files[0].id });
-
-                    await FolderLocalService.updateFolderById({ id: allFolders[0].id, driveFolderId: data.files[0].id })
-
+                    await FolderLocalService.updateFolderById({
+                        id: allFolders[0].id,
+                        driveFolderId: folderId,
+                    });
                 }
-                return data.files[0].id;
-            }
-            console.log('DRIVE_FOLDER_ID>>>>>>>>>.', data);
-            if (!data?.files?.[0]?.id) {
-                setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, data.files.id)
-                return data.files.id
+
+                return folderId;
             }
 
-
-            // Step 4: Create folder
-            const createRes = await axios.post(
-                "https://www.googleapis.com/drive/v3/files",
+            // ✅ Create folder
+            const createRes = await fetch(
+                'https://www.googleapis.com/drive/v3/files',
                 {
-                    name,
-                    mimeType: "application/vnd.google-apps.folder",
-                },
-                {
+                    method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${accessToken}`,
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
+                    body: JSON.stringify({
+                        name,
+                        mimeType: 'application/vnd.google-apps.folder',
+                    }),
                 }
             );
 
-            const createData = createRes.data;
+            if (!createRes.ok) {
+                const text = await createRes.text();
+                console.log('Create folder failed:', text);
+                throw new Error('Create folder failed');
+            }
 
-            console.log("createData--", createData);
-            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, createData.id)
+            const createData = await createRes.json();
 
-            // axios automatically throws error for non-2xx
+            console.log('createData--', createData);
+
+            setLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID, createData.id);
+
             return createData.id;
         });
     },
@@ -125,12 +140,66 @@ export const GoogleDriveService = {
         })
     },
 
+    // async uploadImage(file: { name: string }, folderId: string) {
+
+    //     console.log('fileUri>>>>>>>>>>>>>>', file);
+    //     const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
+
+    //     console.log('fileUri>>>>>>>>>>>>>>', fileUri);
+    //     console.log('folderId>>>>>>>>>>>>>>', folderId);
+
+    //     return await this.withAuthRetry(async (accessToken) => {
+    //         try {
+    //             const metadata = {
+    //                 name: `${file.name}`,
+    //                 parents: [folderId],
+    //             };
+
+    //             const formData = new FormData();
+
+    //             formData.append("metadata", {
+    //                 string: JSON.stringify(metadata),
+    //                 type: "application/json",
+    //             });
+
+
+    //             formData.append("file", {
+    //                 uri: fileUri,
+    //                 type: "image/jpeg",
+    //                 name: "photo.jpg",
+    //             });
+
+    //             const res = await fetch(
+    //                 "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+    //                 {
+    //                     method: "POST",
+    //                     headers: {
+    //                         Authorization: `Bearer ${accessToken}`,
+    //                     },
+    //                     body: formData,
+    //                 }
+    //             );
+
+    //             const data = await res.json();
+
+    //             console.log("Upload response:", data);
+
+    //             return data;
+
+    //         } catch (error) {
+    //             console.log("Upload error:", error);
+    //             throw error;
+    //         }
+    //     });
+    // },
     async uploadImage(file: { name: string }, folderId: string) {
 
         console.log('fileUri>>>>>>>>>>>>>>', file);
         const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
 
         console.log('fileUri>>>>>>>>>>>>>>', fileUri);
+        console.log('accessToken>>>>>>>>>>>>>>', accessToken);
         console.log('folderId>>>>>>>>>>>>>>', folderId);
 
         return await this.withAuthRetry(async (accessToken) => {
@@ -169,11 +238,7 @@ export const GoogleDriveService = {
 
                 console.log("Upload response:", data);
 
-                if (!data?.id) {
-                    throw new Error("No driveId returned");
-                }
-
-                return data.id;
+                return data;
 
             } catch (error) {
                 console.log("Upload error:", error);
@@ -207,15 +272,25 @@ export const GoogleDriveService = {
         try {
             const accessToken: any = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
             console.log('withAuthRetry accessToken', accessToken);
-            return await apiCall(accessToken);
-
-        } catch (e: any) {
-            if (e?.response?.status === 401) {
+            const res = await apiCall(accessToken);
+            console.log('res=======>>>>>>>.', res);
+            console.log('res=======', res?.error?.code);
+            if (res?.error?.code === 401) {
                 // optional: refresh if you implement it later
                 console.log('Token expired, refreshing token...');
                 const newToken = await AuthService.refreshAccessToken();
                 return await apiCall(newToken);
             }
+          else  if (res?.status === 401) {
+                // optional: refresh if you implement it later
+                console.log('Token expired, refreshing token...');
+                const newToken = await AuthService.refreshAccessToken();
+                return await apiCall(newToken);
+            }
+            return res
+        } catch (e: any) {
+            console.log('erorr=========',e);
+            
 
             throw e;
         }
