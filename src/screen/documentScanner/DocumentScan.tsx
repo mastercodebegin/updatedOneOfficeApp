@@ -344,7 +344,13 @@ export const DocumentScan = () => {
           : 'jpg';
 
         // ✅ SINGLE SOURCE NAME
-        let finalName = `${folderDisplayName}_${i}.${extension}`;
+        // let finalName = `${folderDisplayName}_${i}.${extension}`;
+        // let destinationFilePath = `${destinationPath}/${finalName}`;
+
+       let displayName = `${folderDisplayName}`;
+        console.log('display name',displayName);
+        
+        let finalName = `${Date.now() + folderDisplayName}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ handle duplicate safely
@@ -361,8 +367,8 @@ export const DocumentScan = () => {
         await RNFS.copyFile(uri, destinationFilePath);
         // ✅ SAME NAME IN DB
         await FileLocalService.createFile({
-          name: Date.now() + finalName, // exact match with FS
-          displayName: finalName.replace(/\.[^/.]+$/, ''), // without extension
+          name: finalName, // exact match with FS
+          displayName: folderDisplayName+'_'+[i], // without extension
           size: 0,
           lastModified: Date.now(),
           folderId: folderId,
@@ -1187,7 +1193,7 @@ export const DocumentScan = () => {
       }}>
         {/* <Image
           resizeMode="contain"
-          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg') }}
+          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'mn_0.jpg') }}
           style={{
             height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
           }}

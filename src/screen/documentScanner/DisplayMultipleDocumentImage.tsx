@@ -437,6 +437,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           destinationFilePath = `${destinationPath}/${finalName}`;
         }
 
+        console.log('Saving uri:', uri);
         console.log('Saving as:', finalName);
 
         await RNFS.copyFile(uri, destinationFilePath);
