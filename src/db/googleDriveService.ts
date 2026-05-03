@@ -104,41 +104,94 @@ export const GoogleDriveService = {
         });
     },
 
-    async downloadFile(fileId: string) {
-        console.log('drivefiled====', fileId);
+async downloadFile(fileId: string) {
+  return await this.withAuthRetry(async (accessToken) => {
+    console.log('driveFileId',fileId);
+    
+    try {
+      const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
 
-        return await this.withAuthRetry(async (accessToken) => {
-            try {
-                const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
+      const exists = await RNFetchBlob.fs.isDir(dir);
+      if (!exists) {
+        await RNFetchBlob.fs.mkdir(dir);
+      }
 
-                // ✅ ensure folder exists
-                const exists = await RNFetchBlob.fs.isDir(dir);
-                if (!exists) {
-                    await RNFetchBlob.fs.mkdir(dir);
-                }
+      // ✅ STEP 1: Get metadata
+      const metaRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=name,mimeType`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
 
-                const fileName = `file_${Date.now()}.jpg`;
-                const path = `${dir}/${fileName}`;
+      if (!metaRes.ok) {
+        const err = await metaRes.text();
+        console.log("META ERROR:", err);
+        return metaRes
+      }
 
-                const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+      const meta = await metaRes.json();
+      console.log("META:", meta);
 
-                const res = await RNFetchBlob.config({
-                    fileCache: true,
-                    path: path,
-                }).fetch("GET", url, {
-                    Authorization: `Bearer ${accessToken}`,
-                });
+      // ✅ STEP 2: Decide extension + URL
+      let fileName = meta.name || `file_${Date.now()}`;
+      let url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
 
-                console.log("FILE DOWNLOADED");
-                console.log("Saved at:", res.path());
+      if (meta.mimeType?.includes("google-apps")) {
+        // handle Google Docs properly
+        url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`;
 
-                return res.path();
+        // force extension
+        if (!fileName.endsWith(".pdf")) {
+          fileName = fileName + ".pdf";
+        }
+      }
 
-            } catch (error) {
-                console.log("Download error:", error);
-            }
-        })
-    },
+      const path = `${dir}/${fileName}`;
+
+      // ✅ STEP 3: Download
+      const res = await RNFetchBlob.config({
+        fileCache: true,
+        path,
+      }).fetch("GET", url, {
+        Authorization: `Bearer ${accessToken}`,
+      });
+
+      const status = res.info().status;
+      console.log("DOWNLOAD STATUS:", status);
+
+      // ❌ VERY IMPORTANT
+      if (status !== 200) {
+        const errorText = await res.text();
+        console.log("DOWNLOAD ERROR RESPONSE:", errorText);
+
+        // cleanup wrong file
+        await RNFetchBlob.fs.unlink(path).catch(() => {});
+
+        throw new Error(`Download failed with status ${status}`);
+      }
+
+      // ✅ STEP 4: Validate file size
+      const stat = await RNFetchBlob.fs.stat(path);
+      console.log("FILE SIZE:", stat.size);
+
+      if (Number(stat.size) < 1000) {
+        const text = await res.text();
+        console.log("SMALL FILE CONTENT:", text);
+
+        await RNFetchBlob.fs.unlink(path).catch(() => {});
+        throw new Error("Downloaded file is invalid (too small)");
+      }
+
+      console.log("FILE DOWNLOADED OK:", path);
+      return path;
+
+    } catch (error) {
+      console.log("Download error:", error);
+      throw error;
+    }
+  });
+},
 
     // async uploadImage(file: { name: string }, folderId: string) {
 

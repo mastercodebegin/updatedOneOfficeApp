@@ -81,6 +81,7 @@ export const DocumentScan = () => {
 
 
 useEffect(() => {
+  return 
   let unsubscribeFiles: any;
   let unsubscribeTriggers: any;
   let isSyncing = false; // guard
@@ -1136,7 +1137,7 @@ const handleSync=async () => {
         top: heightFromPercentage(72)
       }}>
         {localFiles.map((item) => (
-          <Text key={item.id} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.name}</Text>
+          <Text key={item?.driveFileId} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.name}</Text>
         ))}
       </View>
 
@@ -1241,13 +1242,13 @@ const handleSync=async () => {
         height: scaledSize(100), width: '80%', backgroundColor: 'red',
         flexDirection: 'row', justifyContent: "space-between"
       }}>
-        {/* <Image
+        <Image
           resizeMode="contain"
-          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'mn_0.jpg') }}
+          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + '1777791940638Ght.jpg') }}
           style={{
-            height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
+            height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
           }}
-        /> */}
+        />
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
