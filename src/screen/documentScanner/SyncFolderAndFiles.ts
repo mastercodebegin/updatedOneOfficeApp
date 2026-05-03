@@ -22,7 +22,7 @@ export const syncAll = async () => {
   // console.log('-------');
 
   await pushFilesToGoogleDrive()
-  return []
+  // return []
   const time = DateHelper.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()

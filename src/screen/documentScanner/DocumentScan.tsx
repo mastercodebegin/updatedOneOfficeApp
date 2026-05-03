@@ -49,17 +49,12 @@ import { AuthService } from '../../service/AuthService';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import { syncAll } from './SyncFolderAndFiles';
 import CustomSpinner from '../../component/CustomSpinner';
+  import firestore from '@react-native-firebase/firestore';
+// import { getAuth } from '@react-native-firebase/auth';
 
-const imagesURI = [{
-  // Simplest usage.
-  url: 'https://avatars2.githubusercontent.com/u/7970947?v=3&s=460',
 
-  // width: number
-  // height: number
-  // Optional, if you know the image size, you can set the optimization performance
-}]
+
 const destinationPath = CONSTANT.SAVED_DOCUMENTS_PATH;
-
 export const DocumentScan = () => {
   const [images, setImages] = useState<Array<any>>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -84,6 +79,61 @@ export const DocumentScan = () => {
   const isFocused = useIsFocused();
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
 
+
+useEffect(() => {
+  let unsubscribeFiles: any;
+  let unsubscribeTriggers: any;
+  let isSyncing = false; // guard
+
+  const init = async () => {
+    const userId = await AuthService.getUserId();
+    console.log('userid',userId);
+    
+    if (!userId) return;
+
+    // Listener 1 (normal logs)
+    unsubscribeFiles = firestore()
+      .collection('files')
+      .where('userId', '==', userId)
+      .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          console.log('FILES:', change.type, change.doc.data());
+          handleSync()
+            // syncAll(); // runs for added + modified + removed
+
+        });
+      });
+
+    // Listener 2 (trigger sync)
+    unsubscribeTriggers = firestore()
+      .collection('syncTriggers')
+      .where('userId', '==', userId)
+      .onSnapshot(async snapshot => {
+        if (snapshot.empty) return;
+
+        // prevent multiple calls
+        if (isSyncing) return;
+
+        isSyncing = true;
+
+        try {
+          console.log('SYNC TRIGGERED');
+          await handleSync();
+        } catch (e) {
+          console.log('Sync error', e);
+        } finally {
+          isSyncing = false;
+        }
+      });
+  };
+
+  init();
+
+  return () => {
+    if (unsubscribeFiles) unsubscribeFiles();
+    if (unsubscribeTriggers) unsubscribeTriggers();
+  };
+}, []);
 
   const getfiles = async () => {
     const files = await FileLocalService.getAllFiles()
@@ -126,11 +176,7 @@ export const DocumentScan = () => {
       console.log('Login error:', error);
     }
   };
-
-  const renderButton = () => {
-    return (<><Button title="Login" onPress={handleLogin} />
-
-      <Button title="Sync" onPress={async () => {
+const handleSync=async () => {
         if (isLoading) return; // 🔥 prevent double click
         try {
           setIsLoading(true);
@@ -148,7 +194,11 @@ export const DocumentScan = () => {
         } finally {
           setIsLoading(false); // 🔥 ALWAYS runs
         }
-      }} />
+      }
+  const renderButton = () => {
+    return (<><Button title="Login" onPress={handleLogin} />
+
+      <Button title="Sync" onPress={handleSync} />
       <Button title="CREATE" onPress={async () => {
         console.log('hi');
 

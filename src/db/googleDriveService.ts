@@ -47,7 +47,7 @@ export const GoogleDriveService = {
             // 🔥 fetch doesn't throw on error
             if (res.status === 401) {
                 console.log('res=====from status', res);
-                throw res
+                return res
             }
 
             const data = await res.json();
