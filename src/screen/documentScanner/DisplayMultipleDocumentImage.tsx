@@ -427,7 +427,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         let displayName = `${baseName}`;
         console.log('display name',displayName);
         
-        let finalName = `${Date.now() + baseName}.${extension}`;
+        let finalName = `${ baseName + "_"+Date.now() }.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ if already exists → add random
@@ -442,7 +442,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
         await RNFS.copyFile(uri, destinationFilePath);
 
-        await FileLocalService.createFile({
+       const createdFile= await FileLocalService.createFile({
           name:  finalName,
           displayName: displayName,
           size: 0,
@@ -452,7 +452,9 @@ export default function DisplayMultipleDocumentImage(props: any) {
           isDeleted: 0,
           folderFirebaseId: '',
         });
+        console.log('createdFile====',createdFile);
       }
+
 
       const files = await FileLocalService.getFilesByFolder(folderId);
       setData(files);
@@ -484,7 +486,6 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   const renderItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
-    console.log('RAW VALUE >>>', item.displayName, typeof item.displayName);
     return (
       <TouchableOpacity
         activeOpacity={0.9}
@@ -554,6 +555,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         {/* File Name */}
         <Text style={{...styles.fileName, color: 'black'}} numberOfLines={1}>
           {item.displayName?.replace(/\.[^/.]+$/, '')}
+          {/* {item.name} */}
         </Text>
       </TouchableOpacity>
     );

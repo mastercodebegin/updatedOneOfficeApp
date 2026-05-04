@@ -134,18 +134,10 @@ async downloadFile(fileId: string) {
       console.log("META:", meta);
 
       // ✅ STEP 2: Decide extension + URL
-      let fileName = meta.name || `file_${Date.now()}`;
+      let fileName = meta.name;
       let url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
 
-      if (meta.mimeType?.includes("google-apps")) {
-        // handle Google Docs properly
-        url = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=application/pdf`;
 
-        // force extension
-        if (!fileName.endsWith(".pdf")) {
-          fileName = fileName + ".pdf";
-        }
-      }
 
       const path = `${dir}/${fileName}`;
 
@@ -184,7 +176,7 @@ async downloadFile(fileId: string) {
       }
 
       console.log("FILE DOWNLOADED OK:", path);
-      return path;
+      return meta;
 
     } catch (error) {
       console.log("Download error:", error);

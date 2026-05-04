@@ -50,6 +50,7 @@ import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import { syncAll } from './SyncFolderAndFiles';
 import CustomSpinner from '../../component/CustomSpinner';
   import firestore from '@react-native-firebase/firestore';
+import { getDB } from '../../../src/db';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -163,6 +164,45 @@ useEffect(() => {
     fetchData();
   }, [isFocused]);
 
+const fullReset = async () => {
+  try {
+    console.log("RESET START");
+
+    // 1. clear DB
+    const db = await getDB();
+    await db.executeSql(`DELETE FROM files`);
+    await db.executeSql(`DELETE FROM folders`);
+    
+
+    // 2. clear files
+    const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
+    const exists = await RNFetchBlob.fs.isDir(dir);
+
+    if (exists) {
+      await RNFetchBlob.fs.unlink(dir);
+    }
+
+    // 3. clear cache (optional)
+    const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
+    const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
+
+    for (const file of cacheFiles) {
+      await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
+    }
+          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
+
+          // ⛔ wait before fetching
+          const folders = await FolderLocalService.getActiveFolders()
+          const files = await FileLocalService.getAllFiles()
+          setData(folders)
+          setLocalFiles(files)
+
+    console.log("RESET COMPLETE");
+  } catch (e) {
+    console.log("RESET ERROR", e);
+  }
+};
 
   const handleLogin = async () => {
     try {
@@ -200,7 +240,7 @@ const handleSync=async () => {
     return (<><Button title="Login" onPress={handleLogin} />
 
       <Button title="Sync" onPress={handleSync} />
-      <Button title="CREATE" onPress={async () => {
+      {/* <Button title="CREATE" onPress={async () => {
         console.log('hi');
 
         const created = await FolderLocalService.createFolder
@@ -208,22 +248,15 @@ const handleSync=async () => {
             null, 'coveruri', 'gooleDrivefolderName', 0)
         console.log('created', created);
 
-      }} />
-      <Button title="Update" onPress={async () => {
+      }} /> */}
+      {/* <Button title="Update" onPress={async () => {
         await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
-      }} />
+      }} /> */}
       <Button title="Reset"
         onPress={async () => {
-          await FileLocalService.resetFilesTable()
-          await resetFoldersTable()
-          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
-          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
-
-          // ⛔ wait before fetching
-          const folders = await FolderLocalService.getActiveFolders()
-          const files = await FileLocalService.getAllFiles()
-          setData(folders)
-          setLocalFiles(files)
+          // await FileLocalService.resetFilesTable()
+          // await resetFoldersTable()
+          fullReset()
 
         }} />
       <Button title="Logout" onPress={async () => { await signOut() }} />
@@ -401,7 +434,7 @@ const handleSync=async () => {
        let displayName = `${folderDisplayName}`;
         console.log('display name',displayName);
         
-        let finalName = `${Date.now() + folderDisplayName}.${extension}`;
+        let finalName = `${folderDisplayName+ "_"+ Date.now()}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ handle duplicate safely
@@ -730,6 +763,7 @@ const handleSync=async () => {
             <>
               <Text style={styles.title} numberOfLines={1}>
                 {capitalizeFirstLetter(item?.name || '')}
+                {/* <Text style={styles.date}>{item?.coverUri}</Text> */}
               </Text>
               <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
               {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
@@ -1136,8 +1170,10 @@ const handleSync=async () => {
         height: scaledSize(50), position: "absolute", left: scaledSize(20),
         top: heightFromPercentage(72)
       }}>
+        <Text style={{ color: 'black' }}>{localFiles.length}</Text>
         {localFiles.map((item) => (
-          <Text key={item?.driveFileId} style={{ color: 'black' }}>{item.displayName + ' '}{'    ' + item?.isSynced}{'   ' + item?.isDeleted}+{item?.name}</Text>
+          <Text key={item?.id} style={{ color: 'black' }}>{'Drive' + item.driveFileId}
+          {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
         ))}
       </View>
 
@@ -1239,16 +1275,16 @@ const handleSync=async () => {
       <CustomSpinner isLoading={isLoading} />
 
       <View style={{
-        height: scaledSize(100), width: '80%', backgroundColor: 'red',
+        height: scaledSize(100), width: '80%', 
         flexDirection: 'row', justifyContent: "space-between"
       }}>
-        <Image
+        {/* <Image
           resizeMode="contain"
           source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + '1777791940638Ght.jpg') }}
           style={{
             height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
           }}
-        />
+        /> */}
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}

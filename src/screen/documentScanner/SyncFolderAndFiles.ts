@@ -30,9 +30,9 @@ export const syncAll = async () => {
 
   const maxUpdatedAtFileTime = await syncFilesFromFirebaseToLocal()
   console.log('maxUpdatedAtFileTime: finish', maxUpdatedAtFileTime);
-  setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime);
+  // setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime);
   await pullFilesFromGoogleDrive()
-  // setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime ? maxUpdatedAtFileTime : maxUpdatedAt);
+  setLocalData(asyncStorageKeyName.LAST_SYNC_TIME, maxUpdatedAtFileTime ? maxUpdatedAtFileTime : maxUpdatedAt);
   // console.log('Synced files:', files);
   // await FileLocalService.createFile(dummyFile)
   // const allFiles = await FileLocalService.getAllFiles()
@@ -67,10 +67,11 @@ const pushFilesToGoogleDrive = async () => {
         return;
       }
 
-      await FileLocalService.updateFile(file.id, {
+      const updated = await FileLocalService.updateFile(file.id, {
         driveFileId: driveFileId,
       });
       console.log('Uploaded:', file.name, driveFileRes.id);
+      console.log('updated=========:', updated);
 
     } catch (err) {
       console.log('Upload failed pushFilesToGoogleDrive :', file.name, err);
@@ -80,21 +81,23 @@ const pushFilesToGoogleDrive = async () => {
 }
 const pullFilesFromGoogleDrive = async () => {
   // const googleFolderId = await GoogleDriveService.getOrCreateGDriveFolderName()
-  const files = await FileLocalService.getAllFiles()
-  console.log('files to pull', files);
+  const files = await FileLocalService.getFilesToPullFromGdrive()
+  const Allfiles = await FileLocalService.getAllFiles()
+  console.log('files to Allfiles pull>>>>>>>>>>>', Allfiles);
+  console.log('files to pull>>>>>>>>>>>', files);
 
   for (const file of files) {
     try {
       console.log('file', file);
 
       // 🔹 call your existing util
-      const downloadedPath = await GoogleDriveService.downloadFile(file.driveFileId);
+      const downloadInfo = await GoogleDriveService.downloadFile(file.driveFileId);
 
-      console.log('drivefile downloadedPath >>>>>>>', downloadedPath);
+      console.log('drivefile downloadedPath >>>>>>>', downloadInfo);
       // if (!driveFileId) throw new Error('No driveFileId returned');
 
       // 🔹 update local DB
-      // const updated = await FileLocalService.updateFile(file.id, { driveFileId: driveFileId});
+      const updated = await FileLocalService.updateFile(file.id, { name: downloadInfo.name});
       // console.log('updated filre', updated);
 
       // console.log('Uploaded:', file.name, downloadedPath);
@@ -143,7 +146,7 @@ const syncFilesFromFirebaseToLocal = async () => {
   const insertData: any = await insertOrUpdateFiles(localFilesMap, firebaseFiles, userId, folderMap)
 
   // 🗑️ Delete
-  const deletedData: any = await deleteSyncFiles(localFiles, firebaseFiles);
+  // const deletedData: any = await deleteSyncFiles(localFiles, firebaseFiles);
   //Push to firebase
   const pushedData: any = await pushFilesToFirebase()
   // return []
@@ -153,7 +156,7 @@ const syncFilesFromFirebaseToLocal = async () => {
   console.log('Sync insertData', insertData);
   // Sync insertData 1777552846897
 
-  console.log('Sync deletedData', deletedData);
+  // console.log('Sync deletedData', deletedData);
   console.log('Sync pushedData', pushedData);
   const lastSyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME) || 0;
   console.log('lastSyncTime++', lastSyncTime);
@@ -161,7 +164,7 @@ const syncFilesFromFirebaseToLocal = async () => {
   const maxUpdatedAt = Math.max(
     0,
     insertData ? insertData : 0,
-    deletedData ? deletedData : 0,
+    // deletedData ? deletedData : 0,
     pushedData ? pushedData : 0,
     Number(lastSyncTime ? lastSyncTime : 0)
   );
@@ -202,8 +205,6 @@ const insertOrUpdateFiles = async (
 
     // 🔥 map firebase → local
     const folderLocalId = folderMap.get(remote.folderFirebaseId);
-    console.log('folderLocalId>>>>>>>>>>', folderLocalId);
-    console.log('max updated before ', updatedAt);
 
     if (updatedAt > maxUpdatedAt) {
       maxUpdatedAt = updatedAt;
@@ -214,14 +215,36 @@ const insertOrUpdateFiles = async (
       console.log('⛔ Folder not found, skip:', remote.firebaseId);
       continue;
     }
+  if (updatedAt > maxUpdatedAt) {
+    maxUpdatedAt = updatedAt;
+  }
+
+  if (!folderLocalId) {
+    console.log('⛔ Folder not found, skip:', remote.firebaseId);
+    continue;
+  }
+
+  // 🗑️ DELETE
+  if (remote.isDeleted === 1) {
+    if (local && local.isSynced === 1 && local.isDeleted === 0) {
+      console.log('🗑️ Soft deleting:', remote.firebaseId);
+
+      await FileLocalService.updateFile(local.id, {
+        isDeleted: 1,
+        updatedAt: remote.updatedAt,
+        isSynced: 1
+      });
+    }
+    continue;
+  }
 
     // ✅ CREATE
     if (!local) {
       console.log('create file block>>>>>>>>>>',);
 
-      await FileLocalService.createFile({
+     const createdFile =  await FileLocalService.createFile({
         userId,
-        name: remote.name,
+        name: '',
         displayName: remote.displayName,
         size: remote.size,
         lastModified: remote.lastModified,
@@ -234,7 +257,7 @@ const insertOrUpdateFiles = async (
       });
 
 
-      console.log('Created local folder for Firebase folder:', remote.name);
+      console.log('Created local file for Firebase folder:', createdFile);
 
       continue;
     }
@@ -244,10 +267,10 @@ const insertOrUpdateFiles = async (
     if (local.isSynced === 0) continue;
 
     // ✅ UPDATE only if newer
-    if (updatedAt > Number(local.updatedAt)) {
+    else  {
       console.log('upda file-----', remote);
 
-      await FileLocalService.updateFile(local.id, {
+     const updatedFile =  await FileLocalService.updateFile(local.id, {
         name: remote.name,
         displayName: remote.displayName,
         isDeleted: remote.isDeleted,
@@ -255,10 +278,9 @@ const insertOrUpdateFiles = async (
         folderId: folderLocalId, // handles move
         isSynced: 1
       });
-      console.log('updated file time ', DateHelper.getMillis(remote));
+      console.log('Updated local file for Firebase folder:', updatedFile);
     }
   }
-  console.log('maxUpdate', maxUpdatedAt);
 
   return maxUpdatedAt
 };
@@ -412,7 +434,7 @@ const syncFoldersFromFirebaseToLocal = async () => {
   // console.log('localFolders', localFolders);
   const localFiles = await FileLocalService.getAllFiles();
   console.log('getAllFiles>>>', localFiles)
-  const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolderName(asyncStorageKeyName.DRIVE_FOLDER_NAME)
+  const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolderName()
   let userId = await AuthService.getUserId()
 
   console.log('userId', userId);

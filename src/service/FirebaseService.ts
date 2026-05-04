@@ -135,7 +135,7 @@ export const FirebaseService = {
     try {
       const newFile = {
         name: file.name,
-        displayName: file.name,
+        displayName: file.displayName,
         size: file.size || 0,
         lastModified: Date.now(),
         folderId: file.folderId,
