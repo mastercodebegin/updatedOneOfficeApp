@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppShare, asyncStorageKeyName, CONSTANT } from './Constants';
 import { CommonActions } from '@react-navigation/native';
 import { createNavigationContainerRef } from '@react-navigation/native';
-import { Popup } from 'react-native-popup-confirm-toast';
+import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
 import Share from 'react-native-share';
 import { createPdf } from 'react-native-images-to-pdf';
 
@@ -316,7 +316,7 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
     console.log('Error:', error);
   } finally {
 
-    console.log('stoaring files in asyncstorage start=======', pdfFiles[0]);
+    // console.log('stoaring files in asyncstorage start=======', pdfFiles[0]);
     let sorted = []
     if (data > 0) {
       sorted = pdfFiles.sort((a, b) => new Date(b.mtime) - new Date(a.mtime)); // latest date
@@ -474,8 +474,10 @@ export const toastForDeleteFile = (toast: any, message: string) => {
 }
 
 export const getImageUriByOS = (uri: string) => {
-  return Platform.OS == 'android' ? `file:${uri}` : `file:${uri}`
-}
+  if (!uri) return '';
+
+  return uri.startsWith('file://') ? uri : `file://${uri}`;
+};
 export { RNImageToPdf }
 
 interface S {

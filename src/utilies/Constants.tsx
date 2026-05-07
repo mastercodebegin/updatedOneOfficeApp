@@ -30,7 +30,9 @@ export const CONSTANT = {
     MEDIA_PERMISSION_TITLE: 'To access your media files, please allow the app to access your media location.',
     CAMERA_PERMISSION_TITLE: 'To access your camera, please allow the app to access your camera.',
     ANDROID_SHARE_LINK: `https://play.google.com/store/apps/details?id=com.shopax.pdfviewer`,
-    IOS_SHARE_LINK: 'https://play.google.com/store/apps'
+    IOS_SHARE_LINK: 'https://play.google.com/store/apps',
+    DRIVE_FOLDER_NAME:'ONE-OFFICE',
+
 
 
 }
@@ -90,15 +92,17 @@ export const BANK_LOGOS = {
 };
 
 export const asyncStorageKeyName = {
-    PDF_FILES: 'pdfFiles',
-    WORD_FILES: 'wordFiles',
-    XLSX_FILES: 'xlsxFiles',
-    PPT_FILES: 'pptFiles',
-    CONVERTED_PDF_FILES: 'convertedPdfFiles',
-    SAVED_USERS: 'users1',
-    ALL_FILES: 'allFiles',
-    DOCUMENTS: 'documents',
-    DRIVE_FOLDER_ID:'drive_folder_id'
+    PDF_FILES: 'PDF_FILES',
+    WORD_FILES: 'WORD_FILES',
+    XLSX_FILES: 'XLSX_FILES',
+    PPT_FILES: 'PPT_FILES',
+    CONVERTED_PDF_FILES: 'CONVERTED_PDF_FILES',
+    SAVED_USERS: 'USERS1',
+    ALL_FILES: 'ALL_FILES',
+    DOCUMENTS: 'DOCUMENTS',
+    DRIVE_FOLDER_ID:'DRIVE_FOLDER_ID',
+    LAST_SYNC_TIME : 'LAST_SYNC_TIME',
+    GOOGLE_ACCESS_TOKEN: 'GOOGLE_ACCESS_TOKEN',
 }
 
 

@@ -30,13 +30,15 @@ import { Fonts } from '../../assets/fonts/GlobalFonts';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { CustomErrorToast } from '../../component/CustomToast';
+import { FileLocalService } from '../../db/fileLocalService';
+import { FolderLocalService } from '../../db/folderLocalService';
 
 export default function DisplayMultipleDocumentImage(props: any) {
 
   const [scannedImage, setScannedImage] = useState();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
-  const [existingFile, setExistingFile] = React.useState(0)
+  const [existingFile, setExistingFile] = React.useState()
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
@@ -55,13 +57,17 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const itemId = props.route.params.id
   const refForDocShare = useRef<BottomSheetModal>(null);
 
-
+  const { folderId } = props.route.params
   useEffect(() => {
     console.log('props',);
     if (data.length == 0) {
 
       setData(props.route.params.files)
       setFolderName(props.route.params.folderName)
+
+
+      console.log('props.route.params', props.route.params);
+
 
 
     }
@@ -83,33 +89,29 @@ export default function DisplayMultipleDocumentImage(props: any) {
       backHandler.remove();
     };
   },);
+
+
   const renameFolder = async () => {
+    console.log('rename file====');
+
     if (fileName.length == 0) {
       alert('Please enter a file name')
       return false
     }
-    const updatedData = [...data]
-    updatedData.forEach(item => {
-      if (item.id === existingFile.id) {
-        item.name = fileName
-      }
-    })
-    const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-    const docsObject = JSON.parse(dataStr)
-    console.log('itemId================================================================', itemId);
-    const obj = docsObject.find((item: any) => item.id === itemId)
-    obj.files = updatedData
-    console.log('obj================================================================', obj);
-    const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
-    console.log('filterObjects================================================================', filterObjects);
-    filterObjects.push(obj)
-    console.log('obj 2================================================================', filterObjects);
-    // console.log('data================================================================', obj[0].id);
-    setData(obj.files)
+    console.log('existing file', existingFile);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+    let existingFileTemp = await FileLocalService.getFileById(existingFile.id)
+    console.log('existingFileTemp', existingFileTemp);
+    
+    existingFileTemp.displayName = fileName + '.jpg'
+    await FileLocalService.renameFile(existingFile.id, existingFileTemp)
+    console.log('updateFile' );
+    const updatedFolder = await FileLocalService.getFilesByFolder(existingFileTemp.folderId)
+    setData(updatedFolder)
+
     setIsShowFileNameModal(false)
     setIsNewFile(false)
+    setFileName('')
 
   }
 
@@ -166,46 +168,101 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   }
 
+  // const deleteSingleFile = async (obj: any) => {
+  //   console.log('folder------', selectedFoldersId);
+
+  //   const updatedData = [...data]
+
+  //   const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
+  //   const docsObject = JSON.parse(dataStr)
+  //   const removedDeletedFiles = updatedData.filter((item: any) => item.id !== obj.id)
+  //   console.log('itemId================================================================', itemId);
+  //   const singleObj = docsObject.find((item: any) => item.id === itemId)
+  //   singleObj.files = removedDeletedFiles
+  //   console.log('obj================================================================', obj);
+  //   const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
+  //   console.log('filterObjects================================================================', filterObjects);
+
+  //   console.log('obj 2================================================================', filterObjects);
+  //   if (data.length == 1) {
+  //     console.log('if(data.length==1');
+
+  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+  //     navigateToBack()
+  //   }
+  //   if (data.length > 1) {
+  //     console.log('if(data.length>0');
+
+  //     filterObjects.push(singleObj)
+  //     setData(singleObj.files)
+  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
+  //     setSelectedFoldersId([])
+  //   }
+  //   try {
+  //     for (const filePath of selectedFoldersId) {
+  //       deleteFile(filePath)
+  //     }
+  //     console.log('Files deleted successfully!');
+  //   } catch (error) {
+  //     console.error('Error deleting files:', error);
+  //   }
+  //   setMultidelete(false)
+  // }
+
   const deleteSingleFile = async (obj: any) => {
-    console.log('folder------', selectedFoldersId);
-
-    const updatedData = [...data]
-
-    const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-    const docsObject = JSON.parse(dataStr)
-    const removedDeletedFiles = updatedData.filter((item: any) => item.id !== obj.id)
-    console.log('itemId================================================================', itemId);
-    const singleObj = docsObject.find((item: any) => item.id === itemId)
-    singleObj.files = removedDeletedFiles
-    console.log('obj================================================================', obj);
-    const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
-    console.log('filterObjects================================================================', filterObjects);
-
-    console.log('obj 2================================================================', filterObjects);
-    if (data.length == 1) {
-      console.log('if(data.length==1');
-
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      navigateToBack()
-    }
-    if (data.length > 1) {
-      console.log('if(data.length>0');
-
-      filterObjects.push(singleObj)
-      setData(singleObj.files)
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      setSelectedFoldersId([])
-    }
     try {
-      for (const filePath of selectedFoldersId) {
-        deleteFile(filePath)
+      console.log('Deleting folder:', obj.id);
+
+      // 1. Get all files of this folder
+      // const files = data.photos.filter((item:any) => item.folderId === obj.id);
+      const files = await FileLocalService.getFilesByIds([obj.id])
+
+      console.log('Files to delete:', files);
+
+      // 2. Delete files from storage
+      await Promise.all(
+        files.map(async (file: any) => {
+          const path = `${destinationPath}${file.name}`;
+          const exists = await RNFS.exists(path);
+
+          if (exists) {
+            await RNFS.unlink(path);
+          }
+        })
+      );
+
+      // 3. Delete files from DB
+      await FileLocalService.deleteFile(obj.id)
+      const updatedFiles = await FileLocalService.getFilesByFolder(folderId)
+      console.log('updatedFiles----', updatedFiles);
+
+      if (updatedFiles.length == 0) {
+        const files = await FileLocalService.getFilesByFolder(obj.id)
+
+        console.log('Files to delete:', files);
+
+
+
+        // 3. Delete files from DB
+        await FolderLocalService.deleteFoldersWithFiles([folderId])
+        const updatedData = await FolderLocalService.getAllFolders()
+        navigateToBack()
+
       }
-      console.log('Files deleted successfully!');
+
+      setData(updatedFiles);
+
+
+
+      // Reset UI states
+      setSelectedFoldersId([]);
+      setMultidelete(false);
+
+      console.log('✅ Folder deleted successfully');
     } catch (error) {
-      console.error('Error deleting files:', error);
+      console.log('❌ Error deleting folder:', error);
     }
-    setMultidelete(false)
-  }
+  };
 
 
   const deleteFoldersConfirmationForMultipleItem = () => {
@@ -242,8 +299,23 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setSelectedFoldersId(data.map(item => item))
     }
   }
-  const onPressItem = (item: any) => {
+  const onPressItem = async (item: any) => {
 
+    if (isMultiDelete) {
+      onSelectFolders(item)
+    }
+    else {
+      const urls = data.map((item) => ({ url: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }));
+      console.log('urls----', urls);
+
+      setImageUrls(urls);
+      setIsImageView(true)
+      setFileName(item.name)
+      setImagePath(item.path)
+    }
+  }
+  const onLongPressItem = (item: any) => {
+    setMultidelete(true)
     if (isMultiDelete) {
       onSelectFolders(item)
     }
@@ -257,110 +329,163 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setImagePath(item.path)
     }
   }
-  const onLongPressItem = (item: any) => {
-    setMultidelete(true)
-    // if (isMultiDelete) {
-    onSelectFolders(item)
-    // }
-    // else {
-    //   const urls = data.map((item) => ({ url: 'file:' + item.path }));
-    //   console.log('urls----', urls);
+  // const copyFilesToDirectory = async () => {
+  //   console.log('folderName', folderName);
+  //   console.log('scannedimages', folderName.length);
+  //   if (fileName.length == 0) {
+  //     CustomErrorToast('Please enter File name')
+  //     return
+  //   }
+  //   // Create the destination folder if it doesn't exist
+  //   await RNFS.mkdir(destinationPath);
 
-    //   setImageUrls(urls);
-    //   setIsImageView(true)
-    //   setFileName(item.name)
-    //   setImagePath(item.path)
-    // }
-  }
+  //   // Loop through the URIs and copy them to the destination
+  //   await Promise.all(images.map(async (uri: any, index) => {
+  //     console.log('file name=======', fileName);
+
+  //     const name = uri.split('/').pop(); // Extract the file name
+  //     const defaultFileName = name.split('.').slice(0, -1).join('.');
+  //     console.log('defaultFileName=======', defaultFileName);
+
+  //     const n = uri.split('/').pop(); // Extract the file name
+  //     console.log('file n=======', n);
+  //     // const [defaultFileName, fileExtension] = fullFileName.split('.');
+  //     const destinationFilePath = `${destinationPath}${defaultFileName}`;
+
+  //     await RNFS.copyFile(uri, destinationFilePath);
+  //     // const localStoredData = await readFilesFromDirectory()
+  //     const localStoredData = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS); // returns an array of file objects
+
+  //     // console.log('files length ---', data.length)
+
+  //     const filesArr = []
+  //     for (let i = 0; i < images.length; i++) {
+
+  //       filesArr.push({
+  //         id: generateUniqueNumber(),
+  //         name: fileName.length > 0 ? `${fileName}` : defaultFileName,
+  //         path: destinationFilePath,
+  //         mtime: new Date(),
+  //         type: 'file',
+  //         extension: fileName.split('.').pop(),
+  //         size: 0,
+  //       })
+  //       console.log('arr--------------------------------', filesArr)
+  //     }
+  //     const combinedFiles = [...data, ...filesArr]
+  //     const objParse = JSON.parse(localStoredData)
+  //     // console.log(' props.route.params.id ==========', props.route.params.id);
+  //     // console.log(' converted objParse==========', objParse);
+  //     // console.log('props.route.param.id==========', props.route?.params?.id);
+  //     console.log('combinedFiles====', combinedFiles);
+  //     const objectsNotEquelToID = objParse.filter((obj) => obj.id !== props.route.params.id)
+  //     console.log('objectsNotEquelToID', objectsNotEquelToID);
+  //     const objectEquelToId = objParse.find((obj) => obj.id == props.route.params.id)
+  //     objectEquelToId.files = combinedFiles
+  //     const objIndex = objParse.findIndex((obj) => obj.id == props.route.params.id);
+  //     console.log('objindex', objIndex);
+  //     objParse.splice(objIndex, 1, objectEquelToId)
+  //     console.log('objParse', objParse);
+
+
+  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(objParse))
+  //     console.log(`File ${index + 1} copied to ${destinationFilePath}`);
+  //     setData(combinedFiles)
+  //     setIsShowFileNameModal(false)
+  //     setFileName('')
+  //     setIsNewFile(false)
+
+
+  //   }));
+
+  //   console.log('All files copied successfully!');
+  //   //readFilesFromDirectory()
+
+  // };
+
   const copyFilesToDirectory = async () => {
-    console.log('folderName', folderName);
-    console.log('scannedimages', folderName.length);
-    if (fileName.length == 0) {
-      CustomErrorToast('Please enter File name')
-      return
-    }
-    // Create the destination folder if it doesn't exist
-    await RNFS.mkdir(destinationPath);
+    try {
+      console.log('scanned images:', images);
 
-    // Loop through the URIs and copy them to the destination
-    await Promise.all(images.map(async (uri: any, index) => {
-      console.log('file name=======', fileName);
+      await RNFS.mkdir(destinationPath);
 
-      const name = uri.split('/').pop(); // Extract the file name
-      const defaultFileName = name.split('.').slice(0, -1).join('.');
-      console.log('defaultFileName=======', defaultFileName);
+      const baseTimestamp = Date.now();
 
-      const n = uri.split('/').pop(); // Extract the file name
-      console.log('file n=======', n);
-      // const [defaultFileName, fileExtension] = fullFileName.split('.');
-      const destinationFilePath = `${destinationPath}${defaultFileName}`;
-
-      await RNFS.copyFile(uri, destinationFilePath);
-      // const localStoredData = await readFilesFromDirectory()
-      const localStoredData = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS); // returns an array of file objects
-
-      // console.log('files length ---', data.length)
-
-      const filesArr = []
       for (let i = 0; i < images.length; i++) {
+        const uri = images[i];
 
-        filesArr.push({
-          id: generateUniqueNumber(),
-          name: fileName.length > 0 ? `${fileName}` : defaultFileName,
-          path: destinationFilePath,
-          mtime: new Date(),
-          type: 'file',
-          extension: fileName.split('.').pop(),
+        const originalFileName = uri.split('/').pop() || '';
+        const extension = originalFileName?.includes('.')
+          ? originalFileName.split('.').pop()
+          : 'jpg';
+
+        // 👉 user provided name OR fallback
+        let baseName = fileName?.trim()
+          ? fileName.trim()
+          : `${baseTimestamp}`;
+
+        let displayName = `${baseName}`;
+        console.log('display name',displayName);
+        
+        let finalName = `${ baseName + "_"+Date.now() }.${extension}`;
+        let destinationFilePath = `${destinationPath}/${finalName}`;
+
+        // ✅ if already exists → add random
+        while (await RNFS.exists(destinationFilePath)) {
+          const random = Math.random().toString(36).slice(2, 6);
+          finalName = `${baseName}_${random}.${extension}`;
+          destinationFilePath = `${destinationPath}/${finalName}`;
+        }
+
+        console.log('Saving uri:', uri);
+        console.log('Saving as:', finalName);
+
+        await RNFS.copyFile(uri, destinationFilePath);
+
+       const createdFile= await FileLocalService.createFile({
+          name:  finalName,
+          displayName: displayName,
           size: 0,
-        })
-        console.log('arr--------------------------------', filesArr)
+          lastModified: Date.now(),
+          folderId: folderId,
+          isSynced: 0,
+          isDeleted: 0,
+          folderFirebaseId: '',
+        });
+        console.log('createdFile====',createdFile);
       }
-      const combinedFiles = [...data, ...filesArr]
-      const objParse = JSON.parse(localStoredData)
-      // console.log(' props.route.params.id ==========', props.route.params.id);
-      // console.log(' converted objParse==========', objParse);
-      // console.log('props.route.param.id==========', props.route?.params?.id);
-      console.log('combinedFiles====', combinedFiles);
-      const objectsNotEquelToID = objParse.filter((obj) => obj.id !== props.route.params.id)
-      console.log('objectsNotEquelToID', objectsNotEquelToID);
-      const objectEquelToId = objParse.find((obj) => obj.id == props.route.params.id)
-      objectEquelToId.files = combinedFiles
-      const objIndex = objParse.findIndex((obj) => obj.id == props.route.params.id);
-      console.log('objindex', objIndex);
-      objParse.splice(objIndex, 1, objectEquelToId)
-      console.log('objParse', objParse);
 
 
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(objParse))
-      console.log(`File ${index + 1} copied to ${destinationFilePath}`);
-      setData(combinedFiles)
-      setIsShowFileNameModal(false)
+      const files = await FileLocalService.getFilesByFolder(folderId);
+      setData(files);
+
+      setIsShowFileNameModal(false);
       setFileName('')
-      setIsNewFile(false)
+      console.log('✅ Files saved successfully');
 
-
-    }));
-
-    console.log('All files copied successfully!');
-    //readFilesFromDirectory()
-
+    } catch (error) {
+      console.log('❌ Error:', error);
+    }
   };
-  const onPressEditFile = (item: any) => {
 
+  const onPressEditFile = (item: any) => {
+    console.log('onpress edit ', isNewFile);
 
     setExistingFile(item),
-      setFileName(item.name)
+      setIsNewFile(false)
+
+    setFileName(item.displayName?.replace('.jpg', '')
+    )
     setIsShowFileNameModal(true)
-
   }
-  const onPressEditImage = (item: any) => {
 
+  const onPressEditImage = (item: any) => {
     setIsShowEditImage(true)
     setEditImageUri(item.path)
   }
+
   const renderItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
-
     return (
       <TouchableOpacity
         activeOpacity={0.9}
@@ -380,19 +505,13 @@ export default function DisplayMultipleDocumentImage(props: any) {
           <Image
             resizeMode="contain"
             // resizeMethod='auto'
-            source={{ uri: getImageUriByOS(item.path) }}
+            source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
             style={{
               height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
             }}
           />
 
-          {/* <View style={styles.imageWrapper}>
-  <Image
-    source={{ uri: getImageUriByOS(item.path) }}
-    style={styles.image}
-    resizeMode="cover"
-  />
-</View> */}
+
 
           {/* Overlay Actions */}
           <View style={styles.overlayActions}>
@@ -434,8 +553,9 @@ export default function DisplayMultipleDocumentImage(props: any) {
         </View>
 
         {/* File Name */}
-        <Text style={styles.fileName} numberOfLines={1}>
-          {item.name}
+        <Text style={{...styles.fileName, color: 'black'}} numberOfLines={1}>
+          {item.displayName?.replace(/\.[^/.]+$/, '')}
+          {/* {item.name} */}
         </Text>
       </TouchableOpacity>
     );
@@ -524,6 +644,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
               </Text>
             </View>
             <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
+              {/* <TouchableOpacity onPress={() => { setIsShowFileNameModal(false)}}> */}
               <TouchableOpacity onPress={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}>
                 <MaterialIcons name='close'
                   size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
@@ -809,6 +930,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
     </View>
   )
 }
+
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: scaledSize(14),

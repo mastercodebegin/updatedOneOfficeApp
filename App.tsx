@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { View, useWindowDimensions, PermissionsAndroid, Image, Text, StatusBar, Alert, Linking, Platform } from 'react-native';
+import { View, useWindowDimensions, PermissionsAndroid, Image, Text, StatusBar, Alert, Linking, Platform, AppState } from 'react-native';
 import { MenuProvider } from 'react-native-popup-menu';
 // import GoogleAdd from './src/component/DisplayAdd';
 import Dashboard from './src/screen/dashboard/Dashboard';
@@ -11,7 +11,7 @@ import Splashscreen from './src/screen/splash/Splashscreen';
 import { Provider } from 'react-redux';
 import Store from './src/redux/Store';
 import { heightFromPercentage, navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
-import { Root as PopupRootProvider } from 'react-native-popup-confirm-toast';
+import { Root as PopupRootProvider } from '@sekizlipenguen/react-native-popup-confirm-toast';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import PdfViewer from './src/component/PdfView';
 import ReadSystemFile from './src/component/ReadSystemFile';
@@ -38,6 +38,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
+import { initDB } from './src/db/migration';
 
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
@@ -53,15 +54,15 @@ export default function App(props) {
   const [result, setResult] = React.useState(false);
   const size = scaledSize(24)
   const screensData = [
-    { name: 'Documents', component: Dashboard, focus: <Ionicons name='documents' color={COLORS.THEME_COLOR} size={size} />, unFocus: <Ionicons name='documents' color={'gray'} size={size} /> },
     { name: 'Scan', component: DocumentScan, focus: <FontAwesome5 name='camera' color={COLORS.THEME_COLOR} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, unFocus: <FontAwesome5 name='camera' color={'gray'} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, },
+    { name: 'Documents', component: Dashboard, focus: <Ionicons name='documents' color={COLORS.THEME_COLOR} size={size} />, unFocus: <Ionicons name='documents' color={'gray'} size={size} /> },
     { name: 'Converter', component: ImagesToPdfConverter, focus: <FontAwesome name='refresh' color={COLORS.THEME_COLOR} size={size} />, unFocus: <FontAwesome name='refresh' color={'gray'} size={size} />, },
-    
+
   ]
   const BottomTabs = createBottomTabNavigator();
 
   // React.useEffect(() => {
-  //   checkForUpdate()
+    // checkForUpdate()
 
   // }, [])
 
@@ -94,11 +95,25 @@ export default function App(props) {
 
 
 
+  React.useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        // syncAll();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
 
 
 
 
   React.useEffect(() => {
+    const setupDB = async () => {
+      await initDB();
+    };
+
+    setupDB();
     async function AskPermission() {
       await ManageExternalStorage.checkAndGrantPermission(
         err => {
@@ -109,36 +124,11 @@ export default function App(props) {
         },
       )
     }
-    AskPermission() 
+    AskPermission()
   }, []);
 
-  // const toastConfig = {
-    
-  //   error: (props) => (
-  //     <ErrorToast
-  //       {...props}
-  //       text1Style={{
-  //         fontSize: scaledSize(12),
-  //         color: 'black',
-  //         fontFamily: Fonts.regular,
-  //         letterSpacing: .5,
-  //       }}
-  //       text2Style={{
-  //         fontSize: scaledSize(15),
-  //         color: 'blue',
 
-  //       }}
 
-  //     />
-  //   ),
-   
-  //   tomatoToast: ({ text1, text2, props }) => (
-  //     <View style={{ height: scaledSize(54), width: '100%', backgroundColor: 'red' }}>
-  //       <Text style={{ color: 'white', fontSize: scaledSize(16), fontFamily: FONTS.QuicksandBold }}>{text1}</Text>
-  //       <Text style={{ color: 'white', fontSize: scaledSize(14), fontFamily: FONTS.QuicksandBold, marginLeft: scaledSize(10) }}>{text2}</Text>
-  //     </View>
-  //   )
-  // };
 
   function MyTabs() {
     return (
@@ -147,10 +137,11 @@ export default function App(props) {
         tabBarStyle: {
           // backgroundColor:'red'
           height: heightFromPercentage(7),
-        }}}>
+        }
+      }}>
         {screensData.map((item, key) =>
-          <BottomTabs.Screen key={key} name={item.name} 
-          component={item.component}
+          <BottomTabs.Screen key={key} name={item.name}
+            component={item.component}
             listeners={({ navigation, route }) => ({
               focus: () => {
                 setTimeout(() => {
@@ -159,7 +150,7 @@ export default function App(props) {
               },
             })}
             options={{
-              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center',top:scaledSize(2) }}>
+              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(2) }}>
                 {focused ? item.focus : item.unFocus}
               </View>),
               tabBarLabel: ({ focused }) => (
@@ -183,7 +174,7 @@ export default function App(props) {
                   {/* <Stack.Screen name="Splashscreen" component={Splashscreen} /> */}
                   <Stack.Screen name="Home" component={MyTabs} />
                   <Stack.Screen name="Dashboard" component={Dashboard} />
-                 <Stack.Screen name="EditImage" component={EditImage} />
+                  <Stack.Screen name="EditImage" component={EditImage} />
                   <Stack.Screen name="ReadSystemFile" component={ReadSystemFile} />
                   <Stack.Screen name="PdfViewer" component={PdfViewer} />
                   <Stack.Screen name="MultiplePdfView" component={MultiplePdfView} />

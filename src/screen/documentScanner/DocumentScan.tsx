@@ -4,11 +4,11 @@ import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
 import RNFS from 'react-native-fs';
-import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
+import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clear,  cloud,  searchIcon, } from '../../assets/GlobalImages';
-import Elevations from 'react-native-elevation'
+import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
+// import Elevations from 'react-native-elevation'
 import { COLORS, FONTS } from '../../utilies/GlobalColors';
 import CustomMenu from '../../component/Menu';
 import Icon from 'react-native-vector-icons/Feather';
@@ -39,19 +39,26 @@ import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
+import { DateHelper } from '../../utilies/DateHelper';
+import { FileLocalService } from '../../db/fileLocalService';
+import { FirebaseService } from '../../service/FirebaseService';
+import { GoogleDriveService } from '../../db/googleDriveService';
+import { AuthService } from '../../service/AuthService';
+import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
+import { syncAll } from './SyncFolderAndFiles';
+import CustomSpinner from '../../component/CustomSpinner';
+  import firestore from '@react-native-firebase/firestore';
+import { getDB } from '../../../src/db';
+import useDebounce from '../../component/useDebounce';
+// import { getAuth } from '@react-native-firebase/auth';
 
-const imagesURI = [{
-  // Simplest usage.
-  url: 'https://avatars2.githubusercontent.com/u/7970947?v=3&s=460',
 
-  // width: number
-  // height: number
-  // Optional, if you know the image size, you can set the optimization performance
-}]
+
 const destinationPath = CONSTANT.SAVED_DOCUMENTS_PATH;
-
 export const DocumentScan = () => {
-  const [images, setImages] = useState<Array<{ name: string }>>();
+  const [images, setImages] = useState<Array<any>>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
   const [folderId, setFolderId] = React.useState(0)
@@ -69,49 +76,252 @@ export const DocumentScan = () => {
   // const [isPermissionFunctionCalled,setIsPermissionFunctionCalled] = useState(false);
   const isPermissionFunctionCalled = useRef(false); // Use a ref instead of state
   const refForDocShare = useRef<BottomSheetModal>(null);
-
+  const [isLocalDataFetch, setIsLocalDataFetch] = useState(false)
+  const [localFiles, setLocalFiles] = useState([])
   const isFocused = useIsFocused();
- 
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+const [searchText,setSearchText] = useState('')
+const debouncedSearchText = useDebounce({searchText,delay:10000})
 
-  // useEffect(() => {
-  //   if (isFocused) {
-  //     console.log('is focused',);
-  //     AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS).then((value) => {
-  //       if (value) {
-  //         setData(JSON.parse(value));
-  //       }
-  //     });
+useEffect(() => {
+  // return 
+  let unsubscribeFiles: any;
+  let unsubscribeTriggers: any;
+  let isSyncing = false; // guard
 
-  //   }
-  // }, [isFocused])
+  const init = async () => {
+    const userId = await AuthService.getUserId();
+    console.log('userid',userId);
+    
+    if (!userId) return;
+
+    // Listener 1 (normal logs)
+    unsubscribeFiles = firestore()
+      .collection('files')
+      .where('userId', '==', userId)
+      .onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          console.log('SYNC TRIGGERED 1');
+          handleSync()
+            // syncAll(); // runs for added + modified + removed
+
+        });
+      });
+
+    // Listener 2 (trigger sync)
+    unsubscribeTriggers = firestore()
+      .collection('folders')
+      .where('userId', '==', userId)
+      .onSnapshot(async snapshot => {
+        if (snapshot.empty) return;
+
+        // prevent multiple calls
+        if (isSyncing) return;
+
+        isSyncing = true;
+
+        try {
+          console.log('SYNC TRIGGERED 2');
+          await handleSync();
+        } catch (e) {
+          console.log('Sync error', e);
+        } finally {
+          isSyncing = false;
+        }
+      });
+  };
+
+  init();
+
+  return () => {
+    if (unsubscribeFiles) unsubscribeFiles();
+    if (unsubscribeTriggers) unsubscribeTriggers();
+  };
+}, []);
+useEffect(()=>{
+  console.log('debouncedSearchText',debouncedSearchText);
+  ApiHandler()
+
+},[debouncedSearchText])
+
+const ApiHandler=()=>{
+    console.log('function callled----',debouncedSearchText)
+  }
+
+  const getfiles = async () => {
+    const files = await FileLocalService.getAllFiles()
+    console.log('files====', files);
+    setLocalFiles(files);
+  }
+
   useEffect(() => {
-  if (!isFocused) return;
+    if (!isFocused) return;
 
-  const loadData = async () => {
-    try {
-      console.log('is focused');
+    const fetchData = async () => {
+      try {
+        const folders = await FolderLocalService.getActiveFolders();
 
-      const value = await AsyncStorage.getItem(
-        asyncStorageKeyName.DOCUMENTS
-      );
+        console.log('folders=====1st', folders);
 
-      if (value) {
-        setData(JSON.parse(value));
-      } else {
-        setData([]);
+        setData(folders);
+
+        setIsLocalDataFetch(true);
+        getfiles()
+      } catch (error) {
+        console.log('fetch error:', error);
       }
+    };
+
+    fetchData();
+  }, []);
+
+const fullReset = async () => {
+  try {
+    console.log("RESET START");
+
+    // 1. clear DB
+    const db = await getDB();
+    await db.executeSql(`DELETE FROM files`);
+    await db.executeSql(`DELETE FROM folders`);
+    
+
+    // 2. clear files
+    const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
+    const exists = await RNFetchBlob.fs.isDir(dir);
+
+    if (exists) {
+      await RNFetchBlob.fs.unlink(dir);
+    }
+
+    // 3. clear cache (optional)
+    const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
+    const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
+
+    for (const file of cacheFiles) {
+      await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
+    }
+          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
+
+          // ⛔ wait before fetching
+          const folders = await FolderLocalService.getActiveFolders()
+          const files = await FileLocalService.getAllFiles()
+          setData(folders)
+          setLocalFiles(files)
+
+    console.log("RESET COMPLETE");
+  } catch (e) {
+    console.log("RESET ERROR", e);
+  }
+};
+
+  const handleLogin = async () => {
+    try {
+      const res = await signIn();
+
+      // console.log('Result:', res);
+
+      const token = res?.accessToken;
+
+
     } catch (error) {
-      console.log('AsyncStorage error:', error);
+      console.log('Login error:', error);
+    }
+  };
+const handleSync=async () => {
+        if (isLoading) return; // 🔥 prevent double click
+        try {
+          setIsLoading(true);
+          console.log('Syncing all files... started', accessToken);
+
+          await syncAll();
+          // setTimeout(async() => {
+          const folders = await FolderLocalService.getActiveFolders()
+          const files = await FileLocalService.getAllFiles()
+          console.log('folders-------2nd', folders);
+
+          setLocalFiles(files);
+            
+            setData(folders);
+          // }, 500);
+        } catch (e) {
+          console.log('Sync error document scanner:', e);
+        } finally {
+          console.log('finally triggered');
+          setIsLoading(false); // 🔥 ALWAYS runs
+        }
+      }
+  const renderButton = () => {
+    return (<><Button title="Login" onPress={handleLogin} />
+
+      <Button title="Sync" onPress={handleSync} />
+      {/* <Button title="CREATE" onPress={async () => {
+        console.log('hi');
+
+        const created = await FolderLocalService.createFolder
+          ('', 'name-voter-1' + Math.random(),
+            null, 'coveruri', 'gooleDrivefolderName', 0)
+        console.log('created', created);
+
+      }} /> */}
+      {/* <Button title="Update" onPress={async () => {
+        await FolderLocalService.updateFolderById({ id: 1, name: Math.random().toString(), isDeleted: 0 })
+      }} /> */}
+      <Button title="Reset"
+        onPress={async () => {
+          // await FileLocalService.resetFilesTable()
+          // await resetFoldersTable()
+          fullReset()
+
+        }} />
+      <Button title="Logout" onPress={async () => { await signOut() }} />
+    </>
+
+    )
+  }
+  const createDoc = () => {
+    const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
+    // user logged in flow new user
+    accessToken
+    const folders = []
+  }
+  const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
+    try {
+
+
+      console.log('updatedFiles===', updatedFiles);
+
+      for (const file of updatedFiles as any) {
+
+        // 🗑️ delete file
+        if (file.isDeleted) {
+          await FileLocalService.deleteFile(file.driveFileId);
+          continue;
+        }
+
+        // 🔍 check existing
+        const existingFile = await FileLocalService.getFileById(
+          file.driveFileId
+        );
+
+        // ➕ create
+        if (!existingFile) {
+          await FileLocalService.createFile(file);
+          console.log('➕ File created:', file.driveFileId);
+        }
+        // 🔄 update
+        else {
+          await FileLocalService.updateFile(file);
+          console.log('🔄 File updated:', file.driveFileId);
+        }
+      }
+
+    } catch (err) {
+      console.log('❌ File sync error:', err);
     }
   };
 
-  loadData();
-}, [isFocused]);
 
-  const deleteAsyncStorage = async () => {
-    AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
-    setData([])
-  }
   const requestCameraPermission = async () => {
     try {
       const result = await request(
@@ -161,49 +371,13 @@ export const DocumentScan = () => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   // This will be triggered when Screen A comes into focus
-
-  //   const backHandler = BackHandler.addEventListener("hardwareBackPress",backButtonHandler );
-  //   if (isFocused) {
-  //     console.log('Screen A is focused');
-
-  //     requestCameraPermission()
-  //   }
-
-  //   // Cleanup function to reset the StatusBar when leaving Screen A
-  //   return () => {
-  //    // backHandler.remove(); // Removes the event listener
 
 
-  //   };
-  // }, [isFocused]);
+  const resetDB = async () => {
+    resetFoldersTable()
+  }
 
 
-  useEffect(() => {
-    // call scanDocument on load
-    // scanDocument()
-    // console.log('data--------------------------------',data);
-    const files = async () => {
-      const arr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-      console.log('stored files', arr);
-      if (arr == null) {
-        await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, '[]')
-        setData([])
-      }
-      else {
-        setData(JSON.parse(arr))
-
-
-      }
-
-    }
-    if (data.length == 0) {
-      files()
-    }
-
-    //readFilesFromDirectory()
-  }, []);
 
   const scanDocument = async () => {
     // start the document scanner
@@ -223,103 +397,114 @@ export const DocumentScan = () => {
 
       }
       setIsShowFolderNameModal(true)
-      //copyFilesToDirectory(scannedImages)
     }
   }
+
+
+
 
   const copyFilesToDirectory = async () => {
-    console.log('scannedimages', images);
+    try {
+      console.log('scanned images:', images);
 
-    // Create the destination folder if it doesn't exist
-    await RNFS.mkdir(destinationPath);
+      await RNFS.mkdir(destinationPath);
 
-    // Loop through the URIs and copy them to the destination
-    await Promise.all(images.map(async (uri, index) => {
-      console.log('Copying=======');
+      const folderDisplayName =
+        folderName?.trim() || 'New Folder';
 
-      const fileName = uri.split('/').pop(); // Extract the file name
-      const defaultFolderName = fileName.split('.').slice(0, -1).join('.');
-      console.log('fileName----', fileName);
-      console.log('defaultFileName----', defaultFolderName);
+      // 👉 First image for cover
+      const firstFileName = images[0]?.split('/').pop() || '';
+      const firstExtension = firstFileName.includes('.')
+        ? firstFileName.split('.').pop()
+        : 'jpg';
 
-      const destinationFilePath = `${destinationPath}${fileName}`;
+      const coverUri = `${folderDisplayName}_0.${firstExtension}`;
 
-      await RNFS.copyFile(uri, destinationFilePath);
-      // const localStoredData = await readFilesFromDirectory()
-      const localStoredData = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS); // returns an array of file objects
-      console.log('localStoredData got -------', localStoredData);
-      let filesObject;
-      if (localStoredData != null) {
-        console.log('if-------', localStoredData);
-        filesObject = JSON.parse(localStoredData)
-      }
-      else {
-        console.log('set local data========');
-        await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, '[]')
-        return
-      }
-      // console.log('files length ---', data.length)
+      // 1. Create folder
+      // const folder = await FolderLocalService.createFolder(
+      //   folderDisplayName,
+      //   coverUri
+      // );
+      const folder = await FolderLocalService.createFolder
+        ('', folderDisplayName,
+          null, '', '', 0, 0)
+      console.log('created', folder);
 
-      const filesArr = []
+
+      const folderId = folder.id;
+
+      // 2. Process images
       for (let i = 0; i < images.length; i++) {
+        const uri = images[i];
 
-        filesArr.push({
-          id: generateUniqueNumber()+i,
-          name: defaultFolderName,
-          path: destinationFilePath,
-          mtime: new Date(),
-          type: 'file',
-          extension: fileName.split('.').pop(),
+        const originalFileName = uri.split('/').pop() || '';
+        const extension = originalFileName.includes('.')
+          ? originalFileName.split('.').pop()
+          : 'jpg';
+
+        // ✅ SINGLE SOURCE NAME
+        // let finalName = `${folderDisplayName}_${i}.${extension}`;
+        // let destinationFilePath = `${destinationPath}/${finalName}`;
+
+       let displayName = `${folderDisplayName}`;
+        console.log('display name',displayName);
+        
+        let finalName = `${folderDisplayName+ "_"+ Date.now()}.${extension}`;
+        let destinationFilePath = `${destinationPath}/${finalName}`;
+
+        // ✅ handle duplicate safely
+        let count = 1;
+        while (await RNFS.exists(destinationFilePath)) {
+          finalName = `${folderDisplayName}_${i}_${count}.${extension}`;
+          destinationFilePath = `${destinationPath}/${finalName}`;
+          count++;
+        }
+
+        console.log('Saving as:', finalName);
+
+        // Copy file
+        await RNFS.copyFile(uri, destinationFilePath);
+        // ✅ SAME NAME IN DB
+        await FileLocalService.createFile({
+          name: finalName, // exact match with FS
+          displayName: folderDisplayName+'_'+[i], // without extension
           size: 0,
-        })
-        console.log('arr--------------------------------,--------------------------------', filesArr)
+          lastModified: Date.now(),
+          folderId: folderId,
+        });
       }
-      const obj = { 'id': generateUniqueNumber(), folderName: folderName.length > 0 ? folderName : defaultFolderName, 'files': filesArr }
-      const combinedFiles = [...data, obj]
-      console.log('obj================================', obj);
-      console.log('combinedFiles================================', combinedFiles);
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(combinedFiles))
-      console.log(`File ${index + 1} copied to ${destinationFilePath}`);
-      setData(combinedFiles)
-      setIsShowFolderNameModal(false)
-      setFolderName('')
+      const files = await FileLocalService.getFilesByFolder(folderId)
+      console.log('files=======',files);
+      
+      const updatedFolder= await FolderLocalService.updateFolderById({id:folderId,coverUri:files[0].name})
 
+      console.log('updatedFolder cover uri', updatedFolder);
+      console.log('✅ All files saved');
 
-    }));
+      const updatedFolders = await FolderLocalService.getActiveFolders();
+      setData(updatedFolders);
 
-    console.log('All files copied successfully!');
-    //readFilesFromDirectory()
+      setIsShowFolderNameModal(false);
+      setFolderName('');
 
+    } catch (error) {
+      console.log('❌ Error:', error);
+    }
   };
-
   const readFilesFromDirectory = async () => {
-    // const directoryPath = `/storage/emulated/0/Android/data/${CONSTANT.PACKAGE_NAME}/files/`;
-    console.log('Reading files from directory: ', destinationPath);
+    try {
+      console.log('Reading files from directory: ', destinationPath);
 
+      const files = await RNFS.readDir(destinationPath);
 
+      console.log('✅ Files found:', files.length);
 
-    // List the files in the directory
-    const filesStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS); // returns an array of file objects
-    console.log('filesStr', filesStr);
-    let filesObject = [];
-    if (filesStr != null) {
-      console.log('if', filesStr);
-      filesObject = JSON.parse(filesStr)
+    } catch (error) {
+      console.log('Error reading directory:', error);
     }
-    else {
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, '[]')
-    }
-    console.log('filesObject', filesObject);
-
-    setData(filesObject)
-    console.log('All files read successfully!');
-    return filesObject
-
 
   };
-  const deleteKey = async () => {
-    await AsyncStorage.removeItem(asyncStorageKeyName.DOCUMENTS)
-  }
+
 
   const checkIsEditable = (id: number) => {
     // console.log(id, 'id');
@@ -337,27 +522,19 @@ export const DocumentScan = () => {
     }
   }
   const renameFolder = async () => {
-    setIsFolderNameChange(false)
-    const updatedData = [...data]
-    updatedData.forEach(item => {
-      if (item.id === folderId) {
-        item.folderName = folderName
-      }
-    })
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
 
-  }
-  const deleteFolder = async () => {
-    const updatedData = [...data]
-    updatedData.forEach((item, index) => {
-      if (item.id === folderId) {
-        updatedData.splice(index, 1)
-      }
-    })
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
-  }
+    await FolderLocalService.updateFolderById({ id: folderId, name: folderName, isDeleted: 0 })
+
+    // await FolderLocalService.updateFolder(folderId, folderName, existingFolder.coverUri)
+    const updatedFolder = await FolderLocalService.getActiveFolders()
+
+    // ✅ update UI
+    setData(updatedFolder);
+    setIsFolderNameChange(false)
+
+  };
+
+
   const checkisFolderSelected = (id: number) => {
     // console.log('selectedfolder', selectedFoldersId);
 
@@ -398,17 +575,17 @@ export const DocumentScan = () => {
 
   const generateAndSharePdfs = async (selectedFolders: any) => {
 
-    console.log('selectedFolders',selectedFolders);
-    console.log('selectedFolders',selectedFolders.length);
-    
+    console.log('selectedFolders', selectedFolders);
+    console.log('selectedFolders', selectedFolders.length);
+
     try {
       const pdfFilePaths: string[] = [];
-  
+
       // Loop through each selected folder
       for (let i = 0; i < selectedFolders.length; i++) {
         const folderImages = selectedFolders[i].files.map(item => item.path);
         const folderName = `folder_${i + 1}`; // Unique name for each folder PDF
-  
+
         const options = {
           imagePaths: folderImages,
           name: folderName,
@@ -418,23 +595,23 @@ export const DocumentScan = () => {
           },
           quality: 1,
         };
-  
+
         console.log(`Generating PDF for folder ${folderName}`, options);
-        
+
         const pdf = await RNImageToPdf.createPDFbyImages(options);
         pdfFilePaths.push(pdf.filePath); // Store generated PDF path
-  
+
         console.log(`PDF Generated: ${pdf.filePath}`);
       }
-  
+
       // Share all PDFs together
       shareMultiplePdfFiles(pdfFilePaths);
-  
+
     } catch (e) {
       console.log('Error:', e);
     }
   };
-  
+
   const shareMultiplePdfFiles = async (filePaths: string[]) => {
     try {
       const shareableUris = await Promise.all(
@@ -443,41 +620,71 @@ export const DocumentScan = () => {
           return `data:application/pdf;base64,${base64Data}`;
         })
       );
-  
+
       Share.open({
         urls: shareableUris, // Share multiple PDFs at once
       });
-  
+
       console.log("PDFs Shared Successfully!");
-  refForDocShare.current?.close()
+      refForDocShare.current?.close()
     } catch (err) {
       console.log('Error Sharing PDFs:', err);
     }
   };
-  
+
   const deleteSingleFolder = async (obj: any) => {
-    console.log('folder------', selectedFoldersId);
-    const updatedData = [...data];
-    updatedData.forEach((item, index) => {
-      if (item.id === obj.id) {
-        updatedData.splice(index, 1);
-      }
-    });
-
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
-    setSelectedFoldersId([])
     try {
-      for (const filePath of selectedFoldersId) {
-        // deleteFile(filePath)
-      }
-      console.log('Files deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting files:', error);
-    }
-    setMultidelete(false)
-  }
+      console.log('Deleting folder:', obj.id);
 
+      // 1. Get all files of this folder
+      // const files = data.photos.filter((item:any) => item.folderId === obj.id);
+      const files = await FileLocalService.getFilesByFolder(obj.id)
+      FolderLocalService.deleteFolderById(obj.id)
+      console.log('Files to delete:', files);
+
+      // 2. Delete files from storage
+      await Promise.all(
+        files.map(async (file: any) => {
+          const path = `${destinationPath}${file.name}`;
+          const exists = await RNFS.exists(path);
+
+          if (exists) {
+            await RNFS.unlink(path);
+          }
+        })
+      );
+
+      // 3. Delete files from DB
+      const updatedData = await FolderLocalService.getActiveFolders()
+
+      setData(updatedData);
+
+
+
+      // Reset UI states
+      setSelectedFoldersId([]);
+      setMultidelete(false);
+
+      console.log('✅ Folder deleted successfully');
+    } catch (error) {
+      console.log('❌ Error deleting folder:', error);
+    }
+  };
+
+  const deleteFilesFromFolder = async (photos: Array<any>) => {
+    console.log('photos===', photos);
+
+    // try {
+    //   for (const file of folder.files) {
+    //     if (file.uri) {
+    //       await deleteFile(file.uri); // your RNFS / RNFetchBlob logic
+    //     }
+    //   }
+    //   console.log('Files deleted successfully!');
+    // } catch (error) {
+    //   console.error('Error deleting files:', error);
+    // }
+  };
 
   const deleteFoldersConfirmationForMultipleItem = () => {
     ConfirmPopup(() => deleteMultipleFolder());
@@ -493,34 +700,35 @@ export const DocumentScan = () => {
       setSelectedFoldersId(data.map(item => item))
     }
   }
-  const onPressItem = (item) => {
+  const onPressItem = async (item) => {
 
     if (isMultiDelete) {
       onSelectFolders(item)
     }
     else {
-      const obj = data.find((v) => v.id === item.id)
-      // console.log('found', obj);
-      const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
-      // console.log(selectedFolder);
+      // const obj = data.find((v) => v.id === item.id)
+      // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
-      navigateTo('DisplayMultipleDocumentImage', selectedFolder)
+      const files = await FileLocalService.getFilesByFolder(item.id)
+      navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
+      console.log('files=======', files);
+
     }
   }
 
-  const shareFile = async (item:Array<any>) => {
+  const shareFile = async (item: Array<any>) => {
     console.log('item', item);
-    
+
     let data = []
     // for (let i = 0; i < item.files.length; i++) {
-      const folderFiles = item.files.map(element => ({
-        path: element.path
-      }));
-  
-      data = [...data, ...folderFiles]; // Accumulate file paths from all folders
-    
-  
-  
+    const folderFiles = item.files.map(element => ({
+      path: element.path
+    }));
+
+    data = [...data, ...folderFiles]; // Accumulate file paths from all folders
+
+
+
     console.log('data', data);
     refForDocShare.current?.close()
     await fileShareMultiple(data)
@@ -529,127 +737,147 @@ export const DocumentScan = () => {
 
   }
 
-const renderParentItem = ({ item }) => {
-  const isSelected = checkisFolderSelected(item.id);
-  const isEditable = checkIsEditable(item.id);
+  const readDirectory = () => {
+    readFilesFromDirectory
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={() => onPressItem(item)}
-      onLongPress={() => {
-        setMultidelete(!isMultiDelete);
-        onSelectFolders(item);
-      }}
-      style={[
-        styles.card,
-        {
-          backgroundColor: isSelected ? '#E6F7F5' : '#FFFFFF',
-          borderWidth: isSelected ? 1 : 0,
-          borderColor: isSelected ? '#2FB2A2' : 'transparent',
-        },
-      ]}
-    >
-      {/* Thumbnail */}
-      <View style={styles.thumbnailWrapper}>
-        <Image
-          source={{ uri: 'file:' + item.files[0].path }}
-          style={styles.thumbnail}
-          resizeMode="cover"
-        />
-      </View>
+  }
+  const renderParentItem = ({ item }) => {
 
-      {/* Content */}
-      <View style={styles.content}>
-        {!isEditable ? (
-          <>
-            <Text style={styles.title} numberOfLines={1}>
-              {capitalizeFirstLetter(item.folderName || '')}
-            </Text>
-            <Text style={styles.date}>{getDate(item.date)}</Text>
-          </>
-        ) : (
-          <>
-            <CustomInputBox
-              value={capitalizeFirstLetter(item.folderName || '')}
-              onChangeText={setFolderName}
-              isEditable={true}
-            />
-            <Text style={styles.date}>{getDate(item.date)}</Text>
-          </>
-        )}
-      </View>
+    const isSelected = checkisFolderSelected(item.id);
+    const isEditable = checkIsEditable(item.id);
 
-      {/* Actions */}
-      {!isMultiDelete && (
-        <View style={styles.actionColumn}>
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => onPressItem(item)}
+        onLongPress={() => {
+          setMultidelete(!isMultiDelete);
+          onSelectFolders(item);
+        }}
+        style={[
+          styles.card,
+          {
+            backgroundColor: isSelected ? '#E6F7F5' : '#FFFFFF',
+            borderWidth: isSelected ? 1 : 0,
+            borderColor: isSelected ? '#2FB2A2' : 'transparent',
+          },
+        ]}
+      >
+        {/* Thumbnail */}
+        <View style={styles.thumbnailWrapper}>
+          <Image
+            source={{ uri: getImageUriByOS(destinationPath + item?.coverUri) }}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
           {!isEditable ? (
             <>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  setIsFolderNameChange(true);
-                  setFolderId(item.id);
-                }}
-              >
-                <MaterialIcons name="edit" size={18} color="#209DA1" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() =>
-                  deleteFoldersConfirmationForSingleItem(item)
-                }
-              >
-                <MaterialIcons name="delete" size={18} color="#E4003A" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => shareFile(item)}
-              >
-                <Ionicons
-                  name="share-outline"
-                  size={18}
-                  color="#209DA1"
-                />
-              </TouchableOpacity>
+              <Text style={styles.title} numberOfLines={1}>
+                {/* {capitalizeFirstLetter(item?.name || '')} */}
+                <Text style={styles.date}>{item?.coverUri}</Text>
+              </Text>
+              <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
+              {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
             </>
           ) : (
             <>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={renameFolder}
-              >
-                <Ionicons
-                  name="checkmark-sharp"
-                  size={20}
-                  color="#209DA1"
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => setIsFolderNameChange(false)}
-              >
-                <MaterialIcons name="close" size={18} color="#999" />
-              </TouchableOpacity>
+              <CustomInputBox
+                value={capitalizeFirstLetter(item?.name || '')}
+                onChangeText={setFolderName}
+                isEditable={true}
+              />
+              <Text style={styles.date}>{getDate(item?.date)}</Text>
             </>
           )}
         </View>
-      )}
-    </TouchableOpacity>
-  );
-};
+
+        {/* Actions */}
+        {!isMultiDelete && (
+          <View style={styles.actionColumn}>
+            {!isEditable ? (
+              <>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    setIsFolderNameChange(true);
+                    setFolderId(item.id);
+                  }}
+                >
+                  <MaterialIcons name="edit" size={18} color="#209DA1" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() =>
+                    deleteFoldersConfirmationForSingleItem(item)
+                  }
+                >
+                  <MaterialIcons name="delete" size={18} color="#E4003A" />
+                </TouchableOpacity>
+
+
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => shareFile(item)}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={18}
+                    color="#209DA1"
+                  />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={renameFolder}
+                >
+                  <Ionicons
+                    name="checkmark-sharp"
+                    size={20}
+                    color="#209DA1"
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => setIsFolderNameChange(false)}
+                >
+                  <MaterialIcons name="close" size={18} color="#999" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const getFiles = () => {
     // getting search value from dashboard and filtering it
-    if (searchQuery.length > 0) {
-      return data.filter(file =>
-        file.folderName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    } else {
-      return data;
+    // console.log('data getFiles======', data);
+    if (isLocalDataFetch) {
+
+      if (searchQuery.length > 0) {
+        return data.filter(file =>
+          file.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      } else {
+        // return []
+        // console.log('log==', data.folders);
+
+        return data;
+      }
+    }
+    else {
+      console.log('returned------', data);
+
+      return []
     }
   };
 
@@ -756,18 +984,59 @@ const renderParentItem = ({ item }) => {
 
 
   }
+  // const openFile = async () => {
+  //   try {
+  //     const res = await DocumentPicker.pickSingle({
+  //       copyTo: 'cachesDirectory',
+  //       type: [DocumentPicker.types.zip,]
+  //     })
+  //     // console.log('response-----', res);
+  //     // i want a file extension
+  //     const fileExtension = res.name.split('.').pop()
+  //     console.log('fileExtension--------------', res);
+  //     console.log('fileExtension--------------', fileExtension);
+  //     // importBackup(res)
+
+
+  //   }
+  //   catch (error) {
+  //     console.log('openFile error-----', error);
+  //   }
+  // }
+
   const openFile = async () => {
+    console.log('open file===');
+
+
     try {
-      const res = await DocumentPicker.pickSingle({
-        copyTo: 'cachesDirectory',
-        type: [DocumentPicker.types.zip,]
-      })
-      // console.log('response-----', res);
-      // i want a file extension
-      const fileExtension = res.name.split('.').pop()
-      console.log('fileExtension--------------', res);
+      const res = await DocumentPicker({ isMultipleSelection: false })
+      let fileExtension = ''
+      let uri = ''
+
+      if (res) {
+        // console.log('name--------------', res[0].localUri);
+        // fileExtension = res[0].localUri.split('.').pop()
+        // uri = res[0].localUri
+       const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
+        
+        console.log('uri', uri);
+
+        const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
+        const folderId = await GoogleDriveService.getOrCreateGDriveFolderName(accessToken, asyncStorageKeyName.DRIVE_FOLDER_NAME)
+        await GoogleDriveService.uploadImage(uri, accessToken, folderId)
+        console.log('accesstoken', accessToken);
+        console.log('folderId', folderId);
+        console.log('localUri====', uri);
+
+
+      }
+
+
       console.log('fileExtension--------------', fileExtension);
-      importBackup(res)
+      console.log('uri--------------', uri);
+
+
+
 
 
     }
@@ -780,9 +1049,9 @@ const renderParentItem = ({ item }) => {
       <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
-        marginTop:heightFromPercentage(4)
+        marginTop: heightFromPercentage(4)
 
-        
+
       }}>
         {isMultiDelete ? <LinearGradient
           colors={['#1385b5', '#2fb2a2']}
@@ -830,16 +1099,17 @@ const renderParentItem = ({ item }) => {
         </LinearGradient> :
 
           <LinearGradient
+            // colors={['white', 'white']}
             colors={['#0081A7', '#00AFB9']}
             style={{
               flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-               width: '95%', alignSelf: 'center', 
+              width: '95%', alignSelf: 'center',
               borderRadius: scaledSize(8),
             }}>
             <View style={{
-              width: widthFromPercentage(78), 
-              height: scaledSize(43), 
-              justifyContent: 'center', alignItems: 'center', 
+              width: widthFromPercentage(78),
+              height: scaledSize(43),
+              justifyContent: 'center', alignItems: 'center',
               alignSelf: 'center',
             }}>
               <Searchbar
@@ -847,11 +1117,13 @@ const renderParentItem = ({ item }) => {
                 style={{
                   borderRadius: scaledSize(0), height: scaledSize(43), marginRight: scaledSize(20),
                   backgroundColor: 'white', textAlign: 'center', borderWidth: 1, borderColor: '#e7ebf3',
-                  alignSelf:'center'
+                  alignSelf: 'center'
                 }}
-                onChangeText={(value) => setSearchQuery(value)}
+                defaultValue={searchText}
+                onChangeText={(value) => setSearchText(value)}
+                // onChangeText={(value) => setSearchQuery(value)}
                 // placeholderTextColor="#d5d5d5"
-                inputStyle={{ fontSize: scaledSize(14),alignSelf:'center' }}
+                inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center' }}
                 loading={false}
                 icon={() => <Image source={searchIcon} style={{
                   height: scaledSize(16), width: scaledSize(16),
@@ -869,19 +1141,22 @@ const renderParentItem = ({ item }) => {
                 }
                 value={searchQuery}
               />
+              {/* <CustomInput onChangeText={((v)=>setSearchText(v))} placeholder='input'/> */}
             </View>
             <View style={{
               width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
               alignItems: 'center', marginLeft: scaledSize(10), right: 14,
             }}>
-              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)} color={'white'} onPress={() => setIsShowbackupMessage(true)} />
+              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)}
+                color={'white'} onPress={() => openFile()} />
+              {/* color={'white'} onPress={() => setIsShowbackupMessage(true)} /> */}
             </View>
           </LinearGradient>
         }
 
       </View>
       {/* ----------------------------- */}
-      <View style={{ flex: 1,marginTop:heightFromPercentage(0.5) }}>
+      <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
         {getFiles().length > 0 ? <FlatList
           showsVerticalScrollIndicator={false}
           data={getFiles()}
@@ -891,35 +1166,47 @@ const renderParentItem = ({ item }) => {
           <>
             {isPermissionDenied ?
               <View style={{ flex: 1 }}>
-              <Modal visible={isPermissionDenied} transparent>
-                <CustomPermissionMessage permissionMessage={'Please Allow Camera Permission'} 
-                onPressClose={() => setIsPermissionDenied(false)} />
+                <Modal visible={isPermissionDenied} transparent>
+                  <CustomPermissionMessage permissionMessage={'Please Allow Camera Permission'}
+                    onPressClose={() => setIsPermissionDenied(false)} />
                 </Modal>
-              </View> 
+              </View>
               :
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => openFile()}>
-                <Image source={cloud} style={{ height: scaledSize(150), width: scaledSize(200) }}  />
+                  <Image source={cloud} style={{ height: scaledSize(150), width: scaledSize(200) }} />
 
                 </TouchableOpacity>
-                {/* <MaterialCommunityIcons name='import' size={scaledSize(34)} color={COLORS.THEME_COLOR} onPress={() => openFile()} /> */}
-                <Text style={{ fontSize: scaledSize(16),  letterSpacing: 1 }} >{'Import backup'}</Text>
-              </View>}
+                <Text style={{ fontSize: scaledSize(16), letterSpacing: 1 }} >{'Import backup'}</Text>
+              </View>
+            }
           </>
 
         }
 
       </View>
-
-      <View style={{ height: scaledSize(50), position: "absolute", left: scaledSize(270),
-        top: heightFromPercentage(72) }}>
-        <CustomFAB 
-        icon={<Ionicons name='camera-outline' size={scaledSize(24)} color={'white'} />} 
-        onPress={()=>{requestCameraPermission()}}
-        // onPress={scanDocument}
-         />
+      <View style={{
+        height: scaledSize(50), position: "absolute", left: scaledSize(20),
+        top: heightFromPercentage(72)
+      }}>
+        <Text style={{ color: 'black' }}>{localFiles.length}</Text>
+        {localFiles.map((item) => (
+          <Text key={item?.id} style={{ color: 'black' }}>{'Drive' + item.driveFileId}
+          {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
+        ))}
       </View>
-      <Overlay isVisible={isShowFolderNameModal} overlayStyle={{borderRadius:scaledSize(10)}}>
+
+      <View style={{
+        height: scaledSize(50), position: "absolute", left: scaledSize(270),
+        top: heightFromPercentage(72)
+      }}>
+        <CustomFAB
+          icon={<Ionicons name='camera-outline' size={scaledSize(24)} color={'white'} />}
+          onPress={() => { requestCameraPermission() }}
+        // onPress={scanDocument}
+        />
+      </View>
+      <Overlay isVisible={isShowFolderNameModal} overlayStyle={{ borderRadius: scaledSize(10) }}>
         <View style={{ height: scaledSize(180), width: scaledSize(300), backgroundColor: 'white', }}>
           <View style={{ height: scaledSize(50), backgroundColor: 'white', flexDirection: 'row' }}>
             <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'center' }}>
@@ -931,7 +1218,7 @@ const renderParentItem = ({ item }) => {
               </Text>
             </View>
             <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false), copyFilesToDirectory() }}>
+              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false) }}>
                 <MaterialIcons name='close'
                   size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
               </TouchableOpacity>
@@ -943,7 +1230,7 @@ const renderParentItem = ({ item }) => {
           </View>
           <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(30) }}>
             <CustomeButton name='Save' onPress={() => copyFilesToDirectory()}
-             buttonStyle={{backgroundColor:COLORS.THEME_COLOR,borderRadius:scaledSize(20)}} textStyle={{color:'white'}} />
+              buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, borderRadius: scaledSize(20) }} textStyle={{ color: 'white' }} />
           </View>
 
         </View>
@@ -1004,68 +1291,83 @@ const renderParentItem = ({ item }) => {
 
         </View>
       </Overlay>
+      <CustomSpinner isLoading={isLoading} />
 
-
-      <Overlay isVisible={isShowbackupMessage}>
-        <View style={{ height: scaledSize(190), width: scaledSize(300), backgroundColor: 'white', borderRadius: scaledSize(8) }}>
-          <View style={{ height: scaledSize(50), backgroundColor: 'white', flexDirection: 'row' }}>
-            <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', }}>
-              <Text style={{
-                fontSize: scaledSize(18), fontFamily: FONTS.QuicksandBold, letterSpacing: 1,
-                textAlign: 'center', marginTop: scaledSize(4),
-              }}>
-                Bakup Confirmation
-              </Text>
-            </View>
-            <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => setIsShowbackupMessage(false)}>
-                <MaterialIcons name='close'
-                  size={scaledSize(30)} style={{ bottom: scaledSize(4) }}>
-
-                </MaterialIcons>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={{ height: scaledSize(80) }}>
-            <Text style={{
-              fontSize: scaledSize(14), fontFamily: Fonts.regular, letterSpacing: .8,
-              textAlign: 'center',
-            }}>
-              You are going to create a backup of your documents. Letter you can import it in another device also. and backup we'll be created into Download directory.
-            </Text>
-          </View>
-          <View style={{ height: scaledSize(40), top: scaledSize(10) }}>
-            <CustomeButton name='Proceed' onPress={() => { setIsBackupStarted(true), setIsShowbackupMessage(false), createBackup() }} backGroundColor={COLORS.THEME_COLOR} />
-          </View>
-        </View>
-      </Overlay>
-      <View style={{height:scaledSize(50)}}>
-
-<CustomBannerAdd/>
+      <View style={{
+        height: scaledSize(100), width: '80%', 
+        flexDirection: 'row', justifyContent: "space-between"
+      }}>
+        {/* <Image
+          resizeMode="contain"
+          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + '1777791940638Ght.jpg') }}
+          style={{
+            height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
+          }}
+        /> */}
+        {renderButton()}
+        {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
       </View>
+      {/* 
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
+
+          <CustomeButton onPress={() => getAndCreateFileData(true, 'jolo')} name={'Insert'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => getAndCreateFileData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
+          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
+          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => FileLocalService.resetFilesTable()} name={'Reset-file'}
+            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
+        </View>
+      </View> */}
+      {/* <View style={{ flexDirection: 'row' }}>
+        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
+
+          <CustomeButton onPress={() => getAndCreateFolderData(true, 'jolo')} name={'Insert'}
+            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => getAndCreateFolderData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
+          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
+          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
+        </View>
+        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
+          <CustomeButton onPress={() => resetFoldersTable()} name={'Reset'}
+            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
+        </View>
+      </View> */}
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
-       ref={refForDocShare} bottomShitSnapPoints={['30','30','50']} >
+        ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
         <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: scaledSize(16),  letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
+            <Text style={{ fontSize: scaledSize(16), letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
           </View>
+
           <View
-           style={{ flex: 1, marginTop: scaledSize(10),justifyContent:"center",alignItems:'center' }}>
-          <TouchableOpacity style={styles.shareOptionS} onPress={()=>generateAndSharePdfs(selectedFoldersId)}>
-            <Text style={{fontSize:scaledSize(16),fontFamily:FONTS.regular}}>PDF</Text>
-          </TouchableOpacity>
+            style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
+            <TouchableOpacity style={styles.shareOptionS} onPress={() => generateAndSharePdfs(selectedFoldersId)}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>PDF</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.shareOptionS,{marginTop:scaledSize(10)}]}
-          onPress={()=>shareFile(selectedFoldersId)}>
-            <Text style={{fontSize:scaledSize(16),fontFamily:FONTS.regular}}>Images</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(10) }]}
+              onPress={() => shareFile(selectedFoldersId)}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>Images</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.shareOptionS,{marginTop:scaledSize(20),}]}
-          onPress={()=>refForDocShare.current?.close()}>
-            <Text style={{fontSize:scaledSize(16),fontFamily:FONTS.regular,color:'red'}}>Cancel</Text>
-          </TouchableOpacity>
-              </View>
+            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(20), }]}
+              onPress={() => refForDocShare.current?.close()}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular, color: 'red' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </CustomBottomSheet>
     </SafeAreaView>
@@ -1075,10 +1377,12 @@ const renderParentItem = ({ item }) => {
 export default DocumentScan;
 
 const styles = StyleSheet.create({
-  shareOptionS:{height:scaledSize(40),backgroundColor:'white',
-    width:'100%',flexDirection:'row',borderRadius:scaledSize(10),
-      justifyContent:'center',alignItems:'center',},
-      card: {
+  shareOptionS: {
+    height: scaledSize(40), backgroundColor: 'white',
+    width: '100%', flexDirection: 'row', borderRadius: scaledSize(10),
+    justifyContent: 'center', alignItems: 'center',
+  },
+  card: {
     flexDirection: 'row',
     marginHorizontal: scaledSize(16),
     marginTop: scaledSize(14),
@@ -1114,7 +1418,7 @@ const styles = StyleSheet.create({
     fontSize: scaledSize(14),
     // fontWeight: '600',
     color: '#1F1F1F',
-    letterSpacing:1,
+    letterSpacing: 1,
     // fontFamily:Fonts.regular
   },
 
@@ -1133,7 +1437,7 @@ const styles = StyleSheet.create({
     width: scaledSize(28),
     height: scaledSize(28),
     borderRadius: scaledSize(18),
-    backgroundColor: '#F4F6F8',
+    // backgroundColor: '#F4F6F8',
     justifyContent: 'center',
     alignItems: 'center',
   },

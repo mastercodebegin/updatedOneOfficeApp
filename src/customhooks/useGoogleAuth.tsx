@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { asyncStorageKeyName } from '../utilies/Constants';
-import { getData, setData } from '../utilies/storageService';
-
-interface GoogleUser {
-  user: any;
-  accessToken: string;
-}
+import { useState, useEffect } from 'react';
+import {
+  getAuth,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithCredential,
+} from '@react-native-firebase/auth';
+import { AuthService } from '../service/AuthService';
+import { setLocalData } from '../../src/utilies/storageService';
+import { asyncStorageKeyName } from '../../src/utilies/Constants';
 
 export const useGoogleAuth = () => {
   const [user, setUser] = useState<any>(null);
@@ -15,136 +15,52 @@ export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '955297173470-mh58cg7jfquem59qaj1sh3mhtrat8a15.apps.googleusercontent.com',
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
-      offlineAccess: true,
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        setUser(null);
+      }
     });
+
+    return unsubscribe;
   }, []);
 
-  const signIn = async (): Promise<GoogleUser | null> => {
+  const signIn = async () => {
     try {
       setLoading(true);
 
-      await GoogleSignin.hasPlayServices();
+      const { accessToken, idToken } = await AuthService.signIn();
+      console.log('accessToken signIn -------- :', accessToken);
+      console.log('idToken signIn----------------:', idToken);
 
-      const userInfo = await GoogleSignin.signIn();
-      const tokens = await GoogleSignin.getTokens();
+      const auth = getAuth();
 
-      setUser(userInfo);
-      setAccessToken(tokens.accessToken);
+      const credential = GoogleAuthProvider.credential(idToken);
 
-      return {
-        user: userInfo,
-        accessToken: tokens.accessToken,
-      };
+      const firebaseUser = await signInWithCredential(auth, credential);
 
-    } catch (error: any) {
-      console.log('Google Sign-In Error:', error);
-      return null;
+      setUser(firebaseUser.user);
+      setAccessToken(accessToken);
+      setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, accessToken); // Store token in storage
+
+      return { user: firebaseUser.user, accessToken };
+    } catch (e) {
+      console.log('SignIn error:', e);
+      throw e;
     } finally {
       setLoading(false);
     }
   };
 
-const signOut = async () => {
-  try {
-    await GoogleSignin.revokeAccess(); // optional
-    await GoogleSignin.signOut();
-
+  const signOut = async () => {
+    await AuthService.signOut();
     setUser(null);
-    setAccessToken(null);
-  } catch (error) {
-    console.log('Sign out error:', error);
-  }
-};
-
-const getFolderId = async (accessToken: string) => {
-  try {
-    let folderId = getData(asyncStorageKeyName.DRIVE_FOLDER_ID);
-
-    // ✅ If exists → return
-    if (folderId) {
-      console.log('folderid',folderId);
-      
-      return folderId;
-    }
-
-    // ❌ If not → create folder
-    const res = await fetch("https://www.googleapis.com/drive/v3/files", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: "MyAppPhotos",
-        mimeType: "application/vnd.google-apps.folder",
-      }),
-    });
-
-    const data = await res.json();
-    console.log('json data=========',data);
-    
-
-    if (!data.id) {
-      throw new Error("Folder creation failed");
-    }
-
-    folderId = data.id;
-
-    // ✅ Save in MMKV
-    setData(asyncStorageKeyName.DRIVE_FOLDER_ID, folderId);
-
-    return folderId;
-
-  } catch (error) {
-    console.log("Drive folder error:", error);
-    throw error;
-  }
-};
-
-const uploadImage = async (fileUri:string, accessToken:string, folderId:string) => {
-  try {
-    const metadata = {
-      name: `photo_${Date.now()}.jpg`,
-      parents: [folderId],
-    };
-
-    const formData = new FormData();
-
-    formData.append("metadata", {
-      string: JSON.stringify(metadata),
-      type: "application/json",
-    });
-
-    formData.append("file", {
-      uri: fileUri,
-      type: "image/jpeg",
-      name: "photo.jpg",
-    });
-
-    const res = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: formData,
-      }
-    );
-
-    const data = await res.json();
-
-    console.log("Upload response:", data);
-
-    return data.id;
-
-  } catch (error) {
-    console.log("Upload error:", error);
-  }
-};
+    setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, ''); // Clear token from storage
+    setAccessToken('');
+  };
 
   return {
     user,
@@ -152,7 +68,5 @@ const uploadImage = async (fileUri:string, accessToken:string, folderId:string) 
     loading,
     signIn,
     signOut,
-    getFolderId,
-    uploadImage
   };
 };

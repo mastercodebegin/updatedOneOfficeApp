@@ -2,24 +2,33 @@ import { createMMKV } from 'react-native-mmkv'
 
 export const storage = createMMKV()
 
-export const setData = (key, value) => {
+export const setLocalData = (key: string, value: any) => {
   try {
-    storage.set(key, JSON.stringify(value));
+    if(value)
+    {
+      storage.set(key, JSON.stringify(value));
+    }
   } catch (e) {
     console.log('MMKV set error:', e);
   }
 };
 
-export const getData = (key) => {
+export const getLocalData = (key:string) => {
   try {
     const value = storage.getString(key);
-    return value ? JSON.parse(value) : null;
+    // console.log('getLocalData',value);
+    
+    return value ;
   } catch (e) {
     console.log('MMKV get error:', e);
     return null;
   }
 };
 
-export const removeData = (key) => {
-  storage.delete(key);
+export const removeLocalData = (key:string) => {
+return storage.remove(key)
+};
+
+export const removeAllLocalData = () => {
+return storage.clearAll()
 };
