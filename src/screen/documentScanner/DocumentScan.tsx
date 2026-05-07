@@ -51,6 +51,7 @@ import { syncAll } from './SyncFolderAndFiles';
 import CustomSpinner from '../../component/CustomSpinner';
   import firestore from '@react-native-firebase/firestore';
 import { getDB } from '../../../src/db';
+import useDebounce from '../../component/useDebounce';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -79,7 +80,8 @@ export const DocumentScan = () => {
   const [localFiles, setLocalFiles] = useState([])
   const isFocused = useIsFocused();
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-
+const [searchText,setSearchText] = useState('')
+const debouncedSearchText = useDebounce({searchText,delay:10000})
 
 useEffect(() => {
   // return 
@@ -136,6 +138,15 @@ useEffect(() => {
     if (unsubscribeTriggers) unsubscribeTriggers();
   };
 }, []);
+useEffect(()=>{
+  console.log('debouncedSearchText',debouncedSearchText);
+  ApiHandler()
+
+},[debouncedSearchText])
+
+const ApiHandler=()=>{
+    console.log('function callled----',debouncedSearchText)
+  }
 
   const getfiles = async () => {
     const files = await FileLocalService.getAllFiles()
@@ -1088,6 +1099,7 @@ const handleSync=async () => {
         </LinearGradient> :
 
           <LinearGradient
+            // colors={['white', 'white']}
             colors={['#0081A7', '#00AFB9']}
             style={{
               flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
@@ -1107,7 +1119,9 @@ const handleSync=async () => {
                   backgroundColor: 'white', textAlign: 'center', borderWidth: 1, borderColor: '#e7ebf3',
                   alignSelf: 'center'
                 }}
-                onChangeText={(value) => setSearchQuery(value)}
+                defaultValue={searchText}
+                onChangeText={(value) => setSearchText(value)}
+                // onChangeText={(value) => setSearchQuery(value)}
                 // placeholderTextColor="#d5d5d5"
                 inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center' }}
                 loading={false}
@@ -1127,6 +1141,7 @@ const handleSync=async () => {
                 }
                 value={searchQuery}
               />
+              {/* <CustomInput onChangeText={((v)=>setSearchText(v))} placeholder='input'/> */}
             </View>
             <View style={{
               width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
