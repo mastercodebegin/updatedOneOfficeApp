@@ -82,7 +82,7 @@ export const DocumentScan = () => {
 
 
 useEffect(() => {
-  return 
+  // return 
   let unsubscribeFiles: any;
   let unsubscribeTriggers: any;
   let isSyncing = false; // guard
@@ -99,7 +99,7 @@ useEffect(() => {
       .where('userId', '==', userId)
       .onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
-          console.log('FILES:', change.type, change.doc.data());
+          console.log('SYNC TRIGGERED 1');
           handleSync()
             // syncAll(); // runs for added + modified + removed
 
@@ -108,7 +108,7 @@ useEffect(() => {
 
     // Listener 2 (trigger sync)
     unsubscribeTriggers = firestore()
-      .collection('syncTriggers')
+      .collection('folders')
       .where('userId', '==', userId)
       .onSnapshot(async snapshot => {
         if (snapshot.empty) return;
@@ -119,7 +119,7 @@ useEffect(() => {
         isSyncing = true;
 
         try {
-          console.log('SYNC TRIGGERED');
+          console.log('SYNC TRIGGERED 2');
           await handleSync();
         } catch (e) {
           console.log('Sync error', e);
@@ -150,7 +150,7 @@ useEffect(() => {
       try {
         const folders = await FolderLocalService.getActiveFolders();
 
-        console.log('folders=====', folders);
+        console.log('folders=====1st', folders);
 
         setData(folders);
 
@@ -162,7 +162,7 @@ useEffect(() => {
     };
 
     fetchData();
-  }, [isFocused]);
+  }, []);
 
 const fullReset = async () => {
   try {
@@ -224,15 +224,19 @@ const handleSync=async () => {
           console.log('Syncing all files... started', accessToken);
 
           await syncAll();
-          const files = await FileLocalService.getAllFiles()
+          // setTimeout(async() => {
           const folders = await FolderLocalService.getActiveFolders()
-          console.log('folders-------', folders);
+          const files = await FileLocalService.getAllFiles()
+          console.log('folders-------2nd', folders);
 
           setLocalFiles(files);
-          setData(folders);
+            
+            setData(folders);
+          // }, 500);
         } catch (e) {
           console.log('Sync error document scanner:', e);
         } finally {
+          console.log('finally triggered');
           setIsLoading(false); // 🔥 ALWAYS runs
         }
       }
@@ -762,8 +766,8 @@ const handleSync=async () => {
           {!isEditable ? (
             <>
               <Text style={styles.title} numberOfLines={1}>
-                {capitalizeFirstLetter(item?.name || '')}
-                {/* <Text style={styles.date}>{item?.coverUri}</Text> */}
+                {/* {capitalizeFirstLetter(item?.name || '')} */}
+                <Text style={styles.date}>{item?.coverUri}</Text>
               </Text>
               <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
               {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
