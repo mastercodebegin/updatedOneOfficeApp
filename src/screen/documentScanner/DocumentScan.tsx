@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef, use, useMemo } from 'react'
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
@@ -49,9 +49,13 @@ import { AuthService } from '../../service/AuthService';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import { syncAll } from './SyncFolderAndFiles';
 import CustomSpinner from '../../component/CustomSpinner';
-  import firestore from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 import { getDB } from '../../../src/db';
 import useDebounce from '../../component/useDebounce';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleTheme } from '../theme/ThemeSlice';
+import { useTheme } from '../theme/useTheme';
+import { Theme } from '../theme/ThemeConfig';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -80,72 +84,89 @@ export const DocumentScan = () => {
   const [localFiles, setLocalFiles] = useState([])
   const isFocused = useIsFocused();
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-const [searchText,setSearchText] = useState('')
-const debouncedSearchText = useDebounce({searchText,delay:10000})
+  const [searchText, setSearchText] = useState('')
+  const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
+  const [isEnabled, setIsEnabled] = useState(false);
+  const dispatch = useDispatch()
 
-useEffect(() => {
-  // return 
-  let unsubscribeFiles: any;
-  let unsubscribeTriggers: any;
-  let isSyncing = false; // guard
+  // const toggleSwitch = toggleTheme()
 
-  const init = async () => {
-    const userId = await AuthService.getUserId();
-    console.log('userid',userId);
-    
-    if (!userId) return;
+  // const theme =useSelector((state:any)=>state.ThemeSlice)
+  const { mode, theme, toggleTheme } = useTheme()
 
-    // Listener 1 (normal logs)
-    unsubscribeFiles = firestore()
-      .collection('files')
-      .where('userId', '==', userId)
-      .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          console.log('SYNC TRIGGERED 1');
-          handleSync()
+  const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
+
+  useEffect(() => {
+    console.log('ThemeSlice', theme);
+    console.log('mode', mode);
+  })
+
+
+  useEffect(() => {
+    // return 
+    let unsubscribeFiles: any;
+    let unsubscribeTriggers: any;
+    let isSyncing = false; // guard
+
+    const init = async () => {
+      const userId = await AuthService.getUserId();
+      console.log('userid', userId);
+
+      if (!userId) return;
+
+      // Listener 1 (normal logs)
+      unsubscribeFiles = firestore()
+        .collection('files')
+        .where('userId', '==', userId)
+        .onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            console.log('SYNC TRIGGERED 1');
+            handleSync()
             // syncAll(); // runs for added + modified + removed
 
+          });
         });
-      });
 
-    // Listener 2 (trigger sync)
-    unsubscribeTriggers = firestore()
-      .collection('folders')
-      .where('userId', '==', userId)
-      .onSnapshot(async snapshot => {
-        if (snapshot.empty) return;
+      // Listener 2 (trigger sync)
+      unsubscribeTriggers = firestore()
+        .collection('folders')
+        .where('userId', '==', userId)
+        .onSnapshot(async snapshot => {
+          if (snapshot.empty) return;
 
-        // prevent multiple calls
-        if (isSyncing) return;
+          // prevent multiple calls
+          if (isSyncing) return;
 
-        isSyncing = true;
+          isSyncing = true;
 
-        try {
-          console.log('SYNC TRIGGERED 2');
-          await handleSync();
-        } catch (e) {
-          console.log('Sync error', e);
-        } finally {
-          isSyncing = false;
-        }
-      });
-  };
+          try {
+            console.log('SYNC TRIGGERED 2');
+            await handleSync();
+          } catch (e) {
+            console.log('Sync error', e);
+          } finally {
+            isSyncing = false;
+          }
+        });
+    };
 
-  init();
+    init();
 
-  return () => {
-    if (unsubscribeFiles) unsubscribeFiles();
-    if (unsubscribeTriggers) unsubscribeTriggers();
-  };
-}, []);
-useEffect(()=>{
-  console.log('debouncedSearchText',debouncedSearchText);
-  ApiHandler()
+    return () => {
+      if (unsubscribeFiles) unsubscribeFiles();
+      if (unsubscribeTriggers) unsubscribeTriggers();
+    };
+  }, []);
+  useEffect(() => {
+    console.log('debouncedSearchText', debouncedSearchText);
+    ApiHandler()
 
-},[debouncedSearchText])
+  }, [debouncedSearchText])
 
-const ApiHandler=()=>{
-    console.log('function callled----',debouncedSearchText)
+  const ApiHandler = () => {
+    console.log('function callled----', debouncedSearchText)
   }
 
   const getfiles = async () => {
@@ -175,45 +196,45 @@ const ApiHandler=()=>{
     fetchData();
   }, []);
 
-const fullReset = async () => {
-  try {
-    console.log("RESET START");
+  const fullReset = async () => {
+    try {
+      console.log("RESET START");
 
-    // 1. clear DB
-    const db = await getDB();
-    await db.executeSql(`DELETE FROM files`);
-    await db.executeSql(`DELETE FROM folders`);
-    
+      // 1. clear DB
+      const db = await getDB();
+      await db.executeSql(`DELETE FROM files`);
+      await db.executeSql(`DELETE FROM folders`);
 
-    // 2. clear files
-    const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
-    const exists = await RNFetchBlob.fs.isDir(dir);
 
-    if (exists) {
-      await RNFetchBlob.fs.unlink(dir);
+      // 2. clear files
+      const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
+      const exists = await RNFetchBlob.fs.isDir(dir);
+
+      if (exists) {
+        await RNFetchBlob.fs.unlink(dir);
+      }
+
+      // 3. clear cache (optional)
+      const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
+      const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
+
+      for (const file of cacheFiles) {
+        await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
+      }
+      await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
+
+      // ⛔ wait before fetching
+      const folders = await FolderLocalService.getActiveFolders()
+      const files = await FileLocalService.getAllFiles()
+      setData(folders)
+      setLocalFiles(files)
+
+      console.log("RESET COMPLETE");
+    } catch (e) {
+      console.log("RESET ERROR", e);
     }
-
-    // 3. clear cache (optional)
-    const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
-    const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
-
-    for (const file of cacheFiles) {
-      await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
-    }
-          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
-          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
-
-          // ⛔ wait before fetching
-          const folders = await FolderLocalService.getActiveFolders()
-          const files = await FileLocalService.getAllFiles()
-          setData(folders)
-          setLocalFiles(files)
-
-    console.log("RESET COMPLETE");
-  } catch (e) {
-    console.log("RESET ERROR", e);
-  }
-};
+  };
 
   const handleLogin = async () => {
     try {
@@ -228,29 +249,29 @@ const fullReset = async () => {
       console.log('Login error:', error);
     }
   };
-const handleSync=async () => {
-        if (isLoading) return; // 🔥 prevent double click
-        try {
-          setIsLoading(true);
-          console.log('Syncing all files... started', accessToken);
+  const handleSync = async () => {
+    if (isLoading) return; // 🔥 prevent double click
+    try {
+      setIsLoading(true);
+      console.log('Syncing all files... started', accessToken);
 
-          await syncAll();
-          // setTimeout(async() => {
-          const folders = await FolderLocalService.getActiveFolders()
-          const files = await FileLocalService.getAllFiles()
-          console.log('folders-------2nd', folders);
+      await syncAll();
+      // setTimeout(async() => {
+      const folders = await FolderLocalService.getActiveFolders()
+      const files = await FileLocalService.getAllFiles()
+      console.log('folders-------2nd', folders);
 
-          setLocalFiles(files);
-            
-            setData(folders);
-          // }, 500);
-        } catch (e) {
-          console.log('Sync error document scanner:', e);
-        } finally {
-          console.log('finally triggered');
-          setIsLoading(false); // 🔥 ALWAYS runs
-        }
-      }
+      setLocalFiles(files);
+
+      setData(folders);
+      // }, 500);
+    } catch (e) {
+      console.log('Sync error document scanner:', e);
+    } finally {
+      console.log('finally triggered');
+      setIsLoading(false); // 🔥 ALWAYS runs
+    }
+  }
   const renderButton = () => {
     return (<><Button title="Login" onPress={handleLogin} />
 
@@ -446,10 +467,10 @@ const handleSync=async () => {
         // let finalName = `${folderDisplayName}_${i}.${extension}`;
         // let destinationFilePath = `${destinationPath}/${finalName}`;
 
-       let displayName = `${folderDisplayName}`;
-        console.log('display name',displayName);
-        
-        let finalName = `${folderDisplayName+ "_"+ Date.now()}.${extension}`;
+        let displayName = `${folderDisplayName}`;
+        console.log('display name', displayName);
+
+        let finalName = `${folderDisplayName + "_" + Date.now()}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ handle duplicate safely
@@ -467,16 +488,16 @@ const handleSync=async () => {
         // ✅ SAME NAME IN DB
         await FileLocalService.createFile({
           name: finalName, // exact match with FS
-          displayName: folderDisplayName+'_'+[i], // without extension
+          displayName: folderDisplayName + '_' + [i], // without extension
           size: 0,
           lastModified: Date.now(),
           folderId: folderId,
         });
       }
       const files = await FileLocalService.getFilesByFolder(folderId)
-      console.log('files=======',files);
-      
-      const updatedFolder= await FolderLocalService.updateFolderById({id:folderId,coverUri:files[0].name})
+      console.log('files=======', files);
+
+      const updatedFolder = await FolderLocalService.updateFolderById({ id: folderId, coverUri: files[0].name })
 
       console.log('updatedFolder cover uri', updatedFolder);
       console.log('✅ All files saved');
@@ -742,13 +763,12 @@ const handleSync=async () => {
 
   }
   const renderParentItem = ({ item }) => {
-
     const isSelected = checkisFolderSelected(item.id);
     const isEditable = checkIsEditable(item.id);
 
     return (
       <TouchableOpacity
-        activeOpacity={0.85}
+        activeOpacity={0.9}
         onPress={() => onPressItem(item)}
         onLongPress={() => {
           setMultidelete(!isMultiDelete);
@@ -756,104 +776,142 @@ const handleSync=async () => {
         }}
         style={[
           styles.card,
-          {
-            backgroundColor: isSelected ? '#E6F7F5' : '#FFFFFF',
-            borderWidth: isSelected ? 1 : 0,
-            borderColor: isSelected ? '#2FB2A2' : 'transparent',
+          isSelected && {
+            borderColor: '#3CF28A',
           },
-        ]}
-      >
-        {/* Thumbnail */}
-        <View style={styles.thumbnailWrapper}>
-          <Image
-            source={{ uri: getImageUriByOS(destinationPath + item?.coverUri) }}
-            style={styles.thumbnail}
-            resizeMode="cover"
-          />
-        </View>
+        ]}>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {!isEditable ? (
-            <>
-              <Text style={styles.title} numberOfLines={1}>
-                {/* {capitalizeFirstLetter(item?.name || '')} */}
-                <Text style={styles.date}>{item?.coverUri}</Text>
-              </Text>
-              <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
-              {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
-            </>
-          ) : (
-            <>
-              <CustomInputBox
-                value={capitalizeFirstLetter(item?.name || '')}
-                onChangeText={setFolderName}
-                isEditable={true}
-              />
-              <Text style={styles.date}>{getDate(item?.date)}</Text>
-            </>
-          )}
-        </View>
+        {/* Left Section */}
+        <View style={styles.leftContainer}>
+          <View style={styles.thumbnailWrapper}>
+            <Image
+              source={{
+                uri: getImageUriByOS(
+                  destinationPath + item?.coverUri,
+                ),
+              }}
+              style={styles.thumbnail}
+              resizeMode="cover"
+            />
+          </View>
 
-        {/* Actions */}
-        {!isMultiDelete && (
-          <View style={styles.actionColumn}>
+          <View style={styles.content}>
             {!isEditable ? (
               <>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    setIsFolderNameChange(true);
-                    setFolderId(item.id);
-                  }}
-                >
-                  <MaterialIcons name="edit" size={18} color="#209DA1" />
-                </TouchableOpacity>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.title,
+                    { color: theme.textColor },
+                  ]}>
+                  {capitalizeFirstLetter(item?.name || '')}
+                </Text>
 
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() =>
-                    deleteFoldersConfirmationForSingleItem(item)
-                  }
-                >
-                  <MaterialIcons name="delete" size={18} color="#E4003A" />
-                </TouchableOpacity>
+                <Text style={styles.date}>
+                  {DateHelper.getDateByMomentFormat(item?.createdAt,DateFormat.DATE_WITH_MONTH_NAME)} 
+                </Text>
 
+                <View style={styles.tagContainer}>
+                  <View style={styles.greenLine} />
 
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => shareFile(item)}
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={18}
-                    color="#209DA1"
-                  />
-                </TouchableOpacity>
+                  <Text style={styles.tagText}>
+                    IMAGE
+                  </Text>
+                </View>
               </>
             ) : (
               <>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={renameFolder}
-                >
-                  <Ionicons
-                    name="checkmark-sharp"
-                    size={20}
-                    color="#209DA1"
-                  />
-                </TouchableOpacity>
+                <CustomInputBox
+                  value={capitalizeFirstLetter(item?.name || '')}
+                  onChangeText={setFolderName}
+                  isEditable={true}
+                />
 
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => setIsFolderNameChange(false)}
-                >
-                  <MaterialIcons name="close" size={18} color="#999" />
-                </TouchableOpacity>
+                <Text style={styles.date}>
+                  {getDate(item?.createdAt)}
+                </Text>
               </>
             )}
           </View>
-        )}
+        </View>
+
+        {/* Right Actions */}
+        {!isMultiDelete && (
+        <View style={{...styles.actionRow,flex:.7,}}>
+          {!isEditable ? (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                ]}
+                onPress={() => {
+                  setIsFolderNameChange(true);
+                  setFolderId(item.id);
+                }}>
+                <MaterialIcons
+                  name="edit"
+                  size={styles.actionButton.fontSize}
+                  color="#46F28D"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                ]}
+                onPress={() =>
+                  deleteFoldersConfirmationForSingleItem(item)
+                }>
+                <MaterialIcons
+                  name="delete-outline"
+                  size={styles.actionButton.fontSize}
+                  color="#FF4B7A"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                ]}
+                onPress={() => shareFile(item)}>
+                <Ionicons
+                  name="share-social-outline"
+                  size={styles.actionButton.fontSize}
+                  color="#A970FF"
+                />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                ]}
+                onPress={renameFolder}>
+                <Ionicons
+                  name="checkmark-sharp"
+                  size={styles.actionButton.fontSize}
+                  color="#46F28D"
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                ]}
+                onPress={() =>
+                  setIsFolderNameChange(false)
+                }>
+                <MaterialIcons
+                  name="close"
+                  size={styles.actionButton.fontSize}
+                  color="#999"
+                />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
       </TouchableOpacity>
     );
   };
@@ -1017,8 +1075,8 @@ const handleSync=async () => {
         // console.log('name--------------', res[0].localUri);
         // fileExtension = res[0].localUri.split('.').pop()
         // uri = res[0].localUri
-       const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
-        
+        const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
+
         console.log('uri', uri);
 
         const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
@@ -1045,7 +1103,7 @@ const handleSync=async () => {
     }
   }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <SafeAreaView style={styles.container}>
       <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
@@ -1192,7 +1250,7 @@ const handleSync=async () => {
         <Text style={{ color: 'black' }}>{localFiles.length}</Text>
         {localFiles.map((item) => (
           <Text key={item?.id} style={{ color: 'black' }}>{'Drive' + item.driveFileId}
-          {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
+            {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
         ))}
       </View>
 
@@ -1294,7 +1352,7 @@ const handleSync=async () => {
       <CustomSpinner isLoading={isLoading} />
 
       <View style={{
-        height: scaledSize(100), width: '80%', 
+        height: scaledSize(100), width: '80%',
         flexDirection: 'row', justifyContent: "space-between"
       }}>
         {/* <Image
@@ -1304,6 +1362,13 @@ const handleSync=async () => {
             height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
           }}
         /> */}
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={isEnabled ? '#f5dd4b' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={() => toggleTheme()}
+          value={isEnabled}
+        />
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
             buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
@@ -1374,71 +1439,157 @@ const handleSync=async () => {
   )
 }
 
+
+
 export default DocumentScan;
 
-const styles = StyleSheet.create({
-  shareOptionS: {
-    height: scaledSize(40), backgroundColor: 'white',
-    width: '100%', flexDirection: 'row', borderRadius: scaledSize(10),
-    justifyContent: 'center', alignItems: 'center',
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+  container: {
+    flex: 1, backgroundColor: theme.bgContainor
   },
   card: {
     flexDirection: 'row',
-    marginHorizontal: scaledSize(16),
-    marginTop: scaledSize(14),
-    padding: scaledSize(8),
-    borderRadius: scaledSize(16),
+
     alignItems: 'center',
 
-    elevation: 4,
+    justifyContent: 'space-between',
+
+    marginHorizontal: scaledSize(12),
+    marginTop: scaledSize(18),
+
+    paddingHorizontal: scaledSize(18),
+    paddingVertical: scaledSize(12),
+
+    borderRadius: scaledSize(20),
+    height: scaledSize(110),
+
+    backgroundColor: theme.bgColor,
+
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+  },
+
+  leftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // backgroundColor:'yellow',
+    flex: 1,
   },
 
   thumbnailWrapper: {
-    width: scaledSize(80),
-    height: scaledSize(80),
-    borderRadius: scaledSize(14),
-    overflow: 'hidden',
-    backgroundColor: '#F3F5F7',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: scaledSize(62),
+    height: scaledSize(62),
+
+    // borderRadius: scaledSize(30),
+
+
   },
 
   thumbnail: {
     width: '100%',
     height: '100%',
+    borderRadius: scaledSize(4),
   },
 
   content: {
     flex: 1,
+
     marginLeft: scaledSize(16),
+
     justifyContent: 'center',
   },
 
   title: {
-    fontSize: scaledSize(14),
-    // fontWeight: '600',
-    color: '#1F1F1F',
-    letterSpacing: 1,
-    // fontFamily:Fonts.regular
+    fontSize: scaledSize(15),
+    fontFamily: FONTS.regular,
+    letterSpacing: 0.5,
+    color: theme.textColor,
   },
 
   date: {
     marginTop: scaledSize(6),
-    fontSize: scaledSize(14),
-    color: '#8A8A8A',
+
+    fontSize: scaledSize(12),
+
+    color: mode === 'dark' ? '#444444' : '#000000',
+
+    fontWeight: '500',
   },
 
-  actionColumn: {
-    justifyContent: 'space-between',
-    height: heightFromPercentage(12),
+  tagContainer: {
+    marginTop: scaledSize(10),
+
+    alignSelf: 'flex-start',
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    paddingLeft: scaledSize(0),
+    paddingRight: scaledSize(14),
+
+    height: scaledSize(20),
+
+    borderRadius: scaledSize(6),
+
+    backgroundColor: mode === 'dark' ? '#113B20' : '#E8FFF1',
+    borderWidth: .5,
+    borderColor: mode == 'white'  ? 'green' : 'transparent',
+
+    overflow: 'hidden',
+  },
+
+  greenLine: {
+    width: scaledSize(5),
+
+    height: '100%',
+
+    backgroundColor: mode === 'dark' ? '#46F28D' : 'green',
+    // backgroundColor: '#00E676',
+
+
+    borderTopLeftRadius: scaledSize(6),
+    borderBottomLeftRadius: scaledSize(6),
+
+    marginRight: scaledSize(10),
+  },
+
+  tagText: {
+    color: mode === 'dark' ? '#46F28D' : 'green',
+
+
+    fontSize: scaledSize(12),
+    // fontFamily: FONTS.PTSerifBold,
+
+    fontWeight: '500',
+
+    letterSpacing: 0.5,
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    // marginLeft: scaledSize(12),
   },
 
   actionButton: {
-    width: scaledSize(28),
-    height: scaledSize(28),
-    borderRadius: scaledSize(18),
-    // backgroundColor: '#F4F6F8',
+    width: scaledSize(37),
+    height: scaledSize(37),
+    fontSize: scaledSize(18),
+
+    borderRadius: scaledSize(10),
+
     justifyContent: 'center',
     alignItems: 'center',
+    // borderWidth:.5,
+    // borderColor: mode === 'dark' ? '#46F28D' : 'green',
+
+    marginLeft: scaledSize(6),
+    backgroundColor: mode === 'dark' ? '#2a2a2a' : '#2a2a2a',
+
   },
-})
+
+
+});
