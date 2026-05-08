@@ -36,11 +36,11 @@ export const darkTheme: Theme = {
   bgColor: '#222222',
   bgContainor: '#1c1c1e',
   primaryTextColor: '#ffffff',
-  secondaryTextColor: '#47b16a',
+  secondaryTextColor: 'black',
   iconColor: '#47b16a',
   borderColor: '#262730',
   buttonBGColor: '#2a2a2a',
   themeColor: '#47b16a',
-  themeSecondaryColor:'#00B4D8'
+  themeSecondaryColor:'#47b16a'
 
 };
