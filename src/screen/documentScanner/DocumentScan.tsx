@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, use, useMemo } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
@@ -762,6 +762,60 @@ export const DocumentScan = () => {
     readFilesFromDirectory
 
   }
+  const renderHeader = () => {
+    return (
+      <SafeAreaView style={styles.headerContainer}>
+
+        {/* Top Row */}
+        <View style={styles.topRow}>
+          <View>
+            <Text style={styles.workspaceText}>
+              {/* WORKSPACE */}
+            </Text>
+
+            <Text style={styles.heading}>
+              My{' '}
+              <Text style={styles.primaryText}>
+                Documents
+              </Text>
+            </Text>
+          </View>
+
+          <TouchableOpacity style={styles.profileContainer}>
+            <Text style={styles.profileText}>
+              Login
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search + Filter */}
+        <View style={styles.searchRow}>
+
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search-outline"
+              size={26}
+              color="#3E4047"
+            />
+
+            <TextInput
+              placeholder="Search..."
+              placeholderTextColor="#3E4047"
+              style={styles.input}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.filterButton}>
+            <MaterialCommunityIcons
+              name="tune-variant"
+              size={28}
+              color="#46F28D"
+            />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  };
   const renderParentItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
     const isEditable = checkIsEditable(item.id);
@@ -808,7 +862,7 @@ export const DocumentScan = () => {
                 </Text>
 
                 <Text style={styles.date}>
-                  {DateHelper.getDateByMomentFormat(item?.createdAt,DateFormat.DATE_WITH_MONTH_NAME)} 
+                  {DateHelper.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}
                 </Text>
 
                 <View style={styles.tagContainer}>
@@ -837,81 +891,81 @@ export const DocumentScan = () => {
 
         {/* Right Actions */}
         {!isMultiDelete && (
-        <View style={{...styles.actionRow,flex:.7,}}>
-          {!isEditable ? (
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                ]}
-                onPress={() => {
-                  setIsFolderNameChange(true);
-                  setFolderId(item.id);
-                }}>
-                <MaterialIcons
-                  name="edit"
-                  size={styles.actionButton.fontSize}
-                  color="#46F28D"
-                />
-              </TouchableOpacity>
+          <View style={{ ...styles.actionRow, flex: .7, }}>
+            {!isEditable ? (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                  ]}
+                  onPress={() => {
+                    setIsFolderNameChange(true);
+                    setFolderId(item.id);
+                  }}>
+                  <MaterialIcons
+                    name="edit"
+                    size={styles.actionButton.fontSize}
+                    color="#46F28D"
+                  />
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                ]}
-                onPress={() =>
-                  deleteFoldersConfirmationForSingleItem(item)
-                }>
-                <MaterialIcons
-                  name="delete-outline"
-                  size={styles.actionButton.fontSize}
-                  color="#FF4B7A"
-                />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                  ]}
+                  onPress={() =>
+                    deleteFoldersConfirmationForSingleItem(item)
+                  }>
+                  <MaterialIcons
+                    name="delete-outline"
+                    size={styles.actionButton.fontSize}
+                    color="#FF4B7A"
+                  />
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                ]}
-                onPress={() => shareFile(item)}>
-                <Ionicons
-                  name="share-social-outline"
-                  size={styles.actionButton.fontSize}
-                  color="#A970FF"
-                />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                ]}
-                onPress={renameFolder}>
-                <Ionicons
-                  name="checkmark-sharp"
-                  size={styles.actionButton.fontSize}
-                  color="#46F28D"
-                />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                  ]}
+                  onPress={() => shareFile(item)}>
+                  <Ionicons
+                    name="share-social-outline"
+                    size={styles.actionButton.fontSize}
+                    color="#A970FF"
+                  />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                  ]}
+                  onPress={renameFolder}>
+                  <Ionicons
+                    name="checkmark-sharp"
+                    size={styles.actionButton.fontSize}
+                    color="#46F28D"
+                  />
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                ]}
-                onPress={() =>
-                  setIsFolderNameChange(false)
-                }>
-                <MaterialIcons
-                  name="close"
-                  size={styles.actionButton.fontSize}
-                  color="#999"
-                />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      )}
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                  ]}
+                  onPress={() =>
+                    setIsFolderNameChange(false)
+                  }>
+                  <MaterialIcons
+                    name="close"
+                    size={styles.actionButton.fontSize}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -1104,7 +1158,8 @@ export const DocumentScan = () => {
   }
   return (
     <SafeAreaView style={styles.container}>
-      <View style={{
+      {renderHeader()}
+      {/* <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
         marginTop: heightFromPercentage(4)
@@ -1157,7 +1212,6 @@ export const DocumentScan = () => {
         </LinearGradient> :
 
           <LinearGradient
-            // colors={['white', 'white']}
             colors={['#0081A7', '#00AFB9']}
             style={{
               flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
@@ -1179,8 +1233,7 @@ export const DocumentScan = () => {
                 }}
                 defaultValue={searchText}
                 onChangeText={(value) => setSearchText(value)}
-                // onChangeText={(value) => setSearchQuery(value)}
-                // placeholderTextColor="#d5d5d5"
+
                 inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center' }}
                 loading={false}
                 icon={() => <Image source={searchIcon} style={{
@@ -1199,7 +1252,6 @@ export const DocumentScan = () => {
                 }
                 value={searchQuery}
               />
-              {/* <CustomInput onChangeText={((v)=>setSearchText(v))} placeholder='input'/> */}
             </View>
             <View style={{
               width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
@@ -1207,12 +1259,11 @@ export const DocumentScan = () => {
             }}>
               <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)}
                 color={'white'} onPress={() => openFile()} />
-              {/* color={'white'} onPress={() => setIsShowbackupMessage(true)} /> */}
             </View>
           </LinearGradient>
         }
 
-      </View>
+      </View> */}
       {/* ----------------------------- */}
       <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
         {getFiles().length > 0 ? <FlatList
@@ -1363,11 +1414,12 @@ export const DocumentScan = () => {
           }}
         /> */}
         <Switch
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={isEnabled ? '#f5dd4b' : '#f4f3f4'}
+          trackColor={{ false: '#767577', true: 'green' }}
+          thumbColor={mode=='dark' ? 'green' : '#f4f3f4' }
           ios_backgroundColor="#3e3e3e"
           onValueChange={() => toggleTheme()}
-          value={isEnabled}
+          value={mode=='dark'?true:false}
+          
         />
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
@@ -1534,7 +1586,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     backgroundColor: mode === 'dark' ? '#113B20' : '#E8FFF1',
     borderWidth: .5,
-    borderColor: mode == 'white'  ? 'green' : 'transparent',
+    borderColor: mode == 'white' ? 'green' : 'transparent',
 
     overflow: 'hidden',
   },
@@ -1590,6 +1642,123 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     backgroundColor: mode === 'dark' ? '#2a2a2a' : '#2a2a2a',
 
   },
+ headerContainer: {
+  paddingHorizontal: 20,
+  paddingTop: 20,
+  paddingBottom: 12,
+
+  backgroundColor: theme.bgContainor,
+},
+
+topRow: {
+  flexDirection: 'row',
+
+  justifyContent: 'space-between',
+
+  alignItems: 'center',
+},
+
+workspaceText: {
+  fontSize: 14,
+
+  letterSpacing: 2,
+
+  color: '#5A5D68',
+
+  fontWeight: '600',
+},
+
+heading: {
+  marginTop: 8,
+
+  fontSize: 28,
+
+  fontWeight: '800',
+
+  color: '#FFFFFF',
+},
+
+primaryText: {
+  color: '#46F28D',
+},
+
+profileContainer: {
+  width: 60,
+  height: 60,
+
+  borderRadius: 30,
+
+  backgroundColor: '#46F28D',
+
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+profileText: {
+  fontSize: 20,
+
+  fontWeight: '800',
+
+  color: '#000000',
+},
+
+searchRow: {
+  flexDirection: 'row',
+
+  alignItems: 'center',
+
+  marginTop: 24,
+},
+
+searchContainer: {
+  flex: 1,
+
+  height: 56,
+
+  borderRadius: 20,
+
+  // backgroundColor: '#1F2026',
+
+  borderWidth: 1,
+  borderColor: '#2B2D35',
+
+  flexDirection: 'row',
+
+  alignItems: 'center',
+
+  paddingHorizontal: 16,
+},
+
+input: {
+  flex: 1,
+
+  marginLeft: 10,
+
+  color: '#FFFFFF',
+
+  fontSize: 17,
+
+  padding: 0,
+
+  backgroundColor: 'transparent',
+},
+
+filterButton: {
+  width: 56,
+  height: 56,
+
+  borderRadius: 20,
+
+  backgroundColor: '#1F2026',
+
+  borderWidth: 1,
+  borderColor: '#2B2D35',
+
+  justifyContent: 'center',
+  alignItems: 'center',
+
+  marginLeft: 14,
+},
 
 
 });

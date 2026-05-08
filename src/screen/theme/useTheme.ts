@@ -3,13 +3,22 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { darkTheme, lightTheme } from './ThemeConfig';
 import { toggleTheme } from './ThemeSlice';
-import { StyleProp, TextStyle } from 'react-native';
 
 export const useTheme = () => {
-  const mode = useSelector((state) => state.ThemeSlice.mode);
+  const mode = useSelector(
+    (state: any) => state.ThemeSlice.mode,
+  );
+
   const dispatch = useDispatch();
 
-  const theme = mode === 'dark' ? darkTheme : lightTheme;
+  console.log('mode inside hook', mode);
+
+  const theme =
+    mode === 'dark'
+      ? darkTheme
+      : lightTheme;
+
+  console.log('selectedTheme', theme);
 
   return {
     theme,

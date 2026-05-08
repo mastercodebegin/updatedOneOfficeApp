@@ -4,7 +4,9 @@ import { getLocalData, setLocalData } from '../../utilies/storageService';
 import { asyncStorageKeyName } from '../../utilies/Constants';
 
 const getInitialMode = () => {
-  return getLocalData(asyncStorageKeyName.THEME_MODE) || 'light';
+  const mode= getLocalData(asyncStorageKeyName.THEME_MODE) ;
+  console.log('mode',mode);
+  return mode?JSON.parse(mode):'light';
 };
 
 const initialState = {
