@@ -3,6 +3,7 @@ export const COLORS = {
   TRANSPARENT: 'transparent',
   white: 'rgb(255,255,255)',
   THEME_COLOR:'#0081A7',
+  THEME_SECONDARY_COLOR:'#00B4D8',
   BUTTON_SECONDARY_COLOR:'white',
   BG_COLOR:'#f5f5f5',
   grey:'#ccc',

@@ -56,6 +56,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../theme/ThemeSlice';
 import { useTheme } from '../theme/useTheme';
 import { Theme } from '../theme/ThemeConfig';
+import { color } from 'react-native-elements/dist/helpers';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -762,6 +763,26 @@ export const DocumentScan = () => {
     readFilesFromDirectory
 
   }
+  const renderGradientButton = (iconName: any, color = 'white', onPress: any) => {
+    return (
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+        <LinearGradient
+          colors={mode === 'light' ? [COLORS.THEME_COLOR, COLORS.THEME_SECONDARY_COLOR] :
+            [theme.buttonBGColor, theme.buttonBGColor]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.uploadButton}>
+
+          <Ionicons
+            name={iconName}
+            size={scaledSize(18)}
+            color={ color}
+          />
+        </LinearGradient>
+      </TouchableOpacity>
+    )
+  }
+
   const renderHeader = () => {
     return (
       <SafeAreaView style={styles.headerContainer}>
@@ -781,10 +802,21 @@ export const DocumentScan = () => {
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.profileContainer}>
-            <Text style={styles.profileText}>
-              Login
-            </Text>
+             <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
+            <LinearGradient
+              colors={mode === 'light' ? [COLORS.THEME_COLOR, COLORS.THEME_SECONDARY_COLOR] :
+                [theme.buttonBGColor, theme.buttonBGColor]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.uploadButton}>
+
+              {/* <Ionicons
+                name={iconName}
+                size={scaledSize(18)}
+                color={mode === 'light' ? 'white' : color}
+              /> */}
+              <Text style={{ color: 'white' }}>AK</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -804,14 +836,8 @@ export const DocumentScan = () => {
               style={styles.input}
             />
           </View>
+          {renderGradientButton('filter', theme.iconColor, requestCameraPermission)}
 
-          <TouchableOpacity style={styles.filterButton}>
-            <MaterialCommunityIcons
-              name="tune-variant"
-              size={28}
-              color="#46F28D"
-            />
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -856,7 +882,7 @@ export const DocumentScan = () => {
                   numberOfLines={1}
                   style={[
                     styles.title,
-                    { color: theme.textColor },
+                    { color: theme.primaryTextColor },
                   ]}>
                   {capitalizeFirstLetter(item?.name || '')}
                 </Text>
@@ -894,7 +920,7 @@ export const DocumentScan = () => {
           <View style={{ ...styles.actionRow, flex: .7, }}>
             {!isEditable ? (
               <>
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[
                     styles.actionButton,
                   ]}
@@ -907,9 +933,10 @@ export const DocumentScan = () => {
                     size={styles.actionButton.fontSize}
                     color="#46F28D"
                   />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
-                <TouchableOpacity
+
+                {/* <TouchableOpacity
                   style={[
                     styles.actionButton,
                   ]}
@@ -933,7 +960,16 @@ export const DocumentScan = () => {
                     size={styles.actionButton.fontSize}
                     color="#A970FF"
                   />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
+
+                {renderGradientButton('share-social-sharp', theme.iconColor, () => shareFile(item))}
+                {renderGradientButton('pencil', theme.iconColor, () => {
+                  setIsFolderNameChange(true);
+                  setFolderId(item.id);
+                })}
+                {renderGradientButton('trash-outline', theme.iconColor, () => deleteFoldersConfirmationForSingleItem(item))}
+
+
               </>
             ) : (
               <>
@@ -1415,11 +1451,11 @@ export const DocumentScan = () => {
         /> */}
         <Switch
           trackColor={{ false: '#767577', true: 'green' }}
-          thumbColor={mode=='dark' ? 'green' : '#f4f3f4' }
+          thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
           ios_backgroundColor="#3e3e3e"
           onValueChange={() => toggleTheme()}
-          value={mode=='dark'?true:false}
-          
+          value={mode == 'dark' ? true : false}
+
         />
         {renderButton()}
         {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
@@ -1497,7 +1533,9 @@ export default DocumentScan;
 
 const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: theme.bgContainor
+    flex: 1,
+    backgroundColor:
+      theme.bgContainor
   },
   card: {
     flexDirection: 'row',
@@ -1519,6 +1557,17 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     borderWidth: 1,
     borderColor: theme.borderColor,
+    shadowOpacity: 0.18,
+
+    shadowRadius: scaledSize(10),
+
+    shadowOffset: {
+      width: 0,
+      height: scaledSize(4),
+    },
+
+    elevation: 4,
+
   },
 
   leftContainer: {
@@ -1555,7 +1604,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontSize: scaledSize(15),
     fontFamily: FONTS.regular,
     letterSpacing: 0.5,
-    color: theme.textColor,
+    color: theme.primaryTextColor,
   },
 
   date: {
@@ -1584,9 +1633,9 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     borderRadius: scaledSize(6),
 
-    backgroundColor: mode === 'dark' ? '#113B20' : '#E8FFF1',
-    borderWidth: .5,
-    borderColor: mode == 'white' ? 'green' : 'transparent',
+    backgroundColor: theme.buttonBGColor,
+    borderWidth: mode === 'light' ? .4 : 0,
+    borderColor: '#d3d3d3',
 
     overflow: 'hidden',
   },
@@ -1596,7 +1645,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     height: '100%',
 
-    backgroundColor: mode === 'dark' ? '#46F28D' : 'green',
+    backgroundColor:  theme.themeColor,
     // backgroundColor: '#00E676',
 
 
@@ -1607,7 +1656,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   tagText: {
-    color: mode === 'dark' ? '#46F28D' : 'green',
+    color: theme.themeColor,
 
 
     fontSize: scaledSize(12),
@@ -1639,126 +1688,208 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     // borderColor: mode === 'dark' ? '#46F28D' : 'green',
 
     marginLeft: scaledSize(6),
-    backgroundColor: mode === 'dark' ? '#2a2a2a' : '#2a2a2a',
+    backgroundColor: theme.buttonBGColor,
 
   },
- headerContainer: {
-  paddingHorizontal: 20,
-  paddingTop: 20,
-  paddingBottom: 12,
+  headerContainer: {
+    paddingHorizontal: scaledSize(18),
+    paddingTop: scaledSize(18),
+    paddingBottom: scaledSize(10),
 
-  backgroundColor: theme.bgContainor,
-},
+    backgroundColor: theme.bgContainor,
+  },
 
-topRow: {
-  flexDirection: 'row',
+  topRow: {
+    flexDirection: 'row',
 
-  justifyContent: 'space-between',
+    justifyContent: 'space-between',
 
-  alignItems: 'center',
-},
+    alignItems: 'center',
+  },
 
-workspaceText: {
-  fontSize: 14,
+  workspaceText: {
+    fontSize: scaledSize(14),
 
-  letterSpacing: 2,
+    letterSpacing: 0.5,
 
-  color: '#5A5D68',
+    color: theme.secondaryTextColor,
 
-  fontWeight: '600',
-},
+    fontWeight: '600',
+  },
 
-heading: {
-  marginTop: 8,
+  heading: {
+    marginTop: scaledSize(5),
 
-  fontSize: 28,
+    fontSize: scaledSize(20),
 
-  fontWeight: '800',
+    fontWeight: '600',
 
-  color: '#FFFFFF',
-},
+    color: theme.primaryTextColor,
+  },
 
-primaryText: {
-  color: '#46F28D',
-},
+  primaryText: {
+    color: theme.themeColor,
+  },
 
-profileContainer: {
-  width: 60,
-  height: 60,
+  profileContainer: {
+    width: scaledSize(50),
+    height: scaledSize(50),
+    marginTop: scaledSize(5),
 
-  borderRadius: 30,
+    borderRadius: scaledSize(25),
 
-  backgroundColor: '#46F28D',
+    backgroundColor: theme.buttonBGColor,
 
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-profileText: {
-  fontSize: 20,
+  profileText: {
+    fontSize: scaledSize(16),
 
-  fontWeight: '800',
+    fontWeight: '800',
 
-  color: '#000000',
-},
+    color: '#000000',
+  },
 
-searchRow: {
-  flexDirection: 'row',
+  // searchRow: {
+  //   flexDirection: 'row',
 
-  alignItems: 'center',
+  //   alignItems: 'center',
 
-  marginTop: 24,
-},
+  //   marginTop: 24,
+  // },
 
-searchContainer: {
-  flex: 1,
+  // searchContainer: {
+  //   flex: 1,
 
-  height: 56,
+  //   height: 56,
 
-  borderRadius: 20,
+  //   borderRadius: 20,
 
-  // backgroundColor: '#1F2026',
+  //   backgroundColor: 'transparent',
 
-  borderWidth: 1,
-  borderColor: '#2B2D35',
+  //   borderWidth: mode === 'dark' ? .2 : .5,
+  //   borderColor: '#d3d3d3',
 
-  flexDirection: 'row',
+  //   flexDirection: 'row',
 
-  alignItems: 'center',
+  //   alignItems: 'center',
 
-  paddingHorizontal: 16,
-},
+  //   paddingHorizontal: 16,
+  // },
 
-input: {
-  flex: 1,
+  // input: {
+  //   flex: 1,
 
-  marginLeft: 10,
+  //   marginLeft: 10,
 
-  color: '#FFFFFF',
+  //   color: '#FFFFFF',
 
-  fontSize: 17,
+  //   fontSize: 17,
 
-  padding: 0,
+  //   padding: 0,
 
-  backgroundColor: 'transparent',
-},
+  //   backgroundColor: 'transparent',
+  // },
 
-filterButton: {
-  width: 56,
-  height: 56,
+  filterButton: {
+    width: 56,
+    height: 56,
 
-  borderRadius: 20,
+    borderRadius: 20,
 
-  backgroundColor: '#1F2026',
+    backgroundColor: '#1F2026',
 
-  borderWidth: 1,
-  borderColor: '#2B2D35',
+    borderWidth: 1,
+    borderColor: '#2B2D35',
 
-  justifyContent: 'center',
-  alignItems: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
 
-  marginLeft: 14,
-},
+    marginLeft: 14,
+  },
+  searchRow: {
+    flexDirection: 'row',
 
+    alignItems: 'center',
+
+    marginTop: 24,
+  },
+
+  searchContainer: {
+    flex: 1,
+
+    height: scaledSize(45),
+
+    borderRadius: scaledSize(18),
+
+    backgroundColor: mode === 'dark' ? '#1c1c1e' : '#FFFFFF',
+
+    borderWidth: mode === 'dark' ? .2 : .5,
+    borderColor: '#d3d3d3',
+
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    paddingHorizontal: scaledSize(18),
+
+    shadowColor: '#D9DDE8',
+
+    shadowOpacity: 0.18,
+
+    shadowRadius: scaledSize(10),
+
+    shadowOffset: {
+      width: 0,
+      height: scaledSize(4),
+    },
+
+    elevation: 4,
+  },
+
+  input: {
+    flex: 1,
+
+    marginLeft: scaledSize(10),
+
+    color: '#161735',
+
+    fontSize: scaledSize(12),
+    letterSpacing: 0.5,
+    fontFamily: FONTS.regular,
+
+    // fontWeight: '500',
+
+    padding: 0,
+
+    backgroundColor: 'transparent',
+  },
+
+
+  uploadButton: {
+    width: scaledSize(36),
+    height: scaledSize(36),
+
+    borderRadius: scaledSize(12),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    // shadowColor: theme.themeColor,
+    shadowOpacity: 0.45,
+    marginLeft: scaledSize(6),
+
+    shadowRadius: scaledSize(4),
+
+    shadowOffset: {
+      width: 0,
+      height: scaledSize(4),
+    },
+
+    elevation: 8,
+  },
 
 });
