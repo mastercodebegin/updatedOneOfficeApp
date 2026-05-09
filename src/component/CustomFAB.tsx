@@ -1,4 +1,4 @@
-import { StyleSheet, View, } from 'react-native'
+import { ButtonProps, StyleProp, StyleSheet, View, ViewProps, ViewStyle, } from 'react-native'
 import React from 'react'
 import { TouchableOpacity } from 'react-native'
 import { scaledSize } from '../utilies/Utilities'
@@ -10,17 +10,29 @@ import { useTheme } from '../screen/theme/useTheme';
 interface S {
     onPress: Function
     height?: number
-    icon?: any
+    icon?: any,
+    style?: StyleProp<ViewStyle>
+
 }
 export default function CustomFAB(props: S) {
-    const { onPress, height, icon } = props;
+    const { onPress, height, icon, style } = props;
     const hei = height ? height : scaledSize(50)
     const { mode, theme } = useTheme()
     return (
-        <View style={{
-            height: scaledSize(hei), width: scaledSize(hei),
-            borderRadius: hei
-        }}>
+        <View style={[
+    {
+      height: scaledSize(hei),
+
+      width: scaledSize(hei),
+
+      borderRadius:
+        scaledSize(hei) / 2,
+    },
+
+    style,
+  ]}
+>
+
 
             <LinearGradient
                 colors={mode === 'light' ? [theme.themeColor, theme.themeSecondaryColor] :
@@ -43,7 +55,7 @@ export default function CustomFAB(props: S) {
                     {icon ? icon : <Octicons name='plus' size={scaledSize(20)} color={theme.iconColor} />}
                 </TouchableOpacity>
             </LinearGradient>
-        </View>
+        </View >
     )
 }
 

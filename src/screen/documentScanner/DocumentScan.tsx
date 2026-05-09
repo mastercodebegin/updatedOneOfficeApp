@@ -60,6 +60,8 @@ import { Theme } from '../theme/ThemeConfig';
 import { color } from 'react-native-elements/dist/helpers';
 import { tagLocalService } from '../../../src/db/tagLocalService';
 import CustomVectorIcon from '../../../src/component/CustomVectorIcon';
+import ConfirmationDialog from '../../../src/component/ConfirmationDialog';
+import CustomSortModal from '../../../src/component/CustomSortModal';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -70,6 +72,7 @@ export const DocumentScan = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
   const [isTagModalVisible, setIsTagModalVisible] = React.useState(false);
+  const [isShowRenderRenameTagModal, setIsShowRenderRenameTagModal] = React.useState(false);
   const [folderId, setFolderId] = React.useState(0)
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
@@ -93,11 +96,13 @@ export const DocumentScan = () => {
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const [searchText, setSearchText] = useState('')
   const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
-  const tabs = ['All', 'Images', 'Docs', 'PDF'];
-
+  const [isShowDeleteTagConfirmation, setIsShowDeleteTagConfirmation] = useState(false)
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('')
   const [selectedTag, setSelectedTag] = useState('All');
 
   // const toggleSwitch = toggleTheme()
+
 
   // const theme =useSelector((state:any)=>state.ThemeSlice)
   const { mode, theme, toggleTheme } = useTheme()
@@ -760,19 +765,22 @@ export const DocumentScan = () => {
 
   const shareFile = async (item: Array<any>) => {
     console.log('item', item);
+    // refForDocShare.current?.present()
 
     let data = []
     // for (let i = 0; i < item.files.length; i++) {
-    const folderFiles = item.files.map(element => ({
-      path: element.path
+    const files = await FileLocalService.getFilesByFolder(item.id)
+    const folderFiles = files.map(element => ({
+      path: CONSTANT.SAVED_DOCUMENTS_PATH + element.name
     }));
 
+    console.log('files', files);
     data = [...data, ...folderFiles]; // Accumulate file paths from all folders
-
-
-
     console.log('data', data);
-    refForDocShare.current?.close()
+
+
+
+    // refForDocShare.current?.close()
     await fileShareMultiple(data)
 
 
@@ -783,9 +791,7 @@ export const DocumentScan = () => {
     readFilesFromDirectory
 
   }
-onPressEditTag = (item: any) => {
 
-}
 
   const getTagColor = (isSelected: boolean) => {
     if (mode == 'light') {
@@ -793,7 +799,7 @@ onPressEditTag = (item: any) => {
         return { bgColor: 'red', iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
       }
       else {
-        return { bgColor: 'lightgray', iconColor:theme.primaryTextColor, textColor: theme.primaryTextColor }
+        return { bgColor: 'lightgray', iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
       }
     }
     else if (mode == 'dark')
@@ -820,8 +826,8 @@ onPressEditTag = (item: any) => {
           }>
           {/* <Text style={{color:theme.primaryTextColor,top:10}}>tags.  </Text> */}
           <View style={{ height: 32, marginRight: scaledSize(10), marginTop: scaledSize(11) }}>
-           <MaterialIcons name="local-offer" size={scaledSize(22)} color={theme.themeColor} />
-            </View>
+            <MaterialIcons name="local-offer" size={scaledSize(22)} color={theme.themeColor} />
+          </View>
 
           {userTags.map((item: any) => {
             const isSelected =
@@ -831,33 +837,43 @@ onPressEditTag = (item: any) => {
               <View style={{ height: 32, marginRight: 10, marginTop: 10 }} key={item.id}>
 
                 <Chip
-                  // icon="camera"
                   onPress={() => { setSelectedTag(item) }}
-                  // onPressIn={()=>{alert('edit')}}
                   onClose={() => { alert('close') }}
                   mode='flat'
                   selected={isSelected}
-                  
+                  showSelectedCheck={false}
+
+
                   // showSelectedCheckmark={false}
 
-                  style={{ backgroundColor: isSelected ? theme.themeColor : theme.buttonBGColor, width: 100 }}
-                  closeIcon={() => 
-                  // <VECTOR_ICON_LIBRARIES.MaterialDesignIcons name='dots-horizontal' 
-                  //   size={scaledSize(18)} color={getTagColor(isSelected).iconColor}
-                            <CustomMenu
-                            Icon={<VECTOR_ICON_LIBRARIES.MaterialDesignIcons name="dots-horizontal" size={18} color="#555" />}
-                            menuOptionstyle={{
-                              padding: scaledSize(13),
-                              width: scaledSize(150),
-                              height: scaledSize(50),
-                            }}
-                            menuOption={[
-                              { onSelect: () => alert(), label: 'Share' },
-                              { onSelect: () => navigation.navigate('contactus'), label: 'Contact us' },
-                            ]}
-                   />
+                  style={{
+                    backgroundColor: isSelected ? theme.themeColor : theme.buttonBGColor,
+                  }}
+                  closeIcon={() =>
+                    <CustomMenu
+                      Icon={<VECTOR_ICON_LIBRARIES.MaterialDesignIcons name="dots-horizontal" size={18} color="#555" />}
+                      menuOptionstyle={{
+                        padding: scaledSize(13),
+                        width: scaledSize(150),
+                        height: scaledSize(50),
+                      }}
+                      menuOption={[
+                        {
+                          onSelect: () => {
+                            setIsShowRenderRenameTagModal(true),
+                              setSelectedTag(item), setTagName(item.name)
+                          }, label: 'Rename'
+                        },
+                        {
+                          onSelect: () => {
+                            setIsShowDeleteTagConfirmation(true),
+                            setSelectedTag(item)
+                          }, label: 'Delete'
+                        },
+                      ]}
+                    />
                   }
-                  textStyle={{ color: getTagColor(isSelected).textColor }}
+                  textStyle={{ color: getTagColor(isSelected).textColor, letterSpacing: 0.5, fontSize: scaledSize(13) }}
                 >
 
                   {item.name}
@@ -962,7 +978,7 @@ onPressEditTag = (item: any) => {
               style={styles.input}
             />
           </View>
-          {renderGradientButton('filter', theme.iconColor, requestCameraPermission)}
+          {renderGradientButton('filter', theme.iconColor, () => setIsShowSortModal(true))}
 
         </View>
       </SafeAreaView>
@@ -1014,7 +1030,8 @@ onPressEditTag = (item: any) => {
               </Text>
 
               <Text style={styles.date}>
-                {DateHelper.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}
+                {DateHelper.getDateByMomentFormat(item?.createdAt, 
+                  DateFormat.DATE_WITH_MONTH_NAME)}
               </Text>
 
               <View style={styles.tagContainer}>
@@ -1076,9 +1093,41 @@ onPressEditTag = (item: any) => {
     console.log('createdTags===', createdTags);
     const tags = await tagLocalService.getTags()
     console.log('existing tags===', tags);
+    setUserTags(tags)
+    setIsTagModalVisible(false)
+    setIsShowRenderRenameTagModal(false)
+    setTagName('')
+  }
 
-    // setIsTagModalVisible(false)
-    // setTagName('')
+  const renameTagHandler = async () => {
+    if (tagName.length == 0) {
+      alert('Tag name cannot be empty')
+      return
+    }
+    const existingTag = await tagLocalService.getTagById(selectedTag.id)
+    console.log('existingTag===', existingTag);
+    const updatedTags = await tagLocalService.updateTag(selectedTag.id, { name: tagName })
+    console.log('updatedTags===', updatedTags);
+    const tags = await tagLocalService.getTags()
+    console.log('existing tags===', tags);
+    setUserTags(tags)
+    setIsTagModalVisible(false)
+    setIsShowRenderRenameTagModal(false)
+    setTagName('')
+  }
+
+  const deleteTagHandler = async () => {
+    const existingTag = await tagLocalService.getTagById(selectedTag.id)
+    console.log('existingTag===', existingTag);
+    const updatedTags = await tagLocalService.updateTag(selectedTag.id, { isDeleted: 1 })
+    console.log('updatedTags===', updatedTags);
+    const tags = await tagLocalService.getTags()
+    console.log('existing tags===', tags);
+    setUserTags(tags)
+    setIsTagModalVisible(false)
+    setIsShowRenderRenameTagModal(false)
+    setIsShowDeleteTagConfirmation(false)
+    setTagName('')
   }
   const renderAddTagModal = () => {
     return (
@@ -1156,6 +1205,81 @@ onPressEditTag = (item: any) => {
     );
   };
 
+
+  const renderRenameTagModal = () => {
+    return (
+      <Modal
+        visible={isShowRenderRenameTagModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsShowRenderRenameTagModal(false)
+        }>
+
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Rename Tag
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new tag name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={tagName}
+                onChangeText={setTagName}
+                placeholder="Tag name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={() =>
+                  setIsShowRenderRenameTagModal(false)
+                }>
+
+                <Text style={styles.cancelText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={() => renameTagHandler()}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Rename
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
   const renderRenameModal = () => {
     return (
       <Modal
@@ -1232,28 +1356,61 @@ onPressEditTag = (item: any) => {
     );
   };
 
+  // const getFiles = () => {
+  //   if (isLocalDataFetch) {
+
+  //     if (searchQuery.length > 0) {
+  //       return data.filter(file =>
+  //         file.name.toLowerCase().includes(searchQuery.toLowerCase())
+  //       );
+  //     } else {
+  //       return data;
+  //     }
+  //   }
+  //   else {
+  //     console.log('returned------', data);
+
+  //     return []
+  //   }
+  // };
   const getFiles = () => {
-    // getting search value from dashboard and filtering it
-    // console.log('data getFiles======', data);
-    if (isLocalDataFetch) {
+  if (!isLocalDataFetch) {
+    return [];
+  }
 
-      if (searchQuery.length > 0) {
-        return data.filter(file =>
-          file.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      } else {
-        // return []
-        // console.log('log==', data.folders);
+  let filteredData = [...data];
 
-        return data;
-      }
-    }
-    else {
-      console.log('returned------', data);
+  // search
+  if (searchQuery?.length > 0) {
+    filteredData = filteredData.filter(
+      file =>
+        file.name
+          ?.toLowerCase()
+          .includes(
+            searchQuery.toLowerCase(),
+          ),
+    );
+  }
 
-      return []
-    }
-  };
+  // tag filter
+  if (selectedTag) {
+    filteredData =
+      filteredData.filter(
+        file =>
+          file.tagId ===
+          selectedTag.id,
+      );
+  }
+
+  // sorting
+  filteredData =
+    onApplySortHandler(
+      selectedSort,
+      filteredData,
+    );
+
+  return filteredData;
+};
 
 
   const backupFolderPath = CONSTANT.ASYNC_STORAGE_STRING_INTO_JSON_BAKUP_PATH;
@@ -1358,25 +1515,7 @@ onPressEditTag = (item: any) => {
 
 
   }
-  // const openFile = async () => {
-  //   try {
-  //     const res = await DocumentPicker.pickSingle({
-  //       copyTo: 'cachesDirectory',
-  //       type: [DocumentPicker.types.zip,]
-  //     })
-  //     // console.log('response-----', res);
-  //     // i want a file extension
-  //     const fileExtension = res.name.split('.').pop()
-  //     console.log('fileExtension--------------', res);
-  //     console.log('fileExtension--------------', fileExtension);
-  //     // importBackup(res)
 
-
-  //   }
-  //   catch (error) {
-  //     console.log('openFile error-----', error);
-  //   }
-  // }
 
   const openFile = async () => {
     console.log('open file===');
@@ -1417,6 +1556,49 @@ onPressEditTag = (item: any) => {
     catch (error) {
       console.log('openFile error-----', error);
     }
+  }
+  const onApplySortHandler = (sortType: string,sorted: any[]) => {
+     
+  switch (sortType) {
+    case 'latest':
+
+      return sorted.sort(
+        (a, b) =>
+          b.createdAt - a.createdAt,
+      );
+
+    case 'oldest':
+      return sorted.sort(
+        (a, b) =>
+          a.createdAt - b.createdAt,
+      );
+
+    case 'name_asc':
+      return sorted.sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+
+    case 'name_desc':
+      return sorted.sort((a, b) =>
+        b.name.localeCompare(a.name),
+      );
+
+    case 'size':
+      return sorted.sort(
+        (a, b) => b.size - a.size,
+      );
+
+    case 'modified':
+      return sorted.sort(
+        (a, b) =>
+          b.updatedAt - a.updatedAt,
+      );
+
+    default:
+      return sorted;
+  }
+    setIsShowSortModal(false)
+    // implement filter logic here
   }
   return (
     <SafeAreaView style={styles.container}>
@@ -1537,6 +1719,10 @@ onPressEditTag = (item: any) => {
         {getFiles().length > 0 ? <FlatList
           showsVerticalScrollIndicator={false}
           data={getFiles()}
+          removeClippedSubviews
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
           keyExtractor={(item) => item.id}
           renderItem={renderParentItem}
         /> :
@@ -1578,6 +1764,7 @@ onPressEditTag = (item: any) => {
         top: heightFromPercentage(72)
       }}>
         <CustomFAB
+        style={{borderWidth:.5, borderColor: theme.iconColor}}
           icon={<Ionicons name='camera-outline' size={scaledSize(24)}
             color={mode === 'light' ? 'white' : theme.iconColor} />}
           onPress={() => { requestCameraPermission() }}
@@ -1722,6 +1909,17 @@ onPressEditTag = (item: any) => {
       </CustomBottomSheet>
       {renderRenameModal()}
       {renderAddTagModal()}
+      {renderRenameTagModal()}
+      <CustomSortModal isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => {setSelectedSort(sort),setIsShowSortModal(false)}}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
+      <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
+        onCancel={() => setIsShowDeleteTagConfirmation(false)} onSubmit={() => deleteTagHandler()} />
     </SafeAreaView>
   )
 }
@@ -1813,7 +2011,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontFamily: FONTS.regular,
     letterSpacing: 0.5,
 
-    color: mode === 'dark' ? '#444444' : 'gray',
+    color: mode === 'dark' ? '#808080' : 'gray',
 
     fontWeight: '500',
   },
@@ -2267,22 +2465,171 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     justifyContent: 'center',
 
-    //   backgroundColor:
-    //     mode === 'dark'
-    //       ? '#1B1D24'
-    //       : '#FFFFFF',
-    //
+
+  },
+  // ******************* Sort Modal ******************
+
+
+  sortModalContainer: {
+    width: '98%',
+
+    backgroundColor:
+      theme.bgContainor,
+
+    borderRadius: scaledSize(6),
+
+    paddingTop: scaledSize(18),
+
+    paddingBottom: scaledSize(18),
+
+    paddingHorizontal: scaledSize(18),
+
+    borderWidth: scaledSize(1),
+
+    borderColor: theme.borderColor,
   },
 
-  addTagText: {
-    marginLeft: scaledSize(4),
+  headerRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent:
+      'space-between',
+
+    marginBottom: scaledSize(20),
+  },
+
+  sortTitle: {
+    fontSize: scaledSize(18),
+
+    fontWeight: '700',
+
+    color: theme.primaryTextColor,
+  },
+
+  closeBtn: {
+    width: scaledSize(30),
+
+    height: scaledSize(30),
+
+    borderRadius: scaledSize(16),
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    backgroundColor:
+      theme.buttonBGColor,
+  },
+
+  sortRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    marginBottom: scaledSize(20),
+    paddingVertical: scaledSize(6),
+  },
+
+  radioOuter: {
+    width: scaledSize(20),
+
+    height: scaledSize(20),
+
+    borderRadius: scaledSize(12),
+
+    borderWidth: scaledSize(1),
+
+    borderColor: '#B8BDC9',
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+  },
+
+  radioInner: {
+    width: scaledSize(10),
+
+    height: scaledSize(10),
+
+    borderRadius: scaledSize(5),
+
+    backgroundColor:
+      theme.themeColor,
+  },
+
+  sortLabel: {
+    marginLeft: scaledSize(14),
 
     fontSize: scaledSize(12),
 
-    fontWeight: '500',
+    color: theme.primaryTextColor,
 
-    color: theme.themeColor,
+    fontWeight: '500',
   },
+  footerRow: {
+    flexDirection: 'row',
+
+    justifyContent: 'flex-end',
+
+    marginTop: 10,
+
+    paddingTop: 12,
+
+    borderTopWidth: 1,
+
+    borderTopColor: theme.borderColor,
+  },
+
+  clearButton: {
+    height: 44,
+
+    paddingHorizontal: 18,
+
+    borderRadius: 12,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    backgroundColor:
+      theme.buttonBGColor,
+
+    marginRight: 10,
+  },
+
+  clearText: {
+    fontSize: 15,
+
+    fontWeight: '600',
+
+    color: theme.primaryTextColor,
+  },
+
+  applyButton: {
+    height: 44,
+
+    paddingHorizontal: 22,
+
+    borderRadius: 12,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    backgroundColor:
+      theme.themeColor,
+  },
+
+  applyText: {
+    fontSize: 15,
+
+    fontWeight: '700',
+
+    color: theme.secondaryTextColor,
+  },
+
 
 
 });
