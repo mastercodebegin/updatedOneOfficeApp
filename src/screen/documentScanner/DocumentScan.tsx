@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, use, useMemo } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
+import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'
@@ -57,6 +58,8 @@ import { toggleTheme } from '../theme/ThemeSlice';
 import { useTheme } from '../theme/useTheme';
 import { Theme } from '../theme/ThemeConfig';
 import { color } from 'react-native-elements/dist/helpers';
+import { tagLocalService } from '../../../src/db/tagLocalService';
+import CustomVectorIcon from '../../../src/component/CustomVectorIcon';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -66,13 +69,16 @@ export const DocumentScan = () => {
   const [images, setImages] = useState<Array<any>>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
+  const [isTagModalVisible, setIsTagModalVisible] = React.useState(false);
   const [folderId, setFolderId] = React.useState(0)
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
   const [isShowFolderNameModal, setIsShowFolderNameModal] = useState(false);
   const [data, setData] = useState<any>([])
+  const [userTags, setUserTags] = useState<any>([])
   const [folderName, setFolderName] = useState('')
+  const [tagName, setTagName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isShowbackupMessage, setIsShowbackupMessage] = useState(false)
   const [isBackupStarted, setIsBackupStarted] = useState(false)
@@ -87,8 +93,9 @@ export const DocumentScan = () => {
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const [searchText, setSearchText] = useState('')
   const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
-  const [isEnabled, setIsEnabled] = useState(false);
-  const dispatch = useDispatch()
+  const tabs = ['All', 'Images', 'Docs', 'PDF'];
+
+  const [selectedTag, setSelectedTag] = useState('All');
 
   // const toggleSwitch = toggleTheme()
 
@@ -106,7 +113,7 @@ export const DocumentScan = () => {
 
 
   useEffect(() => {
-    // return 
+    return
     let unsubscribeFiles: any;
     let unsubscribeTriggers: any;
     let isSyncing = false; // guard
@@ -122,6 +129,11 @@ export const DocumentScan = () => {
         .collection('files')
         .where('userId', '==', userId)
         .onSnapshot(snapshot => {
+          if (!snapshot) {
+            console.log('snapshot null');
+            return;
+          }
+          // if (snapshot) return;
           snapshot.docChanges().forEach(change => {
             console.log('SYNC TRIGGERED 1');
             handleSync()
@@ -135,8 +147,10 @@ export const DocumentScan = () => {
         .collection('folders')
         .where('userId', '==', userId)
         .onSnapshot(async snapshot => {
-          if (snapshot.empty) return;
-
+          if (!snapshot) {
+            console.log('snapshot null');
+            return;
+          }
           // prevent multiple calls
           if (isSyncing) return;
 
@@ -182,10 +196,12 @@ export const DocumentScan = () => {
     const fetchData = async () => {
       try {
         const folders = await FolderLocalService.getActiveFolders();
+        const tags = await tagLocalService.getTags();
 
         console.log('folders=====1st', folders);
 
         setData(folders);
+        setUserTags(tags);
 
         setIsLocalDataFetch(true);
         getfiles()
@@ -545,7 +561,7 @@ export const DocumentScan = () => {
   }
   const renameFolder = async () => {
 
-    if(folderName.length==0){
+    if (folderName.length == 0) {
       alert('Folder name cannot be empty')
       return
     }
@@ -767,57 +783,114 @@ export const DocumentScan = () => {
     readFilesFromDirectory
 
   }
-  const tabs = ['All', 'Images', 'Docs', 'PDF'];
+onPressEditTag = (item: any) => {
 
-const [selectedTab, setSelectedTab] =
-  useState('All');
+}
 
-const renderTabs = () => {
-  return (
-    <View style={styles.tabsWrapper}>
-      <View style={styles.tabsContainer}>
-        {tabs.map((item) => {
-          const isSelected =
-            selectedTab === item;
+  const getTagColor = (isSelected: boolean) => {
+    if (mode == 'light') {
+      if (isSelected) {
+        return { bgColor: 'red', iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+      else {
+        return { bgColor: 'lightgray', iconColor:theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+    }
+    else if (mode == 'dark')
+      if (isSelected) {
+        return { bgColor: theme.buttonBGColor, iconColor: theme.secondaryTextColor, textColor: theme.secondaryTextColor }
+      }
+      else {
+        return { bgColor: theme.secondaryButtonBGColor, iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+    else {
+      return { bgColor: '', iconColor: theme.secondaryTextColor, textColor: theme.primaryTextColor }
+    }
+  }
 
-          return (
-            <TouchableOpacity
-              key={item}
-              activeOpacity={0.8}
-              onPress={() =>
-                setSelectedTab(item)
-              }
-              style={styles.tabButton}>
-              
-              <Text
-                style={[
-                  styles.tabText,
-                  isSelected &&
-                    styles.activeTabText,
-                ]}>
-                {item}
-              </Text>
+  const renderTags = () => {
+    return (
+      <View style={styles.tagsWrapper}>
 
-              {isSelected && (
-                <View
-                  style={styles.activeLine}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={
+            styles.tagsContainer
+          }>
+          {/* <Text style={{color:theme.primaryTextColor,top:10}}>tags.  </Text> */}
+          <View style={{ height: 32, marginRight: scaledSize(10), marginTop: scaledSize(11) }}>
+           <MaterialIcons name="local-offer" size={scaledSize(22)} color={theme.themeColor} />
+            </View>
+
+          {userTags.map((item: any) => {
+            const isSelected =
+              selectedTag?.id === item.id;
+
+            return (
+              <View style={{ height: 32, marginRight: 10, marginTop: 10 }} key={item.id}>
+
+                <Chip
+                  // icon="camera"
+                  onPress={() => { setSelectedTag(item) }}
+                  // onPressIn={()=>{alert('edit')}}
+                  onClose={() => { alert('close') }}
+                  mode='flat'
+                  selected={isSelected}
+                  
+                  // showSelectedCheckmark={false}
+
+                  style={{ backgroundColor: isSelected ? theme.themeColor : theme.buttonBGColor, width: 100 }}
+                  closeIcon={() => 
+                  // <VECTOR_ICON_LIBRARIES.MaterialDesignIcons name='dots-horizontal' 
+                  //   size={scaledSize(18)} color={getTagColor(isSelected).iconColor}
+                            <CustomMenu
+                            Icon={<VECTOR_ICON_LIBRARIES.MaterialDesignIcons name="dots-horizontal" size={18} color="#555" />}
+                            menuOptionstyle={{
+                              padding: scaledSize(13),
+                              width: scaledSize(150),
+                              height: scaledSize(50),
+                            }}
+                            menuOption={[
+                              { onSelect: () => alert(), label: 'Share' },
+                              { onSelect: () => navigation.navigate('contactus'), label: 'Contact us' },
+                            ]}
+                   />
+                  }
+                  textStyle={{ color: getTagColor(isSelected).textColor }}
+                >
+
+                  {item.name}
+                </Chip>
+              </View>
+            );
+          })}
+
+          {/* Add Tag */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.addTagButton}>
+
+            <Ionicons
+              name="add"
+              size={20}
+              color={theme.themeColor}
+            />
+
+            <Text style={styles.addTagText}>
+              Add Tag
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
-
-      <View style={styles.bottomBorder} />
-    </View>
-  );
-};
+    );
+  };
 
   const renderGradientButton = (iconName: any, color = 'white', onPress: any) => {
     return (
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
         <LinearGradient
-          colors={mode === 'light' ? [COLORS.THEME_COLOR, COLORS.THEME_SECONDARY_COLOR] :
+          colors={mode === 'light' ? ['white', 'white'] :
             [theme.buttonBGColor, theme.buttonBGColor]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -826,7 +899,7 @@ const renderTabs = () => {
           <Ionicons
             name={iconName}
             size={scaledSize(18)}
-            color={ color}
+            color={color}
           />
         </LinearGradient>
       </TouchableOpacity>
@@ -852,9 +925,9 @@ const renderTabs = () => {
             </Text>
           </View>
 
-             <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
+          <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
             <LinearGradient
-              colors={mode === 'light' ? [theme.themeColor, theme.themeSecondaryColor] :
+              colors={mode === 'light' ? ['white', 'white'] :
                 [theme.buttonBGColor, theme.buttonBGColor]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -865,8 +938,10 @@ const renderTabs = () => {
                 size={scaledSize(18)}
                 color={mode === 'light' ? 'white' : color}
               /> */}
-              <Text style={{ color: mode === 'light' ? theme.secondaryTextColor : theme.themeColor,
-                letterSpacing:1,fontSize:scaledSize(14),fontWeight:'500' }}>AK</Text>
+              <Text style={{
+                color: mode === 'light' ? theme.iconColor : theme.iconColor,
+                letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
+              }}>AK</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -882,7 +957,7 @@ const renderTabs = () => {
             />
 
             <TextInput
-              placeholder="Search..."
+              placeholder="Search document..."
               placeholderTextColor="#3E4047"
               style={styles.input}
             />
@@ -927,128 +1002,235 @@ const renderTabs = () => {
           </View>
 
           <View style={styles.content}>
-           
-              <>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.title,
-                    { color: theme.primaryTextColor },
-                  ]}>
-                  {capitalizeFirstLetter(item?.name || '')}
+
+            <>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.title,
+                  { color: theme.primaryTextColor },
+                ]}>
+                {capitalizeFirstLetter(item?.name || '')}
+              </Text>
+
+              <Text style={styles.date}>
+                {DateHelper.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}
+              </Text>
+
+              <View style={styles.tagContainer}>
+                <View style={styles.greenLine} />
+
+                <Text style={styles.tagText}>
+                  IMAGE
                 </Text>
+              </View>
+            </>
 
-                <Text style={styles.date}>
-                  {DateHelper.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}
-                </Text>
-
-                <View style={styles.tagContainer}>
-                  <View style={styles.greenLine} />
-
-                  <Text style={styles.tagText}>
-                    IMAGE
-                  </Text>
-                </View>
-              </>
-            
           </View>
         </View>
 
         {/* Right Actions */}
         {!isMultiDelete && (
           <View style={{ ...styles.actionRow, flex: .7, }}>
-          
-                {renderGradientButton('share-social-sharp', theme.iconColor, () => shareFile(item))}
-                {renderGradientButton('pencil', theme.iconColor, () => {
-                  setIsFolderNameChange(true);
-                  setFolderId(item.id);
-                })}
-                {renderGradientButton('trash-outline', theme.iconColor, () => deleteFoldersConfirmationForSingleItem(item))}
+
+            {renderGradientButton('share-social-sharp', theme.iconColor, () => shareFile(item))}
+            {renderGradientButton('pencil', theme.iconColor, () => {
+              setIsFolderNameChange(true);
+              setFolderId(item.id);
+            })}
+            {renderGradientButton('trash-outline', 'red', () => deleteFoldersConfirmationForSingleItem(item))}
 
 
-         
-          
+
+
           </View>
         )}
       </TouchableOpacity>
     );
   };
 
-  const renderRenameModal = () => {
-  return (
-    <Modal
-      // visible={true}
-      visible={isFolderNameChange}
-      transparent
-      animationType="fade"
-      onRequestClose={() =>
-        setIsFolderNameChange(false)
-      }>
-      
-      <View style={styles.modalOverlay}>
-        
-        <View style={styles.modalContainer}>
-          
-          {/* Header */}
-          <Text style={styles.modalTitle}>
-            Rename Folder
-          </Text>
+  const renderTagBtn = () => {
+    return (<TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => setIsTagModalVisible(true)}
+      style={styles.addTagButton}
+      onLongPress={() => alert('test')}
+    >
 
-          <Text style={styles.modalSubtitle}>
-            Enter a new folder name
-          </Text>
+      <Ionicons
+        name="add"
+        size={18}
+        color={theme.themeColor}
+      />
 
-          {/* Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              value={folderName}
-              onChangeText={setFolderName}
-              placeholder="Folder name"
-              placeholderTextColor="#9CA3AF"
-              style={styles.modalInput}
-            />
-          </View>
+      <Text style={styles.addTagText}>
+        Add Tag
+      </Text>
+    </TouchableOpacity>)
+  }
 
-          {/* Buttons */}
-          <View style={styles.modalButtonRow}>
-            
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.cancelButton}
-              onPress={() =>
-                setIsFolderNameChange(false)
-              }>
-              
-              <Text style={styles.cancelText}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.renameButton}
-              onPress={renameFolder}>
-              
-              <LinearGradient
-                colors={[
-                  theme.themeSecondaryColor,
-                  theme.themeColor,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientButton}>
-                
-                <Text style={styles.renameText}>
-                  Rename
+  const addTagHandler = async () => {
+    alert('add tag' + tagName)
+    const createdTags = await tagLocalService.addTag({ userId: '', name: tagName, color: '#3CF28A' })
+    console.log('createdTags===', createdTags);
+    const tags = await tagLocalService.getTags()
+    console.log('existing tags===', tags);
+
+    // setIsTagModalVisible(false)
+    // setTagName('')
+  }
+  const renderAddTagModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isTagModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsTagModalVisible(false)
+        }>
+
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Add tag
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new tag name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={tagName}
+                onChangeText={setTagName}
+                placeholder="Tag name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={() =>
+                  setIsTagModalVisible(false)
+                }>
+
+                <Text style={styles.cancelText}>
+                  Cancel
                 </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={addTagHandler}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Create
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  };
+
+  const renderRenameModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isFolderNameChange}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsFolderNameChange(false)
+        }>
+
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Rename Folder
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new folder name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={folderName}
+                onChangeText={setFolderName}
+                placeholder="Folder name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={() =>
+                  setIsFolderNameChange(false)
+                }>
+
+                <Text style={styles.cancelText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={renameFolder}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Rename
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
 
   const getFiles = () => {
     // getting search value from dashboard and filtering it
@@ -1239,7 +1421,12 @@ const renderTabs = () => {
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      {renderTabs()}
+      {renderTags()}
+      <View style={{ height: 40, width: 100, position: 'absolute', top: 150, right: 10 }}>
+        {renderTagBtn()}
+      </View>
+
+
       {/* <View style={{
         height: scaledSize(50),
         alignSelf: 'center',
@@ -1391,8 +1578,8 @@ const renderTabs = () => {
         top: heightFromPercentage(72)
       }}>
         <CustomFAB
-          icon={<Ionicons name='camera-outline' size={scaledSize(24)} 
-          color={theme.iconColor} />}
+          icon={<Ionicons name='camera-outline' size={scaledSize(24)}
+            color={mode === 'light' ? 'white' : theme.iconColor} />}
           onPress={() => { requestCameraPermission() }}
         // onPress={scanDocument}
         />
@@ -1534,6 +1721,7 @@ const renderTabs = () => {
         </View>
       </CustomBottomSheet>
       {renderRenameModal()}
+      {renderAddTagModal()}
     </SafeAreaView>
   )
 }
@@ -1549,6 +1737,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       theme.bgContainor
   },
   card: {
+    height: scaledSize(120),
     flexDirection: 'row',
 
     alignItems: 'center',
@@ -1562,7 +1751,6 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     paddingVertical: scaledSize(12),
 
     borderRadius: scaledSize(20),
-    height: scaledSize(110),
 
     backgroundColor: theme.bgColor,
 
@@ -1577,7 +1765,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       height: scaledSize(4),
     },
 
-    elevation: 4,
+    elevation: mode === 'dark' ? 4 : 0,
 
   },
 
@@ -1622,8 +1810,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginTop: scaledSize(6),
 
     fontSize: scaledSize(12),
+    fontFamily: FONTS.regular,
+    letterSpacing: 0.5,
 
-    color: mode === 'dark' ? '#444444' : '#000000',
+    color: mode === 'dark' ? '#444444' : 'gray',
 
     fontWeight: '500',
   },
@@ -1656,7 +1846,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     height: '100%',
 
-    backgroundColor:  theme.themeColor,
+    backgroundColor: theme.themeColor,
     // backgroundColor: '#00E676',
 
 
@@ -1763,10 +1953,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: theme.secondaryTextColor,
   },
 
- 
 
 
- 
+
+
   searchRow: {
     flexDirection: 'row',
 
@@ -1816,8 +2006,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: '#161735',
 
     fontSize: scaledSize(12),
-    letterSpacing: 0.5,
-    fontFamily: FONTS.regular,
+    letterSpacing: 1,
+    // fontFamily: FONTS.regular,
 
     // fontWeight: '500',
 
@@ -1847,186 +2037,252 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       height: scaledSize(4),
     },
 
-    elevation: 8,
+    elevation: 2,
   },
   // ****************render tab******************
-  tabsWrapper: {
-  marginTop: 26,
-},
+  tagsWrapper: {
+    marginTop: 20,
+  },
 
-tabsContainer: {
-  flexDirection: 'row',
+  tagsContainer: {
+    paddingHorizontal: 18,
+    paddingBottom: 10,
+  },
 
-  alignItems: 'center',
 
-  paddingHorizontal: 24,
-},
+  tagName: {
+    marginHorizontal: 12,
 
-tabButton: {
-  marginRight: 34,
+    fontSize: 16,
 
-  paddingBottom: 16,
-},
+    fontWeight: '700',
+  },
 
-tabText: {
-  fontSize: 17,
+  tagIconContainer: {
+    width: 32,
+    height: 32,
 
-  fontWeight: '600',
+    borderRadius: 12,
 
-  color: theme.primaryTextColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-  opacity: 0.35,
-},
 
-activeTabText: {
-  color: theme.primaryTextColor,
+  editBtn: {
+    marginLeft: 16,
 
-  opacity: 1,
-},
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-activeLine: {
-  position: 'absolute',
+  activeArrow: {
+    position: 'absolute',
 
-  bottom: 0,
+    bottom: -8,
 
-  left: scaledSize(-6),
+    alignSelf: 'center',
 
-  width: scaledSize(54),
+    left: '50%',
 
-  height: scaledSize(2),
+    marginLeft: -8,
 
-  borderRadius: scaledSize(10),
+    width: 16,
+    height: 16,
 
-  backgroundColor: theme.themeSecondaryColor,
-},
+    backgroundColor: theme.themeColor,
 
-bottomBorder: {
-  height: .3,
+    transform: [{ rotate: '45deg' }],
+  },
 
-  backgroundColor: mode==='dark' ? '#464646' : '#d3d3d3',
+  addTagButton: {
+    height: 64,
 
-  marginTop: -1,
-},
+    paddingHorizontal: 22,
 
-// ********************* Rename Modal ***********************
-modalOverlay: {
-  flex: 1,
+    borderRadius: 22,
 
-  backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1.5,
 
-  justifyContent: 'center',
+    borderStyle: 'dashed',
 
-  paddingHorizontal: scaledSize(20),
-},
+    borderColor: '#D9E1EC',
 
-modalContainer: {
-  borderRadius: scaledSize(20),
+    flexDirection: 'row',
 
-  padding: scaledSize(20),
+    alignItems: 'center',
 
-  backgroundColor: theme.bgColor,
+    justifyContent: 'center',
 
-  borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+  },
 
-  borderColor: theme.borderColor,
-},
+  addTagText: {
+    marginLeft: 8,
 
-modalTitle: {
-  fontSize: scaledSize(20),
+    fontSize: 16,
 
-  fontWeight: '800',
+    fontWeight: '700',
 
-  color: theme.primaryTextColor,
-},
+    color: theme.themeColor,
+  },
 
-modalSubtitle: {
-  marginTop: scaledSize(6),
+  // ********************* Rename Modal ***********************
+  modalOverlay: {
+    flex: 1,
 
-  fontSize: scaledSize(12),
+    backgroundColor: 'rgba(0,0,0,0.45)',
 
-  color: '#8B93A7',
-},
+    justifyContent: 'center',
 
-inputContainer: {
-  height: scaledSize(50),
+    paddingHorizontal: scaledSize(20),
+  },
 
-  borderRadius: scaledSize(14),
+  modalContainer: {
+    borderRadius: scaledSize(20),
 
-  marginTop: scaledSize(20),
+    padding: scaledSize(20),
 
-  backgroundColor: theme.buttonBGColor,
+    backgroundColor: theme.bgColor,
 
-  borderWidth: 1,
+    borderWidth: 1,
 
-  borderColor: theme.borderColor,
+    borderColor: theme.borderColor,
+  },
 
-  justifyContent: 'center',
+  modalTitle: {
+    fontSize: scaledSize(20),
 
-  paddingHorizontal: scaledSize(12),
-},
+    fontWeight: '800',
 
-modalInput: {
-  fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
+  },
 
-  color: theme.primaryTextColor,
+  modalSubtitle: {
+    marginTop: scaledSize(6),
 
-  padding: 0,
-},
+    fontSize: scaledSize(12),
 
-modalButtonRow: {
-  flexDirection: 'row',
+    color: '#8B93A7',
+  },
 
-  justifyContent: 'flex-end',
+  inputContainer: {
+    height: scaledSize(50),
 
-  marginTop: scaledSize(24),
-},
+    borderRadius: scaledSize(14),
 
-cancelButton: {
-  height: scaledSize(46),
+    marginTop: scaledSize(20),
 
-  paddingHorizontal: scaledSize(18),
+    backgroundColor: theme.buttonBGColor,
 
-  borderRadius: scaledSize(12),
+    borderWidth: 1,
 
-  backgroundColor: theme.buttonBGColor,
+    borderColor: theme.borderColor,
 
-  justifyContent: 'center',
+    justifyContent: 'center',
 
-  alignItems: 'center',
+    paddingHorizontal: scaledSize(12),
+  },
 
-  marginRight: scaledSize(10),
-},
+  modalInput: {
+    fontSize: scaledSize(12),
 
-cancelText: {
-  fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
 
-  fontWeight: '700',
+    padding: 0,
+  },
 
-  color: theme.primaryTextColor,
-},
+  modalButtonRow: {
+    flexDirection: 'row',
 
-renameButton: {
-  borderRadius: scaledSize(12),
+    justifyContent: 'flex-end',
 
-  overflow: 'hidden',
-},
+    marginTop: scaledSize(24),
+  },
 
-gradientButton: {
-  height: scaledSize(46),
+  cancelButton: {
+    height: scaledSize(46),
 
-  paddingHorizontal: scaledSize(20),
+    paddingHorizontal: scaledSize(18),
 
-  justifyContent: 'center',
+    borderRadius: scaledSize(12),
 
-  alignItems: 'center',
-},
+    backgroundColor: theme.buttonBGColor,
 
-renameText: {
-  fontSize: scaledSize(12),
+    justifyContent: 'center',
 
-  fontWeight: '800',
+    alignItems: 'center',
 
-  color: theme.secondaryTextColor,
-},
+    marginRight: scaledSize(10),
+  },
+
+  cancelText: {
+    fontSize: scaledSize(12),
+
+    fontWeight: '700',
+
+    color: theme.primaryTextColor,
+  },
+
+  renameButton: {
+    borderRadius: scaledSize(12),
+
+    overflow: 'hidden',
+  },
+
+  gradientButton: {
+    height: scaledSize(46),
+
+    paddingHorizontal: scaledSize(20),
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+  },
+
+  renameText: {
+    fontSize: scaledSize(12),
+
+    fontWeight: '800',
+
+    color: theme.secondaryTextColor,
+  },
+
+  // ************* tag btn ****************
+  addTagButton: {
+    height: scaledSize(40),
+    paddingHorizontal: scaledSize(14),
+
+    borderRadius: scaledSize(12),
+
+    // borderWidth: 1.5,
+
+    // borderStyle: 'dashed',
+
+    borderColor: theme.themeColor,
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
+
+    //   backgroundColor:
+    //     mode === 'dark'
+    //       ? '#1B1D24'
+    //       : '#FFFFFF',
+    //
+  },
+
+  addTagText: {
+    marginLeft: scaledSize(4),
+
+    fontSize: scaledSize(12),
+
+    fontWeight: '500',
+
+    color: theme.themeColor,
+  },
+
 
 });

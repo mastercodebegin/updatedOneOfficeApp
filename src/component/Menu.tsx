@@ -1,82 +1,132 @@
-import React, { useEffect } from 'react'
-import { View ,Text,SafeAreaView} from 'react-native';
+import React from 'react';
+
 import {
-    Menu,
-    MenuOptions,
-    MenuOption,
-    MenuTrigger,
-    renderers,
-    MenuProvider
-    
-    
-  } from 'react-native-popup-menu';
-  import Icon from 'react-native-vector-icons/Ionicons';
+  SafeAreaView,
+  Text,
+} from 'react-native';
+
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+  renderers,
+} from 'react-native-popup-menu';
+
 import { scaledSize } from '../utilies/Utilities';
 
-  export const CustomMenu = ({Icon,menuOptionstyle,menuOption}) =>{
-  useEffect(()=>{
-// console.log('icon-------',Icon);
-// console.log('menuOption-------',menuOption);
+import { useTheme } from '../screen/theme/useTheme';
 
-  },[Icon,menuOptionstyle,menuOption])
-  
-    
-   return(<SafeAreaView>
-      <Menu renderer={renderers.Popover}
-      rendererProps={{placement: 'bottom', anchorStyle: {backgroundColor: 'white'}}}
-    //   MenuProvider={}
-      //   rendererProps={{placement:'bottom',preferredPlacement:'left'}}
-    
-      >
+type MenuItem = {
+  label: string;
+  onSelect: () => void;
+};
+
+type Props = {
+  Icon: React.ReactNode;
+
+  menuOptionstyle?: any;
+
+  menuOption: MenuItem[];
+};
+
+export const CustomMenu = ({
+  Icon,
+  menuOptionstyle,
+  menuOption,
+}: Props) => {
+  const { mode, theme } = useTheme();
+
+  return (
+    <SafeAreaView>
+      <Menu
+        renderer={renderers.Popover}
+        rendererProps={{
+          placement: 'bottom',
+          anchorStyle: {
+            backgroundColor:theme.bgColor
+              
+          },
+        }}>
+
         <MenuTrigger>
-            {Icon}
-            </MenuTrigger>
-        <MenuOptions customStyles={{optionWrapper: menuOptionstyle, optionText: {color:'black',fontSize:14}}}>
-{menuOption?.map((item,index)=>
-  <MenuOption key={index+1}onSelect={() =>item.onSelect()} disabled={false}>
-    <Text style={{fontSize:scaledSize(16),}}>{item.label}</Text>
-    </MenuOption>)}
-    </MenuOptions>
+          {Icon}
+        </MenuTrigger>
+
+        <MenuOptions
+          customStyles={{
+            optionsContainer: {
+              backgroundColor: theme.bgColor,
+              // mode === 'dark'
+              //   ? theme.bgColor
+              //   : '#FFFFFF',
+
+              borderRadius: scaledSize(14),
+
+              paddingVertical: scaledSize(4),
+
+              minWidth: scaledSize(150),
+
+              borderWidth: scaledSize(1),
+
+              borderColor:
+                mode === 'dark'
+                  ? '#2B2E38'
+                  : '#ECEEF5',
+
+              shadowColor: '#000',
+
+              shadowOpacity:
+                mode === 'dark'
+                  ? 0.25
+                  : 0.08,
+
+              shadowRadius: 10,
+
+              shadowOffset: {
+                width: 0,
+                height: 4,
+              },
+
+              elevation: 6,
+            },
+
+            optionWrapper: {
+              paddingVertical: scaledSize(12),
+
+              paddingHorizontal: scaledSize(12),
+
+              ...menuOptionstyle,
+            },
+
+          }}>
+
+          {menuOption?.map(
+            (item, index) => (
+              <MenuOption
+                key={index}
+                onSelect={item.onSelect}>
+
+                <Text
+                  style={{
+                    fontSize:
+                      scaledSize(14),
+
+                    color: theme.primaryTextColor,
+
+
+                    // fontWeight: '600',
+                    letterSpacing: .5,
+                  }}>
+                  {item.label}
+                </Text>
+              </MenuOption>
+            ),
+          )}
+        </MenuOptions>
       </Menu>
     </SafeAreaView>
- ) }
-  export default CustomMenu
+  );
+};
 
-// import * as React from 'react';
-// import { View,SafeAreaView} from 'react-native';
-// import { Button, Menu, Divider, Provider } from 'react-native-paper';
-// import Icon from 'react-native-vector-icons/Ionicons';
-
-// const CustomMenu = (props) => {
-//   const [visible, setVisible] = React.useState(false);
-
-//   const openMenu = () => setVisible(true);
-
-//   const closeMenu = () => setVisible(false);
-
-//   return (
-//     <Provider>
-//       <SafeAreaView
-//         style={{
-//           flexDirection: 'row',
-//         //   backgroundColor:'blue',
-//           justifyContent: 'flex-end',
-//           alignItems:'flex-end',
-//           zIndex:1
-//         }}>
-//         <Menu
-        
-//           visible={visible}
-//           onDismiss={closeMenu}
-//           anchor={<Icon  name="menu" size={40} onPress={openMenu}></Icon>}>
-//           <Menu.Item onPress={(e)=>{onPress('e'),closeMenu()}} title="Item 1" />
-//           <Menu.Item onPress={(e)=>{onPress('e'),closeMenu()}} title="Item 2"/>
-//           {/* <Divider /> */}
-//           <Menu.Item onPress={(e)=>{onPress('e'),closeMenu()}} title="Item 3" />
-//         </Menu>
-//       </SafeAreaView>
-//     </Provider>
-//   );
-// };
-
-// export default CustomMenu;
+export default CustomMenu;

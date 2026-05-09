@@ -27,6 +27,25 @@ export const initDB = async () => {
       )
     `);
 
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  userId TEXT,
+
+  name TEXT NOT NULL,
+
+  color TEXT,
+
+  firebaseId TEXT,
+
+  isSynced INTEGER DEFAULT 0,
+  isDeleted INTEGER DEFAULT 0,
+
+  createdAt INTEGER,
+  updatedAt INTEGER
+)`)
+
     // 📄 FILES TABLE
     await db.executeSql(`
       CREATE TABLE IF NOT EXISTS files (
@@ -53,6 +72,7 @@ export const initDB = async () => {
         FOREIGN KEY (folderId) REFERENCES folders(id)
       )
     `);
+
 
     // ⚡ Indexes (safe to run multiple times)
     await db.executeSql(`
