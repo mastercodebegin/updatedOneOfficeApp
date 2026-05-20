@@ -99,7 +99,8 @@ export const DocumentScan = () => {
   const [isShowDeleteTagConfirmation, setIsShowDeleteTagConfirmation] = useState(false)
   const [isShowSortModal, setIsShowSortModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('')
-  const [selectedTag, setSelectedTag] = useState('All');
+  const [selectedTag, setSelectedTag] = useState({});
+  const [tagForDeletion, setTagForDeletion] = useState({});
 
   // const toggleSwitch = toggleTheme()
 
@@ -832,22 +833,23 @@ export const DocumentScan = () => {
           {userTags.map((item: any) => {
             const isSelected =
               selectedTag?.id === item.id;
+              console.log('item====',item);
+              
 
             return (
-              <View style={{ height: 32, marginRight: 10, marginTop: 10 }} key={item.id}>
+              <View style={{minWidth:scaledSize(100), height: scaledSize(32), marginRight: scaledSize(10), marginTop: scaledSize(10) ,paddingHorizontal:scaledSize(4)}} key={item.id} >
 
                 <Chip
-                  onPress={() => { setSelectedTag(item) }}
+                  onPress={() => { selectedTag?.id === item.id?setSelectedTag({}):setSelectedTag(item) }}
                   onClose={() => { alert('close') }}
                   mode='flat'
                   selected={isSelected}
                   showSelectedCheck={false}
-
-
-                  // showSelectedCheckmark={false}
-
+                  
                   style={{
                     backgroundColor: isSelected ? theme.themeColor : theme.buttonBGColor,
+                    
+                    
                   }}
                   closeIcon={() =>
                     <CustomMenu
@@ -867,7 +869,7 @@ export const DocumentScan = () => {
                         {
                           onSelect: () => {
                             setIsShowDeleteTagConfirmation(true),
-                              setSelectedTag(item)
+                              setTagForDeletion(item)
                           }, label: 'Delete'
                         },
                       ]}
@@ -883,7 +885,7 @@ export const DocumentScan = () => {
           })}
 
           {/* Add Tag */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             activeOpacity={0.85}
             style={styles.addTagButton}>
 
@@ -896,7 +898,7 @@ export const DocumentScan = () => {
             <Text style={styles.addTagText}>
               Add Tag
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </ScrollView>
       </View>
     );
@@ -1035,7 +1037,7 @@ export const DocumentScan = () => {
                 {capitalizeFirstLetter(item?.name || '')}
               </Text>
 
-              <Text style={styles.date}>
+              <Text style={[styles.date,{fontFamily:'calibri'}]}>
                 {DateHelper.getDateByMomentFormat(item?.createdAt,
                   DateFormat.DATE_WITH_MONTH_NAME)}
               </Text>
@@ -1094,7 +1096,6 @@ export const DocumentScan = () => {
 
 
   const addTagHandler = async () => {
-    alert('add tag' + tagName)
     const createdTags = await tagLocalService.addTag({ userId: '', name: tagName, color: '#3CF28A' })
     console.log('createdTags===', createdTags);
     const tags = await tagLocalService.getTags()
@@ -1123,13 +1124,18 @@ export const DocumentScan = () => {
   }
 
   const deleteTagHandler = async () => {
-    const existingTag = await tagLocalService.getTagById(selectedTag.id)
+    if(tagForDeletion?.id==undefined){
+      return
+    }
+    const existingTag = await tagLocalService.getTagById(tagForDeletion.id)
     console.log('existingTag===', existingTag);
-    const updatedTags = await tagLocalService.updateTag(selectedTag.id, { isDeleted: 1 })
+    const updatedTags = await tagLocalService.updateTag(tagForDeletion.id, { isDeleted: 1 })
     console.log('updatedTags===', updatedTags);
     const tags = await tagLocalService.getTags()
     console.log('existing tags===', tags);
+    setTagForDeletion({})
     setUserTags(tags)
+    setSelectedTag({})
     setIsTagModalVisible(false)
     setIsShowRenderRenameTagModal(false)
     setIsShowDeleteTagConfirmation(false)
@@ -1362,23 +1368,6 @@ export const DocumentScan = () => {
     );
   };
 
-  // const getFiles = () => {
-  //   if (isLocalDataFetch) {
-
-  //     if (searchQuery.length > 0) {
-  //       return data.filter(file =>
-  //         file.name.toLowerCase().includes(searchQuery.toLowerCase())
-  //       );
-  //     } else {
-  //       return data;
-  //     }
-  //   }
-  //   else {
-  //     console.log('returned------', data);
-
-  //     return []
-  //   }
-  // };
   const getFiles = () => {
     if (!isLocalDataFetch) {
       return [];
@@ -2245,28 +2234,28 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   // ****************render tab******************
   tagsWrapper: {
-    marginTop: 20,
+    marginTop: scaledSize(20),
   },
 
   tagsContainer: {
-    paddingHorizontal: 18,
-    paddingBottom: 10,
+    paddingHorizontal: scaledSize(18),
+    paddingBottom: scaledSize(10),
   },
 
 
   tagName: {
-    marginHorizontal: 12,
+    marginHorizontal: scaledSize(12),
 
-    fontSize: 16,
+    fontSize: scaledSize(16),
 
     fontWeight: '700',
   },
 
   tagIconContainer: {
-    width: 32,
-    height: 32,
+    width: scaledSize(32),
+    height: scaledSize(32),
 
-    borderRadius: 12,
+    borderRadius: scaledSize(12),
 
     justifyContent: 'center',
     alignItems: 'center',
@@ -2274,7 +2263,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
 
   editBtn: {
-    marginLeft: 16,
+    marginLeft: scaledSize(16),
 
     justifyContent: 'center',
     alignItems: 'center',
@@ -2283,16 +2272,16 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   activeArrow: {
     position: 'absolute',
 
-    bottom: -8,
+    bottom: scaledSize(-8),
 
     alignSelf: 'center',
 
     left: '50%',
 
-    marginLeft: -8,
+    marginLeft: scaledSize(-8),
 
-    width: 16,
-    height: 16,
+    width: scaledSize(16),
+    height: scaledSize(16),
 
     backgroundColor: theme.themeColor,
 
@@ -2300,11 +2289,11 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   addTagButton: {
-    height: 64,
+    height: scaledSize(60),
 
-    paddingHorizontal: 22,
+    paddingHorizontal: scaledSize(22),
 
-    borderRadius: 22,
+    borderRadius: scaledSize(22),
 
     borderWidth: 1.5,
 
