@@ -867,7 +867,7 @@ export const DocumentScan = () => {
                         {
                           onSelect: () => {
                             setIsShowDeleteTagConfirmation(true),
-                            setSelectedTag(item)
+                              setSelectedTag(item)
                           }, label: 'Delete'
                         },
                       ]}
@@ -974,8 +974,14 @@ export const DocumentScan = () => {
 
             <TextInput
               placeholder="Search document..."
-              placeholderTextColor="#3E4047"
+              placeholderTextColor={theme.primaryTextColor}
+              onChangeText={setSearchQuery}
               style={styles.input}
+            />
+            <Ionicons
+              name="search-outline"
+              size={26}
+              color="#3E4047"
             />
           </View>
           {renderGradientButton('filter', theme.iconColor, () => setIsShowSortModal(true))}
@@ -1030,7 +1036,7 @@ export const DocumentScan = () => {
               </Text>
 
               <Text style={styles.date}>
-                {DateHelper.getDateByMomentFormat(item?.createdAt, 
+                {DateHelper.getDateByMomentFormat(item?.createdAt,
                   DateFormat.DATE_WITH_MONTH_NAME)}
               </Text>
 
@@ -1374,43 +1380,43 @@ export const DocumentScan = () => {
   //   }
   // };
   const getFiles = () => {
-  if (!isLocalDataFetch) {
-    return [];
-  }
+    if (!isLocalDataFetch) {
+      return [];
+    }
 
-  let filteredData = [...data];
+    let filteredData = [...data];
 
-  // search
-  if (searchQuery?.length > 0) {
-    filteredData = filteredData.filter(
-      file =>
-        file.name
-          ?.toLowerCase()
-          .includes(
-            searchQuery.toLowerCase(),
-          ),
-    );
-  }
-
-  // tag filter
-  if (selectedTag) {
-    filteredData =
-      filteredData.filter(
+    // search
+    if (searchQuery?.length > 0) {
+      filteredData = filteredData.filter(
         file =>
-          file.tagId ===
-          selectedTag.id,
+          file.name
+            ?.toLowerCase()
+            .includes(
+              searchQuery.toLowerCase(),
+            ),
       );
-  }
+    }
 
-  // sorting
-  filteredData =
-    onApplySortHandler(
-      selectedSort,
-      filteredData,
-    );
+    // tag filter
+    if (selectedTag) {
+      filteredData =
+        filteredData.filter(
+          file =>
+            file.tagId ===
+            selectedTag.id,
+        );
+    }
 
-  return filteredData;
-};
+    // sorting
+    filteredData =
+      onApplySortHandler(
+        selectedSort,
+        filteredData,
+      );
+
+    return filteredData;
+  };
 
 
   const backupFolderPath = CONSTANT.ASYNC_STORAGE_STRING_INTO_JSON_BAKUP_PATH;
@@ -1557,46 +1563,46 @@ export const DocumentScan = () => {
       console.log('openFile error-----', error);
     }
   }
-  const onApplySortHandler = (sortType: string,sorted: any[]) => {
-     
-  switch (sortType) {
-    case 'latest':
+  const onApplySortHandler = (sortType: string, sorted: any[]) => {
 
-      return sorted.sort(
-        (a, b) =>
-          b.createdAt - a.createdAt,
-      );
+    switch (sortType) {
+      case 'latest':
 
-    case 'oldest':
-      return sorted.sort(
-        (a, b) =>
-          a.createdAt - b.createdAt,
-      );
+        return sorted.sort(
+          (a, b) =>
+            b.createdAt - a.createdAt,
+        );
 
-    case 'name_asc':
-      return sorted.sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
+      case 'oldest':
+        return sorted.sort(
+          (a, b) =>
+            a.createdAt - b.createdAt,
+        );
 
-    case 'name_desc':
-      return sorted.sort((a, b) =>
-        b.name.localeCompare(a.name),
-      );
+      case 'name_asc':
+        return sorted.sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
 
-    case 'size':
-      return sorted.sort(
-        (a, b) => b.size - a.size,
-      );
+      case 'name_desc':
+        return sorted.sort((a, b) =>
+          b.name.localeCompare(a.name),
+        );
 
-    case 'modified':
-      return sorted.sort(
-        (a, b) =>
-          b.updatedAt - a.updatedAt,
-      );
+      case 'size':
+        return sorted.sort(
+          (a, b) => b.size - a.size,
+        );
 
-    default:
-      return sorted;
-  }
+      case 'modified':
+        return sorted.sort(
+          (a, b) =>
+            b.updatedAt - a.updatedAt,
+        );
+
+      default:
+        return sorted;
+    }
     setIsShowSortModal(false)
     // implement filter logic here
   }
@@ -1764,7 +1770,7 @@ export const DocumentScan = () => {
         top: heightFromPercentage(72)
       }}>
         <CustomFAB
-        style={{borderWidth:.5, borderColor: theme.iconColor}}
+          style={{ borderWidth: .5, borderColor: theme.iconColor }}
           icon={<Ionicons name='camera-outline' size={scaledSize(24)}
             color={mode === 'light' ? 'white' : theme.iconColor} />}
           onPress={() => { requestCameraPermission() }}
@@ -1915,7 +1921,7 @@ export const DocumentScan = () => {
           setIsShowSortModal(false);
           setSelectedSort('');
         }}
-        onPressApply={(sort) => {setSelectedSort(sort),setIsShowSortModal(false)}}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
         onPressClose={() => setIsShowSortModal(false)}
       />
       <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
@@ -2201,7 +2207,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     marginLeft: scaledSize(10),
 
-    color: '#161735',
+    color: theme.primaryTextColor,
 
     fontSize: scaledSize(12),
     letterSpacing: 1,
