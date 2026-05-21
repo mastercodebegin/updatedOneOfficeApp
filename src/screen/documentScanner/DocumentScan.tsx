@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, use, useMemo } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
@@ -62,6 +62,8 @@ import { tagLocalService } from '../../../src/db/tagLocalService';
 import CustomVectorIcon from '../../../src/component/CustomVectorIcon';
 import ConfirmationDialog from '../../../src/component/ConfirmationDialog';
 import CustomSortModal from '../../../src/component/CustomSortModal';
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
+import CustomUpdateFolderTagModal from '../../component/CustomUpdateFolderTagModal';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -76,6 +78,7 @@ export const DocumentScan = () => {
   const [folderId, setFolderId] = React.useState(0)
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
+  const [selectedFolder, setSelectedFolder] = useState();
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
   const [isShowFolderNameModal, setIsShowFolderNameModal] = useState(false);
   const [data, setData] = useState<any>([])
@@ -97,12 +100,38 @@ export const DocumentScan = () => {
   const [searchText, setSearchText] = useState('')
   const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
   const [isShowDeleteTagConfirmation, setIsShowDeleteTagConfirmation] = useState(false)
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('')
   const [selectedTag, setSelectedTag] = useState({});
+  const [selectedFolderTag, setSelectedFolderTag] = useState({});
   const [tagForDeletion, setTagForDeletion] = useState({});
 
   // const toggleSwitch = toggleTheme()
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
 
   // const theme =useSelector((state:any)=>state.ThemeSlice)
@@ -113,8 +142,8 @@ export const DocumentScan = () => {
   }, [theme])
 
   useEffect(() => {
-    console.log('ThemeSlice', theme);
-    console.log('mode', mode);
+    // console.log('ThemeSlice', theme);
+    // console.log('mode', mode);
   })
 
 
@@ -192,7 +221,6 @@ export const DocumentScan = () => {
 
   const getfiles = async () => {
     const files = await FileLocalService.getAllFiles()
-    console.log('files====', files);
     setLocalFiles(files);
   }
 
@@ -204,7 +232,6 @@ export const DocumentScan = () => {
         const folders = await FolderLocalService.getActiveFolders();
         const tags = await tagLocalService.getTags();
 
-        console.log('folders=====1st', folders);
 
         setData(folders);
         setUserTags(tags);
@@ -470,7 +497,7 @@ export const DocumentScan = () => {
       //   coverUri
       // );
       const folder = await FolderLocalService.createFolder
-        ('', folderDisplayName,
+        ('', selectedFolderTag?.id, folderDisplayName,
           null, '', '', 0, 0)
       console.log('created', folder);
 
@@ -805,7 +832,7 @@ export const DocumentScan = () => {
     }
     else if (mode == 'dark')
       if (isSelected) {
-        return { bgColor: theme.buttonBGColor, iconColor: theme.secondaryTextColor, textColor: theme.secondaryTextColor }
+        return { bgColor: theme.buttonBGColor, iconColor: theme.secondaryTextColor, textColor: theme.primaryTextColor }
       }
       else {
         return { bgColor: theme.secondaryButtonBGColor, iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
@@ -833,23 +860,25 @@ export const DocumentScan = () => {
           {userTags.map((item: any) => {
             const isSelected =
               selectedTag?.id === item.id;
-              console.log('item====',item);
-              
+
 
             return (
-              <View style={{minWidth:scaledSize(100), height: scaledSize(32), marginRight: scaledSize(10), marginTop: scaledSize(10) ,paddingHorizontal:scaledSize(4)}} key={item.id} >
+              <View style={{ minWidth: scaledSize(100), height: scaledSize(32), marginRight: scaledSize(10), marginTop: scaledSize(10), paddingHorizontal: scaledSize(4) }} key={item.id} >
 
                 <Chip
-                  onPress={() => { selectedTag?.id === item.id?setSelectedTag({}):setSelectedTag(item) }}
+                  onPress={() => { selectedTag?.id === item.id ? setSelectedTag({}) : setSelectedTag(item) }}
                   onClose={() => { alert('close') }}
                   mode='flat'
                   selected={isSelected}
                   showSelectedCheck={false}
-                  
+
                   style={{
-                    backgroundColor: isSelected ? theme.themeColor : theme.buttonBGColor,
-                    
-                    
+                    borderWidth: .5,
+                    backgroundColor: theme.bgColor,
+
+                    borderColor: isSelected ? theme.themeColor : theme.buttonBGColor,
+
+
                   }}
                   closeIcon={() =>
                     <CustomMenu
@@ -875,10 +904,10 @@ export const DocumentScan = () => {
                       ]}
                     />
                   }
-                  textStyle={{ color: getTagColor(isSelected).textColor, letterSpacing: 0.5, fontSize: scaledSize(13) }}
+                  textStyle={{ color: getTagColor(isSelected).textColor, letterSpacing: 1, fontSize: scaledSize(13) }}
                 >
 
-                  {item.name}
+                  {capitalizeFirstLetter(item.name)}
                 </Chip>
               </View>
             );
@@ -992,9 +1021,19 @@ export const DocumentScan = () => {
       </SafeAreaView>
     );
   };
+  const getTagByIdHandler = (id: number) => {
+console.log('usertags===',userTags);
+
+    const tag: any = userTags.find(
+      (t: any) => t.id === id
+    );
+    return tag ? tag.name : '';
+
+  }
   const renderParentItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
     const isEditable = checkIsEditable(item.id);
+    // console.log('renderParentItem', item);
 
     return (
       <TouchableOpacity
@@ -1037,7 +1076,7 @@ export const DocumentScan = () => {
                 {capitalizeFirstLetter(item?.name || '')}
               </Text>
 
-              <Text style={[styles.date,{fontFamily:'calibri'}]}>
+              <Text style={[styles.date, { fontFamily: 'calibri' }]}>
                 {DateHelper.getDateByMomentFormat(item?.createdAt,
                   DateFormat.DATE_WITH_MONTH_NAME)}
               </Text>
@@ -1045,9 +1084,18 @@ export const DocumentScan = () => {
               <View style={styles.tagContainer}>
                 <View style={styles.greenLine} />
 
-                <Text style={styles.tagText}>
-                  IMAGE
+
+                <Text style={[styles.tagText, 
+                  { color: theme.secondaryTextColor, letterSpacing: 1 }]} 
+                  onPress={() => {setIsShowUpdateTagModal(true),setSelectedFolder(item)}}>
+                  {getTagByIdHandler(item.tagId) }
                 </Text>
+                <CustomVectorIcon iconLibrary='MaterialDesignIcons'
+                  iconName='pencil' style={{
+                    color: theme.iconColor,
+                    fontSize: scaledSize(12),
+                    left: scaledSize(6), top: scaledSize(1)
+                  }} onPress={() => {setIsShowUpdateTagModal(true),setSelectedFolder(item)}} />
               </View>
             </>
 
@@ -1074,9 +1122,11 @@ export const DocumentScan = () => {
     );
   };
 
-  const renderTagBtn = () => {
+  const renderTagBtn = (textStyle?: TextStyle) => {
     return (<TouchableOpacity
       activeOpacity={0.85}
+      key={Math.random()}
+      // onPress={()=>onPress()}
       onPress={() => setIsTagModalVisible(true)}
       style={styles.addTagButton}
       onLongPress={() => alert('test')}
@@ -1088,7 +1138,7 @@ export const DocumentScan = () => {
         color={theme.themeColor}
       />
 
-      <Text style={styles.addTagText}>
+      <Text style={[styles.addTagText, textStyle]}>
         Add Tag
       </Text>
     </TouchableOpacity>)
@@ -1096,6 +1146,23 @@ export const DocumentScan = () => {
 
 
   const addTagHandler = async () => {
+    // error
+    console.log('tag', tagName);
+
+    const existingTag = await tagLocalService.getTagByName(tagName)
+    console.log('existingTag', existingTag);
+    if (tagName.length == 0) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag name is invalid')
+      return
+    }
+    if (existingTag != undefined) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag already exist')
+      return
+    }
+
+
     const createdTags = await tagLocalService.addTag({ userId: '', name: tagName, color: '#3CF28A' })
     console.log('createdTags===', createdTags);
     const tags = await tagLocalService.getTags()
@@ -1108,7 +1175,8 @@ export const DocumentScan = () => {
 
   const renameTagHandler = async () => {
     if (tagName.length == 0) {
-      alert('Tag name cannot be empty')
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag name is invalid')
       return
     }
     const existingTag = await tagLocalService.getTagById(selectedTag.id)
@@ -1124,7 +1192,7 @@ export const DocumentScan = () => {
   }
 
   const deleteTagHandler = async () => {
-    if(tagForDeletion?.id==undefined){
+    if (tagForDeletion?.id == undefined) {
       return
     }
     const existingTag = await tagLocalService.getTagById(tagForDeletion.id)
@@ -1377,6 +1445,8 @@ export const DocumentScan = () => {
 
     // search
     if (searchQuery?.length > 0) {
+      console.log('in search===');
+
       filteredData = filteredData.filter(
         file =>
           file.name
@@ -1388,7 +1458,8 @@ export const DocumentScan = () => {
     }
 
     // tag filter
-    if (selectedTag) {
+    if (selectedTag?.id) {
+
       filteredData =
         filteredData.filter(
           file =>
@@ -1396,13 +1467,17 @@ export const DocumentScan = () => {
             selectedTag.id,
         );
     }
+    if (selectedSort) {
 
-    // sorting
-    filteredData =
-      onApplySortHandler(
-        selectedSort,
-        filteredData,
-      );
+      // sorting
+      filteredData =
+        onApplySortHandler(
+          selectedSort,
+          filteredData,
+        );
+    }
+
+
 
     return filteredData;
   };
@@ -1590,125 +1665,465 @@ export const DocumentScan = () => {
         );
 
       default:
-        return sorted;
+        return sorted.sort(
+          (a, b) =>
+            b.createdAt - a.createdAt,
+        );;
     }
     setIsShowSortModal(false)
     // implement filter logic here
+  }
+
+  const tags = [
+    'Work',
+    'Personal',
+    'Important',
+    'Study',
+  ];
+
+
+
+  // const renderFolderNameModal = () => {
+  //   const tags = [
+  //     'Work',
+  //     'Personal',
+  //     'Important',
+  //     'Study',
+  //   ];
+
+  //   return (
+  //     <Overlay
+  //       isVisible={isShowFolderNameModal}
+  //       onBackdropPress={() =>
+  //         setIsShowFolderNameModal(false)
+  //       }
+  //       overlayStyle={{
+  //         backgroundColor: 'transparent',
+  //         padding: 0,
+  //         elevation: 0,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           width: scaledSize(330),
+  //           backgroundColor: '#111216',
+  //           borderRadius: scaledSize(30),
+  //           padding: scaledSize(24),
+  //         }}
+  //       >
+  //         {/* Header */}
+
+  //         <View
+  //           style={{
+  //             flexDirection: 'row',
+  //             justifyContent:
+  //               'space-between',
+  //             alignItems: 'center',
+  //           }}
+  //         >
+  //           <Text
+  //             style={{
+  //               color: 'white',
+  //               fontSize: scaledSize(26),
+  //               fontFamily:
+  //                 FONTS.QuicksandBold,
+  //             }}
+  //           >
+  //             Create Folder
+  //           </Text>
+
+  //           <TouchableOpacity
+  //             onPress={() =>
+  //               setIsShowFolderNameModal(
+  //                 false
+  //               )
+  //             }
+  //           >
+  //             <MaterialIcons
+  //               name="close"
+  //               color="#8F9196"
+  //               size={30}
+  //             />
+  //           </TouchableOpacity>
+  //         </View>
+
+  //         {/* Input */}
+
+  //         <View
+  //           style={{
+  //             marginTop: scaledSize(28),
+  //             backgroundColor:
+  //               '#1C1D22',
+  //             borderRadius:
+  //               scaledSize(18),
+  //             paddingHorizontal:
+  //               scaledSize(18),
+  //           }}
+  //         >
+  //           <CustomInputBox
+  //             value={folderName}
+  //             onChangeText={
+  //               setFolderName
+  //             }
+  //             placeholder="Folder name"
+  //             placeholderTextColor="#666"
+  //             inputStyle={{
+  //               color: 'white',
+  //             }}
+  //           />
+  //         </View>
+
+  //         {/* Tags */}
+
+  //         <Text
+  //           style={{
+  //             color: '#A2A2A2',
+  //             marginTop:
+  //               scaledSize(24),
+  //             marginBottom:
+  //               scaledSize(14),
+  //             fontSize:
+  //               scaledSize(15),
+  //           }}
+  //         >
+  //           Choose Tag
+  //         </Text>
+
+  //         <View
+  //           style={{
+  //             flexDirection: 'row',
+  //             flexWrap: 'wrap',
+  //             gap: scaledSize(12),
+  //           }}
+  //         >
+  //           {tags.map(item => (
+  //             <TouchableOpacity
+  //               key={item}
+  //               onPress={() =>
+  //                 setSelectedTag(
+  //                   item
+  //                 )
+  //               }
+  //               style={{
+  //                 paddingHorizontal:
+  //                   scaledSize(18),
+  //                 paddingVertical:
+  //                   scaledSize(12),
+
+  //                 borderRadius:
+  //                   scaledSize(999),
+
+  //                 backgroundColor:
+  //                   selectedTag ===
+  //                   item
+  //                     ? COLORS.THEME_COLOR
+  //                     : '#1D1F24',
+  //               }}
+  //             >
+  //               <Text
+  //                 style={{
+  //                   color:
+  //                     selectedTag ===
+  //                     item
+  //                       ? '#fff'
+  //                       : '#CFCFCF',
+  //                   fontSize:
+  //                     scaledSize(
+  //                       14
+  //                     ),
+  //                 }}
+  //               >
+  //                 {item}
+  //               </Text>
+  //             </TouchableOpacity>
+  //           ))}
+  //         </View>
+
+  //         {/* Save */}
+
+  //         <CustomeButton
+  //           name="Create"
+  //           onPress={() =>
+  //             copyFilesToDirectory()
+  //           }
+  //           buttonStyle={{
+  //             marginTop:
+  //               scaledSize(28),
+  //             height:
+  //               scaledSize(56),
+  //             borderRadius:
+  //               scaledSize(18),
+  //             backgroundColor:
+  //               COLORS.THEME_COLOR,
+  //           }}
+  //           textStyle={{
+  //             fontSize:
+  //               scaledSize(18),
+  //             color: 'white',
+  //             fontFamily:
+  //               FONTS.QuicksandBold,
+  //           }}
+  //         />
+  //       </View>
+  //     </Overlay>
+  //   );
+  // };
+
+
+  const renderFolderNameModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isShowFolderNameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsShowFolderNameModal(false)
+        }
+      >
+        <View
+          style={styles.modalOverlay}
+        >
+          <View
+            style={styles.modalContainer}
+          >
+
+            {/* Header */}
+
+            <Text
+              style={styles.modalTitle}
+            >
+              Create Folder
+            </Text>
+
+            <Text
+              style={
+                styles.modalSubtitle
+              }
+            >
+              Enter folder name
+              and choose tag
+            </Text>
+
+            {/* Folder Input */}
+
+            <View
+              style={
+                styles.inputContainer
+              }
+            >
+              <TextInput
+                value={folderName}
+                onChangeText={
+                  setFolderName
+                }
+                placeholder="Folder name"
+                placeholderTextColor="#9CA3AF"
+                style={
+                  styles.modalInput
+                }
+              />
+            </View>
+
+            {/* Tags */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+
+
+              <Text
+                style={{
+                  color: '#9CA3AF',
+                  marginTop: scaledSize(20),
+                  marginBottom: scaledSize(12),
+                  fontSize: scaledSize(12),
+                }}
+              >
+                Select Tag
+              </Text>
+              <View style={{ marginTop: scaledSize(4) }}>
+
+                {renderTagBtn({ fontSize: scaledSize(12) })}
+              </View>
+            </View>
+
+            <View
+              style={{
+                flexDirection:
+                  'row',
+                flexWrap:
+                  'wrap',
+              }}
+            >
+              {userTags.map((item: any) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() =>
+                    setSelectedFolderTag(
+                      item
+                    )
+                  }
+                  style={{
+                    paddingHorizontal:
+                      scaledSize(14),
+                    paddingVertical:
+                      scaledSize(9),
+
+                    marginRight:
+                      scaledSize(9),
+
+                    marginBottom:
+                      scaledSize(8),
+
+                    borderRadius:
+                      999,
+
+                    backgroundColor:
+                      selectedFolderTag.id ===
+                        item.id
+                        ? theme.themeColor
+                        : '#2B2B2B',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        'white',
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* <TouchableOpacity
+              onPress={() =>
+                setIsTagModalVisible(
+                  true
+                )
+              }
+              style={{
+                paddingHorizontal:
+                  scaledSize(10),
+
+                paddingVertical:
+                  scaledSize(8),
+
+                borderRadius:
+                  scaledSize(999),
+
+
+              }}
+            >
+              <Text
+                style={{
+                  color:
+                    theme.themeColor,
+                }}
+              >
+                + Add
+              </Text>
+            </TouchableOpacity> */}
+              {/* <View style={{position:'absolute',bottom:scaledSize(40),right:scaledSize(1)}}>
+            {renderTagBtn()}
+            </View> */}
+            </View>
+
+            {/* Buttons */}
+
+            <View
+              style={
+                styles.modalButtonRow
+              }
+            >
+              <TouchableOpacity
+                style={
+                  styles.cancelButton
+                }
+                onPress={() =>
+                  setIsShowFolderNameModal(
+                    false
+                  )
+                }
+              >
+                <Text
+                  style={
+                    styles.cancelText
+                  }
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={
+                  styles.renameButton
+                }
+                onPress={() =>
+                  copyFilesToDirectory(
+                    selectedTag
+                  )
+                }
+              >
+                <LinearGradient
+                  colors={[
+                    theme
+                      .themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{
+                    x: 0,
+                    y: 0,
+                  }}
+                  end={{
+                    x: 1,
+                    y: 1,
+                  }}
+                  style={
+                    styles.gradientButton
+                  }
+                >
+                  <Text
+                    style={
+                      styles.renameText
+                    }
+                  >
+                    Create
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const updateFolderTagHandler = async (tag: any) => {
+    console.log('folder===', selectedFolder);
+    console.log('tag===', tag);
+    if(tag.id==undefined){
+      setIsShowErrorModal(true)
+      setErrorMessage('Please select tag')
+      return
+    }
+await FolderLocalService.updateFolderById({id:selectedFolder.id,tagId:tag.id})
+const allFolders = await FolderLocalService.getActiveFolders()
+
+setData(allFolders)
+
+    setIsShowUpdateTagModal(false);
   }
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
       {renderTags()}
-      <View style={{ height: 40, width: 100, position: 'absolute', top: 150, right: 10 }}>
+      <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
         {renderTagBtn()}
       </View>
 
 
-      {/* <View style={{
-        height: scaledSize(50),
-        alignSelf: 'center',
-        marginTop: heightFromPercentage(4)
 
-
-      }}>
-        {isMultiDelete ? <LinearGradient
-          colors={['#1385b5', '#2fb2a2']}
-          style={{ height: scaledSize(50), }}>
-          <View style={{
-            justifyContent: 'space-between', flex: 1, width: '100%',
-            flexDirection: 'row', alignItems: 'flex-start'
-          }}>
-            <View style={{
-              flex: 1, height: '100%',
-              justifyContent: 'center', alignItems: 'flex-start',
-            }}>
-              <TouchableOpacity onPress={() => { setMultidelete(false), setSelectedFoldersId([]) }}>
-                <MaterialIcons name='arrow-back' color={'white'}
-                  size={scaledSize(30)} style={{ marginLeft: scaledSize(10), marginRight: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-            <View style={{
-              justifyContent: 'center', flexDirection: 'row',
-              height: scaledSize(50), alignItems: 'center'
-            }}>
-              <View style={{ width: scaledSize(50) }}>
-
-                <Text style={{
-                  fontSize: scaledSize(16), color: 'white', fontWeight: 'bold',
-                  letterSpacing: 1, fontFamily: FONTS.QuicksandBold,
-                }}>{selectedFoldersId.length}</Text>
-              </View>
-              <TouchableOpacity onPress={onPressSelectAll} style={{ width: scaledSize(100) }}>
-                <Text style={{
-                  fontSize: scaledSize(16), color: 'white',
-                  letterSpacing: 1, fontFamily: FONTS.bold
-                }}>{data.length == selectedFoldersId.length ? 'Unselect All' : 'Select All'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => refForDocShare.current?.present()}>
-                <MaterialIcons name='share' color={'white'} size={scaledSize(24)} style={{ marginLeft: scaledSize(10) }} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { deleteFoldersConfirmationForMultipleItem() }}>
-                <MaterialIcons name='delete' color={'white'}
-                  size={scaledSize(24)} style={{ marginLeft: scaledSize(10), marginRight: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-        </LinearGradient> :
-
-          <LinearGradient
-            colors={['#0081A7', '#00AFB9']}
-            style={{
-              flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-              width: '95%', alignSelf: 'center',
-              borderRadius: scaledSize(8),
-            }}>
-            <View style={{
-              width: widthFromPercentage(78),
-              height: scaledSize(43),
-              justifyContent: 'center', alignItems: 'center',
-              alignSelf: 'center',
-            }}>
-              <Searchbar
-                placeholder="Search"
-                style={{
-                  borderRadius: scaledSize(0), height: scaledSize(43), marginRight: scaledSize(20),
-                  backgroundColor: 'white', textAlign: 'center', borderWidth: 1, borderColor: '#e7ebf3',
-                  alignSelf: 'center'
-                }}
-                defaultValue={searchText}
-                onChangeText={(value) => setSearchText(value)}
-
-                inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center' }}
-                loading={false}
-                icon={() => <Image source={searchIcon} style={{
-                  height: scaledSize(16), width: scaledSize(16),
-                }}
-
-                />}
-                clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                  setSearchQuery(''), console.log('press search')
-                }}>
-                  <Image source={clear} style={{
-                    height: scaledSize(16), width: scaledSize(16),
-
-                  }} />
-                </TouchableOpacity> : <></>
-                }
-                value={searchQuery}
-              />
-            </View>
-            <View style={{
-              width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
-              alignItems: 'center', marginLeft: scaledSize(10), right: 14,
-            }}>
-              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)}
-                color={'white'} onPress={() => openFile()} />
-            </View>
-          </LinearGradient>
-        }
-
-      </View> */}
       {/* ----------------------------- */}
       <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
         {getFiles().length > 0 ? <FlatList
@@ -1743,16 +2158,6 @@ export const DocumentScan = () => {
         }
 
       </View>
-      {/* <View style={{
-        height: scaledSize(50), position: "absolute", left: scaledSize(20),
-        top: heightFromPercentage(72)
-      }}>
-        <Text style={{ color: 'black' }}>{localFiles.length}</Text>
-        {localFiles.map((item) => (
-          <Text key={item?.id} style={{ color: 'black' }}>{'Drive' + item.driveFileId}
-            {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
-        ))}
-      </View> */}
 
       <View style={{
         height: scaledSize(50), position: "absolute", left: scaledSize(270),
@@ -1766,36 +2171,8 @@ export const DocumentScan = () => {
         // onPress={scanDocument}
         />
       </View>
-      <Overlay isVisible={isShowFolderNameModal} overlayStyle={{ borderRadius: scaledSize(10) }}>
-        <View style={{ height: scaledSize(180), width: scaledSize(300), backgroundColor: 'white', }}>
-          <View style={{ height: scaledSize(50), backgroundColor: 'white', flexDirection: 'row' }}>
-            <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'center' }}>
-              <Text style={{
-                fontSize: scaledSize(14), fontFamily: FONTS.QuicksandBold,
-                textAlign: 'center', marginTop: scaledSize(4),
-              }}>
-                Enter Folder Name
-              </Text>
-            </View>
-            <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false) }}>
-                <MaterialIcons name='close'
-                  size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(10) }}>
-            <CustomInputBox
-              onChangeText={setFolderName} value={folderName} placeholder='Enter name' />
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(30) }}>
-            <CustomeButton name='Save' onPress={() => copyFilesToDirectory()}
-              buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, borderRadius: scaledSize(20) }} textStyle={{ color: 'white' }} />
-          </View>
 
-        </View>
-      </Overlay>
-
+      {renderFolderNameModal()}
       <Overlay isVisible={isBackupStarted} >
         <View style={{ height: 300, justifyContent: 'center', alignItems: 'center' }}>
           <View style={{
@@ -1905,7 +2282,9 @@ export const DocumentScan = () => {
       {renderRenameModal()}
       {renderAddTagModal()}
       {renderRenameTagModal()}
-      <CustomSortModal isvisible={isShowSortModal}
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
         onPressClear={() => {
           setIsShowSortModal(false);
           setSelectedSort('');
@@ -1913,6 +2292,19 @@ export const DocumentScan = () => {
         onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
         onPressClose={() => setIsShowSortModal(false)}
       />
+
+      <CustomUpdateFolderTagModal
+        data={userTags}
+        isvisible={isShowUpdateTagModal}
+        onPressClear={() => {
+          setIsShowUpdateTagModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(tag) => updateFolderTagHandler(tag)}
+        onPressClose={() => setIsShowUpdateTagModal(false)}
+      />
+      <CustomErrorMsgModal isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
       <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
         onCancel={() => setIsShowDeleteTagConfirmation(false)} onSubmit={() => deleteTagHandler()} />
     </SafeAreaView>
@@ -2035,7 +2427,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   greenLine: {
-    width: scaledSize(5),
+    width: scaledSize(2),
 
     height: '100%',
 

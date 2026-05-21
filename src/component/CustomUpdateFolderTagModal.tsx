@@ -1,12 +1,12 @@
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native'
 import React, { useMemo } from 'react'
-import { scaledSize, VECTOR_ICON_LIBRARIES } from '../../src/utilies/Utilities';
-import { useTheme } from '../../src/screen/theme/useTheme';
-import { Theme } from '../../src/screen/theme/ThemeConfig';
+import { scaledSize, VECTOR_ICON_LIBRARIES } from '../utilies/Utilities';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 
 
 interface CustomSortModalProps {
-    data:Array<[]>,
+    data: Array<[]>,
     isvisible: boolean;  // You can add props here if needed, such as:
     onPressApply: (sort: string) => void; // visible: boolean;
     onPressClear: () => void; // onClose: () => void;
@@ -14,8 +14,8 @@ interface CustomSortModalProps {
 }
 
 
-export default function CustomSortModal(props: CustomSortModalProps) {
-    const { isvisible,data, onPressApply, onPressClear, onPressClose } = props;
+export default function CustomUpdateFolderTagModal(props: CustomSortModalProps) {
+    const { isvisible, data, onPressApply, onPressClear, onPressClose } = props;
     const [isShowSortModal, setIsShowSortModal] = React.useState(false);
     const [selectedSort, setSelectedSort] = React.useState('');
     const { mode, theme } = useTheme();
@@ -41,7 +41,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                     <View style={styles.headerRow}>
 
                         <Text style={styles.sortTitle}>
-                            Sort by
+                            Select tag
                         </Text>
 
                         <TouchableOpacity
@@ -64,20 +64,14 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                     {/* Options */}
                     {data.map(item => {
                         const isSelected =
-                            selectedSort === item.id;
+                            selectedSort.id === item.id;
 
                         return (
                             <TouchableOpacity
                                 key={item.id}
                                 activeOpacity={0.85}
                                 onPress={() => {
-                                    setSelectedSort(
-                                        item.id,
-                                    );
-                                    onPressApply(item.id)
-                                    setIsShowSortModal(
-                                        false,
-                                    );
+                                    setSelectedSort(item)
                                 }}
                                 style={styles.sortRow}>
 
@@ -104,7 +98,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                                     style={
                                         styles.sortLabel
                                     }>
-                                    {item.name}
+                                    {item.name }
                                 </Text>
                             </TouchableOpacity>
                         );
@@ -125,7 +119,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                             </Text>
                         </TouchableOpacity>
 
-                        {/* <TouchableOpacity
+                        <TouchableOpacity
                             activeOpacity={0.85}
                             onPress={() =>
                                 onPressApply(selectedSort)
@@ -135,7 +129,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                             <Text style={styles.applyText}>
                                 Apply
                             </Text>
-                        </TouchableOpacity> */}
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>
@@ -257,9 +251,9 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
         justifyContent: 'flex-end',
 
-        marginTop: 10,
+        marginTop: scaledSize(10),
 
-        paddingTop: 12,
+        paddingTop: scaledSize(12),
 
         borderTopWidth: 1,
 
@@ -292,11 +286,11 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     },
 
     applyButton: {
-        height: 44,
+        height: scaledSize(38),
 
-        paddingHorizontal: 22,
+        paddingHorizontal: scaledSize(18),
 
-        borderRadius: 12,
+        borderRadius: scaledSize(10),
 
         justifyContent: 'center',
 
@@ -307,10 +301,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     },
 
     applyText: {
-        fontSize: 15,
+        fontSize: scaledSize(12),
 
         fontWeight: '700',
 
-        color: theme.secondaryTextColor,
+        color: theme.buttonTextColor,
     },
 })

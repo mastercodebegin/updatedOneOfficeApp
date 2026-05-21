@@ -8,24 +8,33 @@ export const initDB = async () => {
 
     // 📂 FOLDERS TABLE
     await db.executeSql(`
-      CREATE TABLE IF NOT EXISTS folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS folders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        userId TEXT,
+    userId TEXT,
 
-        name TEXT,
-        coverUri TEXT,
+    tagId INTEGER,
 
-        firebaseId TEXT UNIQUE,
-        driveFolderId TEXT,
+    name TEXT,
 
-        isSynced INTEGER DEFAULT 0,
-        isDeleted INTEGER DEFAULT 0,
+    coverUri TEXT,
 
-        updatedAt INTEGER,
-        createdAt INTEGER
-      )
-    `);
+    firebaseId TEXT UNIQUE,
+
+    driveFolderId TEXT,
+
+    isSynced INTEGER DEFAULT 0,
+
+    isDeleted INTEGER DEFAULT 0,
+
+    updatedAt INTEGER,
+
+    createdAt INTEGER,
+
+    FOREIGN KEY(tagId)
+    REFERENCES tags(id)
+)
+`);
 
     await db.executeSql(`
       CREATE TABLE IF NOT EXISTS tags (

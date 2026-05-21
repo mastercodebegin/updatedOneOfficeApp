@@ -12,7 +12,8 @@ export type Theme = {
   themeColor: string; // optional for future use
   buttonBGColor?: string; // optional for future use
   secondaryButtonBGColor?: string; // optional for future use
-  themeSecondaryColor:string
+  themeSecondaryColor:string,
+  buttonTextColor:string
 };
 
 const commonThemeProperties = {
@@ -35,12 +36,13 @@ export const lightTheme: Theme = {
   bgColor: 'white',
   bgContainor: 'white',
   primaryTextColor: '#000000',
-  secondaryTextColor: 'white',
-  iconColor: '#47b16a',
+  secondaryTextColor: '#000000',
+  iconColor: '#000000',
   borderColor: '#e0e0e0',
   themeColor: '#47b16a',
-  buttonBGColor:'#f5f5f5',
-  themeSecondaryColor:'#47b16a'
+  buttonBGColor:'#d3d3d3',
+  themeSecondaryColor:'#47b16a',
+  buttonTextColor:'#000000'
 };
 
 export const darkTheme: Theme = {
@@ -48,10 +50,11 @@ export const darkTheme: Theme = {
   bgColor: '#222222',
   bgContainor: '#1c1c1e',
   primaryTextColor: '#f5f5f5',
-  secondaryTextColor: 'black',
-  iconColor: '#47b16a',
+  secondaryTextColor: '#808080',
+  iconColor: '#f5f5f5',
   borderColor: '#262730',
   buttonBGColor: '#2a2a2a',
+  buttonTextColor: '#2a2a2a',
   themeColor: '#47b16a',
   themeSecondaryColor:'#47b16a'
 

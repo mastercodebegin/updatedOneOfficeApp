@@ -1,7 +1,8 @@
 export const Fonts = {
   'bold': 'CrimsonText-Bold',
   'PTSerifBold': 'PTSerif-Bold',
-  'regular': 'PTSerif-Regular',
+  'regular': 'calibri',
+  'PTSerif-Regular': 'PTSerif-Regular',
   'italic': 'PTSerif-Italic'
 
 }

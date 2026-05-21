@@ -11,14 +11,12 @@ export const useTheme = () => {
 
   const dispatch = useDispatch();
 
-  console.log('mode inside hook', mode);
 
   const theme =
     mode === 'dark'
       ? darkTheme
       : lightTheme;
 
-  console.log('selectedTheme', theme);
 
   return {
     theme,

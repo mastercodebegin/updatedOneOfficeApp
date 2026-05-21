@@ -168,9 +168,30 @@ const getTagById = async (id: number) => {
     return null;
   }
 }
+
+const getTagByName = async (name: string) => {
+  try {
+    const db = await getDB();
+
+    const results = await db.executeSql(
+      `
+      SELECT * FROM tags
+      WHERE name = ?
+      `,
+      [name]
+    );
+
+    return results[0].rows.raw()[0];
+  } catch (error) {
+    console.log('getTagById error', error);
+
+    return null;
+  }
+}
 export const tagLocalService = {
   getTags,
   addTag,
   updateTag,
-    getTagById
+    getTagById,
+    getTagByName
 }
