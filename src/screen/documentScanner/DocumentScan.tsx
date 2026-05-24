@@ -100,12 +100,14 @@ export const DocumentScan = () => {
   const [searchText, setSearchText] = useState('')
   const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
   const [isShowDeleteTagConfirmation, setIsShowDeleteTagConfirmation] = useState(false)
+  const [isShowFolderDeleteConfirmation, setIsFolderDeleteConfirmation] = useState(false)
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isShowSortModal, setIsShowSortModal] = useState(false)
   const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('')
-  const [selectedTag, setSelectedTag] = useState({});
+  const [selectedTags, setSelectedTags] = useState([]);
+
   const [selectedFolderTag, setSelectedFolderTag] = useState({});
   const [tagForDeletion, setTagForDeletion] = useState({});
 
@@ -765,7 +767,9 @@ export const DocumentScan = () => {
     ConfirmPopup(() => deleteMultipleFolder());
   };
   const deleteFoldersConfirmationForSingleItem = (item: any) => {
-    ConfirmPopup(() => deleteSingleFolder(item));
+    setSelectedFolder(item)
+    setIsFolderDeleteConfirmation(true)
+    //  deleteSingleFolder(item)
   };
   const onPressSelectAll = () => {
     if (selectedFoldersId.length == data.length) {
@@ -841,7 +845,18 @@ export const DocumentScan = () => {
       return { bgColor: '', iconColor: theme.secondaryTextColor, textColor: theme.primaryTextColor }
     }
   }
+  const selectTagHandler = (tag: any) => {
 
+    const isTagSelected = selectedTags.find((item) => item.id == tag.id)
+    if (isTagSelected) {
+      const unselectTag = selectedTags.filter((item) => item.id != tag.id)
+      setSelectedTags(unselectTag)
+      return
+    }
+    else {
+      setSelectedTags(arr => [...arr, tag])
+    }
+  }
   const renderTags = () => {
     return (
       <View style={styles.tagsWrapper}>
@@ -858,15 +873,15 @@ export const DocumentScan = () => {
           </View>
 
           {userTags.map((item: any) => {
-            const isSelected =
-              selectedTag?.id === item.id;
+            let isSelected = selectedTags.find((t: any) => t.id == item.id)
+            isSelected ? isSelected = true : isSelected = false
 
 
             return (
               <View style={{ minWidth: scaledSize(100), height: scaledSize(32), marginRight: scaledSize(10), marginTop: scaledSize(10), paddingHorizontal: scaledSize(4) }} key={item.id} >
 
                 <Chip
-                  onPress={() => { selectedTag?.id === item.id ? setSelectedTag({}) : setSelectedTag(item) }}
+                  onPress={() => { selectTagHandler(item) }}
                   onClose={() => { alert('close') }}
                   mode='flat'
                   selected={isSelected}
@@ -892,7 +907,7 @@ export const DocumentScan = () => {
                         {
                           onSelect: () => {
                             setIsShowRenderRenameTagModal(true),
-                              setSelectedTag(item), setTagName(item.name)
+                              selectTagHandler(item), setTagName(item.name)
                           }, label: 'Rename'
                         },
                         {
@@ -1010,7 +1025,7 @@ export const DocumentScan = () => {
               style={styles.input}
             />
             <Ionicons
-              name="search-outline"
+              name="close-outline"
               size={26}
               color="#3E4047"
             />
@@ -1022,7 +1037,7 @@ export const DocumentScan = () => {
     );
   };
   const getTagByIdHandler = (id: number) => {
-console.log('usertags===',userTags);
+    console.log('usertags===', userTags);
 
     const tag: any = userTags.find(
       (t: any) => t.id === id
@@ -1085,17 +1100,18 @@ console.log('usertags===',userTags);
                 <View style={styles.greenLine} />
 
 
-                <Text style={[styles.tagText, 
-                  { color: theme.secondaryTextColor, letterSpacing: 1 }]} 
-                  onPress={() => {setIsShowUpdateTagModal(true),setSelectedFolder(item)}}>
-                  {getTagByIdHandler(item.tagId) }
+                <Text style={[styles.tagText,
+                { color: theme.secondaryTextColor, letterSpacing: 1 }]}
+                  onPress={() => { setIsShowUpdateTagModal(true), setSelectedFolder(item) }}>
+                  {getTagByIdHandler(item.tagId)}
                 </Text>
                 <CustomVectorIcon iconLibrary='MaterialDesignIcons'
                   iconName='pencil' style={{
                     color: theme.iconColor,
                     fontSize: scaledSize(12),
                     left: scaledSize(6), top: scaledSize(1)
-                  }} onPress={() => {setIsShowUpdateTagModal(true),setSelectedFolder(item)}} />
+                  }} onPress={() => { setIsShowUpdateTagModal(true), 
+                  setSelectedFolder(item) }} />
               </View>
             </>
 
@@ -1458,15 +1474,16 @@ console.log('usertags===',userTags);
     }
 
     // tag filter
-    if (selectedTag?.id) {
+    if (selectedTags.length > 0) {
+      console.log('selecteds===', selectedTags);
 
       filteredData =
         filteredData.filter(
           file =>
-            file.tagId ===
-            selectedTag.id,
+            selectedTags.some(tag => tag.id === file.tagId)
         );
     }
+
     if (selectedSort) {
 
       // sorting
@@ -2059,7 +2076,7 @@ console.log('usertags===',userTags);
                 }
                 onPress={() =>
                   copyFilesToDirectory(
-                    selectedTag
+                    
                   )
                 }
               >
@@ -2102,15 +2119,15 @@ console.log('usertags===',userTags);
   const updateFolderTagHandler = async (tag: any) => {
     console.log('folder===', selectedFolder);
     console.log('tag===', tag);
-    if(tag.id==undefined){
+    if (tag.id == undefined) {
       setIsShowErrorModal(true)
       setErrorMessage('Please select tag')
       return
     }
-await FolderLocalService.updateFolderById({id:selectedFolder.id,tagId:tag.id})
-const allFolders = await FolderLocalService.getActiveFolders()
+    await FolderLocalService.updateFolderById({ id: selectedFolder.id, tagId: tag.id })
+    const allFolders = await FolderLocalService.getActiveFolders()
 
-setData(allFolders)
+    setData(allFolders)
 
     setIsShowUpdateTagModal(false);
   }
@@ -2120,6 +2137,14 @@ setData(allFolders)
       {renderTags()}
       <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
         {renderTagBtn()}
+      </View>
+      <View style={{
+        height: scaledSize(40), width: scaledSize(100), position: 'absolute',
+        top: scaledSize(150), left: scaledSize(10)
+      }}>
+        {selectedTags.length>0&&<Text style={{ color: '#FF3B5C', letterSpacing: 1 }} onPress={() => setSelectedTags([])}>
+          Clear tags
+        </Text>}
       </View>
 
 
@@ -2306,7 +2331,11 @@ setData(allFolders)
       <CustomErrorMsgModal isVisible={isShowErrorModal}
         onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
       <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
-        onCancel={() => setIsShowDeleteTagConfirmation(false)} onSubmit={() => deleteTagHandler()} />
+        onCancel={() => setIsShowDeleteTagConfirmation(false)} 
+        onSubmit={() => deleteTagHandler()} />
+      <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
+        onCancel={() => setIsFolderDeleteConfirmation(false)} 
+        onSubmit={() => deleteTagHandler()} />
     </SafeAreaView>
   )
 }
@@ -2830,7 +2859,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     fontWeight: '800',
 
-    color: theme.secondaryTextColor,
+    color: theme.buttonTextColor,
   },
 
   // ************* tag btn ****************

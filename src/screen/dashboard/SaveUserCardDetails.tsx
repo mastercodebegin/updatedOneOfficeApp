@@ -3,7 +3,6 @@ import {
   TouchableOpacity, StyleSheet, Image, Modal,
   SafeAreaView,
   FlatList, Alert,
-  StatusBar
 } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import CustomCloseIcon from '../../component/CustomCloseIcon'
@@ -1118,7 +1117,6 @@ const renderAddCardDetails = () => {
 };
   return (
     <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
-      <StatusBar backgroundColor={COLORS.THEME_COLOR} />
       <View style={{ height: scaledSize(50), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
         <View style={{ flex: 1 }}>
 

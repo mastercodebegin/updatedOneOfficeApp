@@ -5,7 +5,6 @@ import {
   TextInput, Text, Image, FlatList, ScrollView,
   KeyboardAvoidingView, SafeAreaView, LogBox, Keyboard,
   Alert,
-  StatusBar
 } from "react-native";
 import { COLORS } from "../utilies/GlobalColors";
 import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, } from "../utilies/Utilities";
@@ -307,7 +306,6 @@ const ModalView = (props: myProps) => {
       <View style={{ flex: .9 }}>
 
 
-        <StatusBar backgroundColor={COLORS.THEME_COLOR} />
 
         <Modal visible={props.visible} animationType="fade" transparent>
           <View style={styles.overlay}>

@@ -7,7 +7,6 @@ import {
   Platform, BackHandler, AppState,
   Modal,
   Alert, KeyboardAvoidingView,
-  StatusBar,
   ScrollView,
   Button,
 } from 'react-native';
@@ -745,9 +744,7 @@ const pushFolders = async () => {
       }) => {
         setScreenName(route.title);
 
-        setTimeout(() => {
-          StatusBar.setBackgroundColor(getLinearColors()[0]);
-        }, 50);
+
       }}
 
     />

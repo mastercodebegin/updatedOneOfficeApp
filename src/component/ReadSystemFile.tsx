@@ -6,7 +6,6 @@ import {
   Text, StyleSheet,
   FlatList, View, TouchableOpacity, Image,
   SafeAreaView, KeyboardAvoidingView, ActivityIndicator, RefreshControl,
-  StatusBar
 } from 'react-native';
 import { ConfirmPopup, deleteFile, fileShare, getDate, getFileSize, scaledSize, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon } from '../assets/GlobalImages';

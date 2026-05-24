@@ -27,7 +27,6 @@ import {
     Image,
     SafeAreaView,
     ScrollView,
-    StatusBar,
     StyleSheet,
     Text,
     useColorScheme,

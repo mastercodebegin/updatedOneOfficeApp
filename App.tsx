@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { View, useWindowDimensions, PermissionsAndroid, Image, Text, StatusBar, Alert, Linking, Platform, AppState } from 'react-native';
+import { View, useWindowDimensions, PermissionsAndroid, Image, Text, Alert, Linking, Platform, AppState } from 'react-native';
 import { MenuProvider } from 'react-native-popup-menu';
 // import GoogleAdd from './src/component/DisplayAdd';
 import Dashboard from './src/screen/dashboard/Dashboard';

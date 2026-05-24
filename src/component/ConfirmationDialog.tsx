@@ -19,6 +19,7 @@ import { Fonts } from '../assets/fonts/GlobalFonts';
 import CustomVectorIcon from './CustomVectorIcon';
 
 import { useTheme } from '../../src/screen/theme/useTheme';
+import { Theme } from 'src/screen/theme/ThemeConfig';
 
 interface myProps {
   visible: boolean;
@@ -139,7 +140,7 @@ const ConfirmationDialog = (
   );
 };
 
-const createStyles = (theme: any) =>
+const createStyles = (theme: Theme) =>
   StyleSheet.create({
     mainView: {
       flex: 1,
@@ -275,7 +276,7 @@ const createStyles = (theme: any) =>
     confirmText: {
       fontSize: scaledSize(15),
 
-      color: theme.secondaryTextColor,
+      color: theme.primaryTextColor,
 
       fontFamily: Fonts.regular,
     },

@@ -1,8 +1,8 @@
 import { View, Text, FlatList, TouchableOpacity, Image, Dimensions, ActivityIndicator, SafeAreaView, BackHandler, StyleSheet, StatusBar } from 'react-native'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mediumBG, MSExcel, MSOffice, MSPowerPoint, smallBG } from '../../assets/GlobalImages'
 import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants'
-import { ConfirmPopup, deleteFile, fileShare, fileShareMultiple, generateUniqueNumber, navigateToBack, RNImageToPdf, scaledSize } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShare, fileShareMultiple, generateUniqueNumber, navigateToBack, RNImageToPdf, scaledSize } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -12,7 +12,7 @@ import { Overlay } from 'react-native-elements';
 // import i from '../../assets/images/microsoft-word.png'
 import { Image as RNImage } from 'react-native'; // Use React Native's Image component to resolve the URI
 import { ImageZoom } from '@likashefqet/react-native-image-zoom';
-import { Modal } from 'react-native-paper';
+import { Modal, Switch } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import CustomeButton from '../../component/CustomButton';
@@ -32,6 +32,9 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { CustomErrorToast } from '../../component/CustomToast';
 import { FileLocalService } from '../../db/fileLocalService';
 import { FolderLocalService } from '../../db/folderLocalService';
+import { useTheme } from '../theme/useTheme';
+import { Theme } from '../theme/ThemeConfig';
+import ConfirmationDialog from '../../component/ConfirmationDialog';
 
 export default function DisplayMultipleDocumentImage(props: any) {
 
@@ -40,7 +43,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
   const [existingFile, setExistingFile] = React.useState()
   const [isMultiDelete, setMultidelete] = useState(false);
-  const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
+  const [selectedFileIds, setSelectedFileIds] = useState<any>([]);
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
   const [isImageView, setIsImageView] = useState(false)
   const [imagePath, setImagePath] = useState('')
@@ -51,12 +54,13 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [isShowFileNameModal, setIsShowFileNameModal] = useState(false);
   const [isNewFile, setIsNewFile] = useState(false);
   const [isShowEditImage, setIsShowEditImage] = useState(false);
+  const [isShowDeleteImageConfirmation, setIsShowDeleteImageConfirmation] = useState(false);
   const [folderName, setFolderName] = useState('')
   const [editImageUri, setEditImageUri] = useState('')
   const destinationPath = `/storage/emulated/0/Android/data/${CONSTANT.PACKAGE_NAME}/documents/`;
   const itemId = props.route.params.id
   const refForDocShare = useRef<BottomSheetModal>(null);
-
+const {theme,mode,toggleTheme}= useTheme()
   const { folderId } = props.route.params
   useEffect(() => {
     console.log('props',);
@@ -64,15 +68,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
       setData(props.route.params.files)
       setFolderName(props.route.params.folderName)
+    }},)
 
+      const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
 
-      console.log('props.route.params', props.route.params);
-
-
-
-    }
-
-  },)
   useEffect(() => {
     // This will be triggered when Screen A comes into focus
 
@@ -84,7 +85,6 @@ export default function DisplayMultipleDocumentImage(props: any) {
     });
 
 
-    // Cleanup function to reset the StatusBar when leaving Screen A
     return () => {
       backHandler.remove();
     };
@@ -118,14 +118,14 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const deleteMultipleFolder = async () => {
     const updatedData = [...data]
     console.log('data------', updatedData.map((it: any) => it.id));
-    console.log('selected images------', selectedFoldersId.map((it: any) => it.id));
-    console.log('length', selectedFoldersId.length);
+    console.log('selected images------', selectedFileIds.map((it: any) => it.id));
+    console.log('length', selectedFileIds.length);
     console.log('length', data.length);
 
 
     const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
     const docsArr = JSON.parse(dataStr)
-    const removedDeletedFiles = updatedData.filter((item: any) => !selectedFoldersId.some((i: any) => item.id == i.id))
+    const removedDeletedFiles = updatedData.filter((item: any) => !selectedFileIds.some((i: any) => item.id == i.id))
     console.log('removedDeletedFiles images------', removedDeletedFiles.map((it: any) => it.id));
     // console.log('removedDeletedFiles================================================================', removedDeletedFiles);
     console.log('docsObject================================================================', docsArr);
@@ -141,23 +141,23 @@ export default function DisplayMultipleDocumentImage(props: any) {
     console.log('filterObjects================================================================', filterObjects);
     console.log('obj 2================================================================', JSON.stringify(filterObjects));
 
-    if (data.length == selectedFoldersId.length) {
-      console.log('selectedFoldersId.length', selectedFoldersId.length);
+    if (data.length == selectedFileIds.length) {
+      console.log('selectedFileIds.length', selectedFileIds.length);
       console.log('data.length', data.length);
-      setSelectedFoldersId([])
+      setSelectedFileIds([])
       await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
       navigateToBack()
     }
-    if (data.length != selectedFoldersId.length) {
+    if (data.length != selectedFileIds.length) {
       filterObjects.push(singleObj)
       console.log('if(data.length== not equel', filterObjects[0].files);
       setData(singleObj.files)
       // i think we have to update params or docs Arr is not being updated on dashboard
       await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      setSelectedFoldersId([])
+      setSelectedFileIds([])
     }
     try {
-      for (const filePath of selectedFoldersId) {
+      for (const filePath of selectedFileIds) {
         //deleteFile(filePath)
       }
       console.log('Files deleted successfully!');
@@ -168,50 +168,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   }
 
-  // const deleteSingleFile = async (obj: any) => {
-  //   console.log('folder------', selectedFoldersId);
 
-  //   const updatedData = [...data]
-
-  //   const dataStr = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS)
-  //   const docsObject = JSON.parse(dataStr)
-  //   const removedDeletedFiles = updatedData.filter((item: any) => item.id !== obj.id)
-  //   console.log('itemId================================================================', itemId);
-  //   const singleObj = docsObject.find((item: any) => item.id === itemId)
-  //   singleObj.files = removedDeletedFiles
-  //   console.log('obj================================================================', obj);
-  //   const filterObjects = docsObject.filter((item: any) => item.id !== itemId)
-  //   console.log('filterObjects================================================================', filterObjects);
-
-  //   console.log('obj 2================================================================', filterObjects);
-  //   if (data.length == 1) {
-  //     console.log('if(data.length==1');
-
-  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-  //     navigateToBack()
-  //   }
-  //   if (data.length > 1) {
-  //     console.log('if(data.length>0');
-
-  //     filterObjects.push(singleObj)
-  //     setData(singleObj.files)
-  //     await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-  //     setSelectedFoldersId([])
-  //   }
-  //   try {
-  //     for (const filePath of selectedFoldersId) {
-  //       deleteFile(filePath)
-  //     }
-  //     console.log('Files deleted successfully!');
-  //   } catch (error) {
-  //     console.error('Error deleting files:', error);
-  //   }
-  //   setMultidelete(false)
-  // }
 
   const deleteSingleFile = async (obj: any) => {
     try {
       console.log('Deleting folder:', obj.id);
+      selectedFileIds
 
       // 1. Get all files of this folder
       // const files = data.photos.filter((item:any) => item.folderId === obj.id);
@@ -236,26 +198,26 @@ export default function DisplayMultipleDocumentImage(props: any) {
       const updatedFiles = await FileLocalService.getFilesByFolder(folderId)
       console.log('updatedFiles----', updatedFiles);
 
-      if (updatedFiles.length == 0) {
-        const files = await FileLocalService.getFilesByFolder(obj.id)
+      // if (updatedFiles.length == 0) {
+      //   const files = await FileLocalService.getFilesByFolder(obj.id)
 
-        console.log('Files to delete:', files);
+      //   console.log('Files to delete:', files);
 
 
 
-        // 3. Delete files from DB
-        await FolderLocalService.deleteFoldersWithFiles([folderId])
-        const updatedData = await FolderLocalService.getAllFolders()
-        navigateToBack()
+      //   // 3. Delete files from DB
+      //   await FolderLocalService.deleteFoldersWithFiles([folderId])
+      //   const updatedData = await FolderLocalService.getAllFolders()
+      //   navigateToBack()
 
-      }
+      // }
 
       setData(updatedFiles);
 
 
 
       // Reset UI states
-      setSelectedFoldersId([]);
+      setSelectedFileIds([]);
       setMultidelete(false);
 
       console.log('✅ Folder deleted successfully');
@@ -273,30 +235,30 @@ export default function DisplayMultipleDocumentImage(props: any) {
   };
 
   const checkisFolderSelected = (id: number) => {
-    // console.log('selectedfolder', selectedFoldersId);
+    // console.log('selectedfolder', selectedFileIds);
 
-    return selectedFoldersId.find(item => item.id === id)
+    return selectedFileIds.find(item => item.id === id)
   }
 
   const onSelectFolders = (item: any) => {
     // handling to show select or unselect folder checking id
     //  if does exist so removing if not then adding
     if (checkisFolderSelected(item.id)) {
-      setSelectedFoldersId(selectedFoldersId.filter(selectfolderId => selectfolderId.id != item.id))
+      setSelectedFileIds(selectedFileIds.filter(selectfolderId => selectfolderId.id != item.id))
     }
     else {
-      setSelectedFoldersId([...selectedFoldersId, item])
+      setSelectedFileIds([...selectedFileIds, item])
     }
 
   }
 
 
   const onPressSelectAll = () => {
-    if (selectedFoldersId.length == data.length) {
-      setSelectedFoldersId([])
+    if (selectedFileIds.length == data.length) {
+      setSelectedFileIds([])
     }
     else {
-      setSelectedFoldersId(data.map(item => item))
+      setSelectedFileIds(data.map(item => item))
     }
   }
   const onPressItem = async (item: any) => {
@@ -494,7 +456,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         style={[
           styles.card,
           {
-            borderColor: isSelected ? COLORS.THEME_COLOR : 'transparent',
+            borderColor: isSelected ? theme.themeColor : 'transparent',
             borderWidth: isSelected ? .5 : 0,
           },
         ]}
@@ -522,7 +484,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
               <MaterialIcons
                 name="share"
                 size={18}
-                color={COLORS.THEME_COLOR}
+                color={theme.iconColor}
               />
             </TouchableOpacity>
 
@@ -533,28 +495,30 @@ export default function DisplayMultipleDocumentImage(props: any) {
               <MaterialIcons
                 name="edit"
                 size={18}
-                color={COLORS.THEME_COLOR}
+                color={theme.iconColor}
               />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={() =>
-                deleteFoldersConfirmationForSingleItem(item)
+              onPress={() =>{
+               setIsShowDeleteImageConfirmation(true)
+                setSelectedFileIds([item.id])
+              }
               }
             >
               <MaterialIcons
                 name="delete"
                 size={18}
-                color="#E4003A"
+                color={theme.deleteIconColor}
               />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* File Name */}
-        <Text style={{...styles.fileName, color: 'black'}} numberOfLines={1}>
-          {item.displayName?.replace(/\.[^/.]+$/, '')}
+        <Text style={{...styles.fileName,fontFamily:Fonts.regular, }} numberOfLines={1}>
+          {capitalizeFirstLetter(item.displayName)?.replace(/\.[^/.]+$/, '')}
           {/* {item.name} */}
         </Text>
       </TouchableOpacity>
@@ -755,56 +719,49 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   }
 
-  const renderHeaderNoSelection = () => {
-    return (
-      <View style={styles.header}>
+ const renderHeaderNoSelection = () => {
+  return (
+    <SafeAreaView style={styles.header}>
 
-        {/* Back Button */}
+      {/* Back Button */}
+      <TouchableOpacity
+        style={styles.iconBtn}
+        onPress={() => {
+          setMultidelete(false)
+          setSelectedFileIds([])
+          navigateToBack()
+        }}
+      >
+        <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
+      </TouchableOpacity>
+
+      {/* Title */}
+      <Text style={styles.title} numberOfLines={1}>
+        {capitalizeFirstLetter(props.route.params?.folderName)}
+      </Text>
+
+      {/* Right Actions */}
+      <View style={styles.rightActions}>
+
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => {
-            setMultidelete(false)
-            setSelectedFoldersId([])
-            navigateToBack()
-          }}
+          onPress={() => generatePdf(data)}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+          <Text style={styles.iconLabel}>PDF</Text>
         </TouchableOpacity>
 
-        {/* Title */}
-        <Text style={styles.title} numberOfLines={1}>
-          {props.route.params?.folderName}
-        </Text>
-
-        {/* Right Actions */}
-        <View style={styles.rightActions}>
-
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => generatePdf(data)}
-          >
-            <MaterialCommunityIcons
-              name="file-pdf-box"
-              size={24}
-              color={COLORS.THEME_COLOR}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => shareFile(data)}
-          >
-            <MaterialIcons
-              name="share"
-              size={24}
-            />
-          </TouchableOpacity>
-
-        </View>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => shareFile(data)}
+        >
+          <MaterialIcons name="share" size={22} color={theme.iconColor} />
+        </TouchableOpacity>
 
       </View>
-    )
-  }
+
+    </SafeAreaView>
+  )
+}
   const renderHeaderMultiSelection = () => {
     return (
       <View style={styles.multiHeader}>
@@ -814,17 +771,17 @@ export default function DisplayMultipleDocumentImage(props: any) {
           style={styles.iconBtn}
           onPress={() => {
             setMultidelete(false)
-            setSelectedFoldersId([])
+            setSelectedFileIds([])
           }}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+          <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
         </TouchableOpacity>
 
 
         {/* Count Badge */}
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>
-            {selectedFoldersId.length}
+        <View style={{...styles.iconBtn,left:10}}>
+          <Text style={{...styles.iconLabel,padding:6,fontFamily:Fonts.regular,fontSize:scaledSize(12)}}>
+            {selectedFileIds.length}
           </Text>
         </View>
 
@@ -836,12 +793,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
         <TouchableOpacity style={styles.iconBtn} onPress={onPressSelectAll}>
           <MaterialIcons
             name={
-              data.length === selectedFoldersId.length
+              data.length === selectedFileIds.length
                 ? "check-box"
                 : "check-box-outline-blank"
             }
             size={22}
-            color="#333"
+            color={theme.iconColor}
           />
         </TouchableOpacity>
 
@@ -851,7 +808,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           style={styles.iconBtn}
           onPress={() => refForDocShare.current?.present()}
         >
-          <MaterialIcons name="share" size={22} color="#333" />
+          <MaterialIcons name="share" size={22} color={theme.iconColor} />
         </TouchableOpacity>
 
 
@@ -860,21 +817,25 @@ export default function DisplayMultipleDocumentImage(props: any) {
           style={styles.iconBtn}
           onPress={deleteFoldersConfirmationForMultipleItem}
         >
-          <MaterialIcons name="delete" size={22} color="#d32f2f" />
+          <MaterialIcons name="delete" size={22} color={theme.deleteIconColor} />
         </TouchableOpacity>
 
       </View>
     )
   }
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
-      {/* <StatusBar backgroundColor={'white'}/> */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
+      {/* <StatusBar backgroundColor={'black'}/> */}
+      <View style={{height:50,backgroundColor:'red'}}>
+
       {isMultiDelete ?
         renderHeaderMultiSelection()
         :
         renderHeaderNoSelection()
       }
-      <View style={{ flex: 1, }}>
+      </View>
+      <View style={{ flex: .5, }}>
+        
 
         <FlatList
           // display to item inrow
@@ -882,6 +843,14 @@ export default function DisplayMultipleDocumentImage(props: any) {
           data={data}
           renderItem={renderItem}
         />
+                      <Switch
+                trackColor={{ false: '#767577', true: 'green' }}
+                thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
+                ios_backgroundColor="#3e3e3e"
+                onValueChange={() => toggleTheme()}
+                value={mode == 'dark' ? true : false}
+      
+              />
       </View>
 
       <LinearGradient colors={['#0081A7', '#00AFB9']}
@@ -897,6 +866,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
       {renderFileReNameModal()}
       {renderImageView()}
+      
       <Modal visible={isShowEditImage} style={{ flex: 1, backgroundColor: 'black' }}>
         <View style={{ flex: 1, backgroundColor: 'red' }}>
           {<EditImage onPressBack={handlePressBack} imageUri={editImageUri} signaturePath={(v: any) => getImageUriByOS(v)} />}
@@ -910,12 +880,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
           </View>
           <View
             style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
-            <TouchableOpacity style={styles.shareOptionS} onPress={() => generatePdf(selectedFoldersId)}>
+            <TouchableOpacity style={styles.shareOptionS} onPress={() => generatePdf(selectedFileIds)}>
               <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>PDF</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(10) }]}
-              onPress={() => shareFile(selectedFoldersId)}>
+              onPress={() => shareFile(selectedFileIds)}>
               <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>Images</Text>
             </TouchableOpacity>
 
@@ -926,26 +896,33 @@ export default function DisplayMultipleDocumentImage(props: any) {
           </View>
         </View>
       </CustomBottomSheet>
+<ConfirmationDialog visible={isShowDeleteImageConfirmation}
+ onCancel={()=>setIsShowDeleteImageConfirmation(false)}
+ onSubmit={()=>deleteMultipleFolder()}
+ mode='delete'
+ />
 
-    </View>
+    </SafeAreaView>
   )
 }
 
-const styles = StyleSheet.create({
+
+const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
   card: {
     marginHorizontal: scaledSize(14),
     marginTop: scaledSize(14),
     borderRadius: scaledSize(10),
-    backgroundColor: '#fff',
+    backgroundColor: theme.bgColor,
     overflow: 'hidden',
-
+    borderWidth:.5,
     elevation: 4,
+    borderColor:theme.secondaryTextColor
   },
 
   imageWrapper: {
     width: '100%',
-    height: scaledSize(180),        // fixed container height
-    backgroundColor: '#eee',
+    height: scaledSize(180), 
+
   },
 
   image: {
@@ -953,43 +930,12 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  header: {
-    height: 56,
-    backgroundColor: "#fff",
-
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-
-    paddingHorizontal: 12,
-
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-
-  title: {
-    fontSize: 18,
-    // fontWeight: "600",
-    color: "#222",
-    letterSpacing: 1
-  },
-
-  rightActions: {
-    flexDirection: "row",
-  },
-
-  headerTitle: {
-    fontSize: scaledSize(18),
-    fontWeight: '600',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-
   headerIcon: {
     width: scaledSize(38),
     height: scaledSize(38),
     justifyContent: 'center',
     alignItems: 'center',
+    color:theme.iconColor
   },
 
   headerRight: {
@@ -1012,8 +958,8 @@ const styles = StyleSheet.create({
   },
 
   iconButton: {
-    backgroundColor: '#FFFFFFEE',
-    borderRadius: scaledSize(16),
+    backgroundColor: theme.buttonBGColor,
+    borderRadius: scaledSize(20),
     padding: scaledSize(4),
     marginBottom: scaledSize(6),
     elevation: 2,
@@ -1023,16 +969,14 @@ const styles = StyleSheet.create({
     marginTop: scaledSize(8),
     marginHorizontal: scaledSize(10),
     fontSize: scaledSize(13),
-    // fontWeight: '600',
-    // color: 'gray',
-    // fontFamily:FONTS.italic,
     bottom: scaledSize(4),
-    letterSpacing: 1
+    letterSpacing: 1,
+    color:theme.primaryTextColor
   },
   // ************************
   multiHeader: {
     height: scaledSize(52),
-    backgroundColor: "#fff",
+    backgroundColor: theme.bgColor,
 
     flexDirection: "row",
     alignItems: "center",
@@ -1040,36 +984,79 @@ const styles = StyleSheet.create({
     paddingHorizontal: scaledSize(10),
 
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
+    },
 
-  iconBtn: {
-    padding: scaledSize(6),
-  },
+
 
   countBadge: {
     marginLeft: scaledSize(8),
-    backgroundColor: COLORS.THEME_COLOR,
+    backgroundColor: theme.buttonTextColor,
     borderRadius: scaledSize(24),
     width: scaledSize(24),
     height: scaledSize(24),
-
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: scaledSize(6),
   },
 
   countText: {
-    color: "white",
-    fontSize: 14,
+    color: theme.primaryTextColor,
+    fontSize: scaledSize(12),
     fontWeight: "600",
   },
 
   selectText: {
-    fontSize: 15,
-    color: "#555",
-    marginRight: 10,
+    fontSize: scaledSize(13),
+    color: theme.primaryTextColor,
+    marginRight: scaledSize(8),
   },
+  header: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: theme.bgColor,
+  // marginTop:20,
+  paddingHorizontal: 8,
+  paddingVertical: 10,
+  // borderBottomWidth: 0.5,
+  // borderBottomColor: '#ddd',
+},
+title: {
+  flex: 1,
+  fontSize: scaledSize(16),
+  left:scaledSize(10),
+  fontWeight: '500',
+  color: theme.primaryTextColor,
+  marginHorizontal: scaledSize(8),
+  fontFamily:Fonts.regular,
+  letterSpacing:1
+},
+// iconBtn: {
+//   width: 36,
+//   height: 36,
+//   borderRadius: 8,
+//   alignItems: 'center',
+//   justifyContent: 'center',
+// },
+iconBtn: {
+  height: 38,
+  paddingHorizontal: 8,
+  borderRadius: 6,
+  backgroundColor: theme.buttonBGColor,   // dark filled background
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 4,
+},
+iconLabel: {
+  fontSize: 11,
+  fontWeight: '700',
+  color: theme.primaryTextColor,             // white text on dark bg
+  letterSpacing: 0.5,
+},
+rightActions: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+},
 });
 
 

@@ -1,5 +1,5 @@
 
-import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, StatusBar, Linking, Modal, TextInput, Platform } from 'react-native'
+import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import FloatingButton from './FloatingButton'
 import DocumentPicker from 'react-native-document-picker';
@@ -23,7 +23,6 @@ import { updateIsLoadingState } from '../screen/dashboard/FileSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Searchbar } from 'react-native-paper'
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import { getDateByMomentFormat } from '../utilies/DateHelper';
 import { Button, Overlay } from 'react-native-elements';
 import { useToast } from "react-native-toast-notifications";
 import Toast from 'react-native-toast-message';
