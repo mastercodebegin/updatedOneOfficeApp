@@ -41,7 +41,7 @@ import {
     ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 import DocxGenerator from './Xlsxgenerator';
-import { navigateToBack, scaledSize } from '../../utilies/Utilities';
+import {  scaledSize, Utility } from '../../utilies/Utilities';
 import HeaderComponent from '../../component/CustomHeader';
 import { Button } from 'react-native-elements';
 import { ErrorToast } from '../../component/CustomToast';
@@ -121,7 +121,7 @@ const XslxReader = (props: S) => {
             }
         } catch (error) {
             ErrorToast('Unsupported file ')
-            navigateToBack()
+            Utility.images.navigateToBack()
             // console.error('Error converting XLSX to HTML:', error);
         }
     }
@@ -230,7 +230,7 @@ const XslxReader = (props: S) => {
             <View style={{ height: scaledSize(40), flexDirection: 'row',
             backgroundColor:'white'
                 ,elevation:4 }}>
-               <HeaderComponent title='' onPress={async () => navigateToBack()}/>
+               <HeaderComponent title='' onPress={async () => Utility.navigation.navigateToBack()}/>
             </View>
             <View style={{ height: scaledSize(50), width: '100%',marginTop:scaledSize(10) }}>
 

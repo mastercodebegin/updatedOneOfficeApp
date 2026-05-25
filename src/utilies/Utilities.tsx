@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppShare, asyncStorageKeyName, CONSTANT } from './Constants';
 import { CommonActions } from '@react-navigation/native';
 import { createNavigationContainerRef } from '@react-navigation/native';
-import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
+import { Popup } from '@sekizlipenguen/react-native-popup-confirm-toast'
 import Share from 'react-native-share';
 import { createPdf } from 'react-native-images-to-pdf';
 
@@ -32,6 +32,9 @@ import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Zocial from 'react-native-vector-icons/Zocial';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import ReactNativeBlobUtil from 'react-native-blob-util';
+import { getFirstLetterCapitalize } from './StringUtilitiy';
+import { getDateByMomentFormat, getDateFromString, getFirebaseTimeStampByMillis, getMillis } from './DateUtility';
+import { getLocalData, removeAllLocalData, removeLocalData, setLocalData } from './storageUtility';
 
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
 const baseWidth = 360;
@@ -52,7 +55,7 @@ export const widthFromPercentage = wp;
 export const heightFromPercentage = hp;
 
 
- const generateUniqueNumber = () => {
+const generateUniqueNumber = () => {
   return Math.floor(Math.random() * (100000 - 1 + 1)) + Math.floor(Math.random() * 100 * 9);
 };
 
@@ -82,29 +85,7 @@ export const VECTOR_ICON_LIBRARIES = {
 
 // ✅ Type for autocompletion support
 export type IconLibraryType = keyof typeof VECTOR_ICON_LIBRARIES;
-// export const getDate = (item) => {
 
-
-
-//   const mtimeDate = typeof item == 'object' ? item : item !== undefined ? new Date(item) : new Date();
-
-//   try {
-
-//     if (mtimeDate) {
-//       const day = mtimeDate.getDate();
-//       const month = mtimeDate.getMonth() + 1; 
-
-//       return `${day} - ${month} - ${year}`;
-//     }
-//     else {
-//       console.log('Invalid date string:', item);
-//     }
-//   }
-//   catch (error) {
-//     console.log('Error in getDate:', error);
-//     return 'Invalid date string';
-//   }
-// }
 
 export const getFileSize = (size) => {
   // console.log('getFileSize',size);
@@ -121,9 +102,7 @@ export const getFileSize = (size) => {
 
 }
 
-export const capitalizeFirstLetter = (string) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
+
 
 export const heightToDp = number => {
   let givenHeight = typeof number === 'number' ? number : parseFloat(number)
@@ -146,9 +125,9 @@ export const getPotraitAndLandscapeDimensions = () => {
 
 
 
- const fileShare = async (url: string, name: string,) => {
+const fileShare = async (url: string, name: string,) => {
 
-  
+
   console.log('url: ' + url);
   const extension = url.split('.').pop(); // Get the file extension from the URL
   console.log('extension======', extension);
@@ -407,7 +386,7 @@ export const getConvertedPdfFileFromPhoneStorage = async () => {
 //     console.log('error-----', e);
 //   }
 // }
- const shareApp = () => {
+const shareApp = () => {
   Platform.OS == 'android' ?
     Share.open({ url: AppShare.ANDROID_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', }) :
     Share.open({ url: AppShare.IOS_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', })
@@ -417,7 +396,7 @@ export const setNavigator = (nav) => {
   navigator = nav;
 };
 
- const navigateTo = (routeName, params?, resetStack = false) => {
+const navigateTo = (routeName, params?, resetStack = false) => {
   if (resetStack) {
     navigationRef.dispatch(
       CommonActions.reset({
@@ -434,7 +413,7 @@ export const setNavigator = (nav) => {
     );
   }
 };
- function navigateToBack() {
+function navigateToBack() {
   if (navigationRef.isReady()) {
     navigationRef.goBack();
   }
@@ -474,14 +453,14 @@ export const toastForDeleteFile = (toast: any, message: string) => {
   });
 }
 
- const getImageUriByOS = (uri: string) => {
+const getImageUriByOS = (uri: string) => {
   if (!uri) return '';
 
   return uri.startsWith('file://') ? uri : `file://${uri}`;
 };
 
 
- const DocumentPicker = async (props: S) => {
+const DocumentPicker = async (props: S) => {
   const { isMultipleSelection = false, fileTypes = [], isBase64 = false } = props
 
   try {
@@ -519,7 +498,7 @@ export const toastForDeleteFile = (toast: any, message: string) => {
   }
 }
 
- const createImagesToPdf = async (images: Array<any>) => {
+const createImagesToPdf = async (images: Array<any>) => {
   console.log('images to convert in pdf>>>>>>', images);
 
   try {
@@ -558,15 +537,34 @@ export const toastForDeleteFile = (toast: any, message: string) => {
   }
 }
 
-export const Utility= {
-createImagesToPdf,
-DocumentPicker,
-getImageUriByOS,
-navigateToBack,
-navigateTo,
-fileShare,
-shareApp,
-generateUniqueNumber,
-getFileSize,
+export const Utility = {
+  string: {
+    getFirstLetterCapitalize
+  },
+  date: {
+    getDateFromString,
+    getDateByMomentFormat,
+    getMillis,
+    getFirebaseTimeStampByMillis
+  },
+  storage: {
+    setLocalData,
+    getLocalData,
+    removeLocalData,
+    removeAllLocalData
+  },
+  navigation:{
+    navigateToBack,
+    navigateTo,
+  },
+  images:{
+    createImagesToPdf,
+    DocumentPicker,
+    getImageUriByOS,
+  },
+  fileShare,
+  shareApp,
+  generateUniqueNumber,
+  getFileSize,
 
 }

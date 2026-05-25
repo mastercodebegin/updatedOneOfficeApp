@@ -42,7 +42,7 @@ export const lightTheme: Theme = {
   iconColor: '#000000',
   borderColor: '#e0e0e0',
   themeColor: '#47b16a',
-  buttonBGColor:'#d3d3d3',
+  buttonBGColor:'#F5F5F5',
   themeSecondaryColor:'#47b16a',
   buttonTextColor:'#000000'
 };

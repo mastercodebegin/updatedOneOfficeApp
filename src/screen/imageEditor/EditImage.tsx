@@ -77,7 +77,7 @@ const ImageOverlay = (props: S) => {
     }, [writtenSignature])
 
     useEffect(() => {
-        setEditedImage(Utility.getImageUriByOS(imageUri))
+        setEditedImage(Utility.images.getImageUriByOS(imageUri))
     }, [])
 
 

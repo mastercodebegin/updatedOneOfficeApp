@@ -6,7 +6,7 @@ import { Button, Overlay } from 'react-native-elements';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, heightFromPercentage, RNImageToPdf, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
+import {  ConfirmPopup, deleteFile, fileShareMultiple,  heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'
@@ -40,9 +40,8 @@ import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageUtility';
 import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
-import { DateHelper } from '../../utilies/DateHelper';
 import { FileLocalService } from '../../db/fileLocalService';
 import { FirebaseService } from '../../service/FirebaseService';
 import { GoogleDriveService } from '../../db/googleDriveService';
@@ -789,7 +788,7 @@ export const DocumentScan = () => {
       // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
       const files = await FileLocalService.getFilesByFolder(item.id)
-      Utility.navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
+      Utility.navigation.navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
       console.log('files=======', files);
 
     }
@@ -922,7 +921,7 @@ export const DocumentScan = () => {
                   textStyle={{ color: getTagColor(isSelected).textColor, letterSpacing: 1, fontSize: scaledSize(13) }}
                 >
 
-                  {capitalizeFirstLetter(item.name)}
+                  {Utility.string.getFirstLetterCapitalize(item.name)}
                 </Chip>
               </View>
             );
@@ -1070,7 +1069,7 @@ export const DocumentScan = () => {
           <View style={styles.thumbnailWrapper}>
             <Image
               source={{
-                uri: Utility.getImageUriByOS(
+                uri: Utility.images.getImageUriByOS(
                   destinationPath + item?.coverUri,
                 ),
               }}
@@ -1088,11 +1087,11 @@ export const DocumentScan = () => {
                   styles.title,
                   { color: theme.primaryTextColor },
                 ]}>
-                {capitalizeFirstLetter(item?.name || '')}
+                {Utility.string.getFirstLetterCapitalize(item?.name || '')}
               </Text>
 
               <Text style={[styles.date, { fontFamily: 'calibri' }]}>
-                {DateHelper.getDateByMomentFormat(item?.createdAt,
+                {Utility.date.getDateByMomentFormat(item?.createdAt,
                   DateFormat.DATE_WITH_MONTH_NAME)}
               </Text>
 
@@ -1617,7 +1616,7 @@ export const DocumentScan = () => {
         // console.log('name--------------', res[0].localUri);
         // fileExtension = res[0].localUri.split('.').pop()
         // uri = res[0].localUri
-        const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
+        const uri = Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
 
         console.log('uri', uri);
 
@@ -2193,7 +2192,6 @@ export const DocumentScan = () => {
           icon={<Ionicons name='camera-outline' size={scaledSize(24)}
             color={mode === 'light' ? 'white' : theme.iconColor} />}
           onPress={() => { requestCameraPermission() }}
-        // onPress={scanDocument}
         />
       </View>
 

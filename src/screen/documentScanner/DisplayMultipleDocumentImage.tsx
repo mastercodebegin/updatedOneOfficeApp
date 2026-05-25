@@ -2,7 +2,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, Dimensions, ActivityIndi
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mediumBG, MSExcel, MSOffice, MSPowerPoint, smallBG } from '../../assets/GlobalImages'
 import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants'
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShareMultiple, generateUniqueNumber, navigateToBack, RNImageToPdf, scaledSize, Utility } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShareMultiple, generateUniqueNumber, heightFromPercentage, navigateToBack, RNImageToPdf, scaledSize, Utility } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -36,6 +36,8 @@ import { Theme } from '../theme/ThemeConfig';
 import ConfirmationDialog from '../../component/ConfirmationDialog';
 import CustomRenameModal from '../../component/CustomRenameModal';
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
+import CustomImagesViewSlider from '../../component/CustomImagesViewSlider';
+import CustomFAB from '../../component/CustomFAB';
 
 export default function DisplayMultipleDocumentImage(props: any) {
 
@@ -46,7 +48,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<any>([]);
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
-  const [isImageView, setIsImageView] = useState(false)
+  const [isShowImageView, setIsImageView] = useState(false)
   const [imagePath, setImagePath] = useState('')
   const [data, setData] = useState([])
   const [images, setImages] = useState<Array<{ name: string }>>();
@@ -151,7 +153,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
       console.log('data.length', data.length);
       setSelectedFileIds([])
       await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(filterObjects))
-      navigateToBack()
+      Utility.navigation.navigateToBack()
     }
     if (data.length != selectedFileIds.length) {
       filterObjects.push(singleObj)
@@ -272,10 +274,8 @@ export default function DisplayMultipleDocumentImage(props: any) {
       onSelectFolders(item)
     }
     else {
-      const urls = data.map((item) => ({ url: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }));
-      console.log('urls----', urls);
-
-      setImageUrls(urls);
+      const filter = data.filter(v => v.id !== item.id)
+      setImageUrls([item, ...filter]);
       setIsImageView(true)
       setFileName(item.name)
       setImagePath(item.path)
@@ -284,17 +284,19 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const onLongPressItem = (item: any) => {
     setMultidelete(true)
     if (isMultiDelete) {
+      // setting imageurl if image view open accidently while longpress
+      setImageUrls(data)
       onSelectFolders(item)
     }
-    else {
-      const urls = data.map((item) => ({ url: 'file:' + item.path }));
-      console.log('urls----', urls);
+    // else {
+    //   const urls = data.map((item) => ({ url: 'file:' + item.path }));
+    //   console.log('urls----', urls);
 
-      setImageUrls(urls);
-      setIsImageView(true)
-      setFileName(item.name)
-      setImagePath(item.path)
-    }
+    //   setImageUrls(urls);
+    //   setIsImageView(true)
+    //   setFileName(item.name)
+    //   setImagePath(item.path)
+    // }
   }
   // const copyFilesToDirectory = async () => {
   //   console.log('folderName', folderName);
@@ -477,7 +479,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           <Image
             resizeMode="contain"
             // resizeMethod='auto'
-            source={{ uri: Utility.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
+            source={{ uri: Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
             style={{
               height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
             }}
@@ -488,8 +490,9 @@ export default function DisplayMultipleDocumentImage(props: any) {
           {/* Overlay Actions */}
           <View style={styles.overlayActions}>
             <TouchableOpacity
+              disabled={isMultiDelete}
               style={styles.iconButton}
-              onPress={() => Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH+item.name, item.name)}
+              onPress={() => Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH + item.name, item.name)}
             >
               <MaterialIcons
                 name="share"
@@ -499,10 +502,12 @@ export default function DisplayMultipleDocumentImage(props: any) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              disabled={isMultiDelete}
               style={styles.iconButton}
               onPress={() => onPressEditFile(item)}
             >
               <MaterialIcons
+                disabled={isMultiDelete}
                 name="edit"
                 size={18}
                 color={theme.iconColor}
@@ -511,6 +516,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
             <TouchableOpacity
               style={styles.iconButton}
+              disabled={isMultiDelete}
               onPress={() => {
                 setIsShowDeleteImageConfirmation(true)
                 setSelectedFileIds([item.id])
@@ -528,93 +534,24 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
         {/* File Name */}
         <Text style={{ ...styles.fileName, fontFamily: Fonts.regular, }} numberOfLines={1}>
-          {capitalizeFirstLetter(item.displayName)?.replace(/\.[^/.]+$/, '')}
+          {Utility.string.getFirstLetterCapitalize(item.displayName)?.replace(/\.[^/.]+$/, '')}
           {/* {item.name} */}
         </Text>
       </TouchableOpacity>
     );
   };
-  const convertImagesPathToURI = () => {
-    //  const url = data.map((item) => {
-    //   return { url: 'file:' + item.path };
-    // });
-    // console.log('url', url);
-    // return url
 
-  };
-  const renderImageView = () => {
-    return (
-      <Modal visible={isImageView} style={{ flex: 1, }} contentContainerStyle={{ backgroundColor: 'white' }}>
-        <SafeAreaView style={{
-          height: scaledSize(800), width: '100%',
-
-        }}>
-          <View style={{
-            height: scaledSize(80), width: '100%', backgroundColor: 'red',
-            justifyContent: 'space-between', alignItems: 'center',
-            flexDirection: 'row', marginTop: scaledSize(0), borderBottomWidth: 1,
-          }}>
-            <CustomLinearGradientView>
-              <View style={{
-                height: scaledSize(80), width: '100%',
-                justifyContent: 'space-between', alignItems: 'center',
-                flexDirection: 'row', marginTop: scaledSize(0), borderBottomWidth: 1, borderBottomColor: '#d3d3d3'
-              }}>
-
-
-                <View style={{
-                  flex: 1.9, flexDirection: 'row', justifyContent: 'flex-start', height: '100%',
-                  alignItems: 'center',
-                }}>
-                  {/* <TouchableOpacity onPress={() => { setIsImageView(false), setFileName('') }} > */}
-                  <MaterialIcons name='arrow-back' color={'white'}
-                    size={scaledSize(24)} style={{ marginLeft: scaledSize(10), marginTop: scaledSize(20) }}
-                    onPress={() => { setIsImageView(false), setFileName('') }} />
-                  {/* </TouchableOpacity> */}
-                </View>
-                <View style={{ flex: .5, flexDirection: 'row' }}>
-                  {/* <TouchableOpacity onPress={() => { generatePdf() }}>
-                    <MaterialCommunityIcons name='pencil' color={'white'} size={scaledSize(24)} style={{ marginLeft: scaledSize(10), alignSelf: 'center' }} />
-                  </TouchableOpacity> */}
-                  {/* <TouchableOpacity onPress={() => { generatePdf() }}>
-                <MaterialCommunityIcons name='file-pdf-box' color={'black'} size={scaledSize(24)} style={{ marginLeft: scaledSize(10), alignSelf: 'center' }} />
-              </TouchableOpacity>*/}
-                  <TouchableOpacity onPress={() => { fileShare(imagePath, fileName) }}>
-                    <MaterialIcons name='share' color={'white'}
-                      size={scaledSize(24)} style={{ marginLeft: scaledSize(30), marginRight: scaledSize(0), marginTop: scaledSize(20) }} />
-                  </TouchableOpacity>
-
-                </View>
-              </View>
-            </CustomLinearGradientView>
-          </View>
-
-          {/* <ImageZoom
-            uri={'file:' + imagePath}
-            style={{ height: '100%', width: '100%' }}
-            resizeMode='center'
-          /> */}
-          <ImageViewer imageUrls={imageUrls} style={{ height: '100%', width: '100%' }}
-            onChange={(index: number) => setImagePath
-              (data[index].path)} />
-
-
-
-        </SafeAreaView>
-      </Modal>
-    )
-  }
 
 
   const generatePdf = async (data: any) => {
-    console.log('data',data);
-    
-    const arr = await data.map((path:any) => CONSTANT.SAVED_DOCUMENTS_PATH+path.name)
+    console.log('data', data);
+
+    const arr = await data.map((path: any) => CONSTANT.SAVED_DOCUMENTS_PATH + path.name)
     console.log('arr', arr);
-   const url =  await Utility.createImagesToPdf(arr,folderName)
-   console.log('url',url);
-   await Utility.fileShare(url,'testpdf')
-   
+    const url = await Utility.createImagesToPdf(arr, folderName)
+    console.log('url', url);
+    await Utility.fileShare(url, 'testpdf')
+
 
 
 
@@ -693,7 +630,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           onPress={() => {
             setMultidelete(false)
             setSelectedFileIds([])
-            navigateToBack()
+            Utility.navigation.navigateToBack()
           }}
         >
           <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
@@ -701,7 +638,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
         {/* Title */}
         <Text style={styles.title} numberOfLines={1}>
-          {capitalizeFirstLetter(props.route.params?.folderName)}
+          {Utility.string.getFirstLetterCapitalize(props.route.params?.folderName)}
         </Text>
 
         {/* Right Actions */}
@@ -779,7 +716,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         {/* Delete */}
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={deleteFoldersConfirmationForMultipleItem}
+          onPress={() => setIsShowDeleteImageConfirmation(true)}
         >
           <MaterialIcons name="delete" size={22} color={theme.deleteIconColor} />
         </TouchableOpacity>
@@ -796,7 +733,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         :
         renderHeaderNoSelection()
       }
-      <View style={{ flex: .5, }}>
+      <View style={{ flex: 1, }}>
 
 
         <FlatList
@@ -813,9 +750,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
           value={mode == 'dark' ? true : false}
 
         />
-      </View>
-
-      <LinearGradient colors={['#0081A7', '#00AFB9']}
+        {/* <LinearGradient colors={['#0081A7', '#00AFB9']}
         style={{ height: scaledSize(60), width: scaledSize(60), borderRadius: scaledSize(60), position: 'absolute', bottom: 100, right: 20 }}>
         <TouchableOpacity style={{
 
@@ -824,42 +759,71 @@ export default function DisplayMultipleDocumentImage(props: any) {
         }} onPress={() => scanDocument()}>
           <Ionicons name='camera-outline' size={scaledSize(24)} color={'white'} />
         </TouchableOpacity>
-      </LinearGradient>
+      </LinearGradient> */}
+        <View style={{
+          height: scaledSize(50), position: "absolute", left: scaledSize(270),
+          top: heightFromPercentage(72)
+        }}>
+          <CustomFAB
+            style={{ borderWidth: .5, borderColor: theme.iconColor }}
+            icon={<Ionicons name='camera-outline' size={scaledSize(24)}
+              color={mode === 'light' ? 'white' : theme.iconColor} />}
+            onPress={() => { scanDocument() }}
+          />
+        </View>
+      </View>
 
-      {renderImageView()}
-{/* Later we will complete implement image editing in next version */}
+
+
+      {/* {renderImageView()} */}
+      <CustomImagesViewSlider imageUrls={imageUrls} isVisible={isShowImageView}
+        onPressBack={() => setIsImageView(false)} isBackIconHide={false}
+        isCloseIconShow={false} isShareIconShow={true}
+        // onShare={()=>{alert()}}
+        onShare={(data) => {
+          console.log(data);
+
+          Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH + data?.name, data.displayName)
+        }}
+      />
+
+      {/* Later we will complete implement image editing in next version */}
       <Modal visible={isShowEditImage} style={{ flex: 1, backgroundColor: 'black' }}>
         <View style={{ flex: 1, backgroundColor: 'red' }}>
-          {<EditImage onPressBack={handlePressBack} imageUri={editImageUri} signaturePath={(v: any) => Utility.getImageUriByOS(v)} />}
+          {<EditImage onPressBack={handlePressBack} imageUri={editImageUri} signaturePath={(v: any) => Utility.images.getImageUriByOS(v)} />}
         </View>
       </Modal>
       {/* End Image Editing */}
 
 
 
-      <CustomBottomSheet title='Option' headerColor='#f5f5f5'
+      <CustomBottomSheet title='Option' headerColor={theme.bgColor}
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
-        <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: scaledSize(16), letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
-          </View>
-          <View
-            style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
-            <TouchableOpacity style={styles.shareOptionS} onPress={() => generatePdf(selectedFileIds)}>
-              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>PDF</Text>
-            </TouchableOpacity>
+          {/* <Text style={{color:theme.primaryTextColor}}>Share as</Text> */}
+        <View style={{ flexDirection: 'row', gap: scaledSize(10), 
+          marginBottom: scaledSize(10),marginTop:scaledSize(5) }}>
+          <TouchableOpacity style={styles.shareCard} onPress={() => generatePdf(selectedFileIds)}>
+            <View style={[styles.iconTile, { backgroundColor: '#FEF2F2' }]}>
+              {/* PDF icon */}
+              <MaterialCommunityIcons name="file-pdf-box" size={22} color="#DC2626" />
 
-            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(10) }]}
-              onPress={() => shareFile(selectedFileIds)}>
-              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>Images</Text>
-            </TouchableOpacity>
+            </View>
+            <Text style={styles.shareLabel}>PDF</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(20), }]}
-              onPress={() => refForDocShare.current?.close()}>
-              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular, color: 'red' }}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.shareCard} onPress={() => shareFile(selectedFileIds)}>
+            <View style={[styles.iconTile, { backgroundColor: '#EFF6FF' }]}>
+              {/* Image icon */}
+              <MaterialCommunityIcons name="image-multiple" size={22} color="#2563EB" />
+
+            </View>
+            <Text style={styles.shareLabel}>Images</Text>
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => refForDocShare.current?.close()}>
+          <Text style={styles.cancelLabel}>Cancel</Text>
+        </TouchableOpacity>
       </CustomBottomSheet>
       <ConfirmationDialog visible={isShowDeleteImageConfirmation}
         onCancel={() => setIsShowDeleteImageConfirmation(false)}
@@ -1003,13 +967,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontFamily: Fonts.regular,
     letterSpacing: 1
   },
-  // iconBtn: {
-  //   width: 36,
-  //   height: 36,
-  //   borderRadius: 8,
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  // },
+
   iconBtn: {
     height: 38,
     paddingHorizontal: 8,
@@ -1029,6 +987,48 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  shareCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: scaledSize(12),
+    paddingHorizontal: scaledSize(8),
+    backgroundColor: theme.buttonBGColor,  // white card
+    borderRadius: scaledSize(12),
+    marginTop: scaledSize(8),
+    // borderColor: '#E5E5E5',
+    minHeight: scaledSize(80),
+    gap: scaledSize(8),
+  },
+  iconTile: {
+    width: scaledSize(40),
+    height: scaledSize(40),
+    borderRadius: scaledSize(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily:FONTS.regular,
+  },
+  shareLabel: {
+    fontSize: scaledSize(10),
+    // fontFamily: FONTS.regular,
+    letterSpacing:.5,
+    color: theme.primaryTextColor,
+  },
+  cancelBtn: {
+    paddingVertical: scaledSize(12),
+    borderRadius: scaledSize(10),
+
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaledSize(2),
+    backgroundColor: theme.buttonBGColor,  // white cancel button
+  },
+  cancelLabel: {
+    fontSize: scaledSize(12),
+    // fontFamily: FONTS.regular,
+    letterSpacing:.5,
+    color: theme.deleteIconColor,
   },
 });
 

@@ -6,7 +6,7 @@ import {
   signInWithCredential,
 } from '@react-native-firebase/auth';
 import { AuthService } from '../service/AuthService';
-import { setLocalData } from '../../src/utilies/storageService';
+import { setLocalData } from '../utilies/storageUtility';
 import { asyncStorageKeyName } from '../../src/utilies/Constants';
 
 export const useGoogleAuth = () => {

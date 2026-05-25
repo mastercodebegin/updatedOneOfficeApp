@@ -103,7 +103,7 @@ const ModalView = (props: myProps) => {
 
       const tempObj =
       {
-        label: capitalizeFirstLetter(obj.firstName) + ' ' + capitalizeFirstLetter(obj.lastName),
+        label: Utility.string.getFirstLetterCapitalize(obj.firstName) + ' ' + Utility.string.getFirstLetterCapitalize(obj.lastName),
         id:obj.id,
         value: obj
       }

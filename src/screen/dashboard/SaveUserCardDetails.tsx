@@ -6,7 +6,7 @@ import {
 } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import CustomCloseIcon from '../../component/CustomCloseIcon'
-import { capitalizeFirstLetter, generateUniqueNumber, navigateToBack, scaledSize, widthFromPercentage } from '../../utilies/Utilities'
+import {  scaledSize, Utility, widthFromPercentage } from '../../utilies/Utilities'
 import { COLORS, FONTS } from '../../utilies/GlobalColors'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import AntDesign from 'react-native-vector-icons/AntDesign'
@@ -439,10 +439,10 @@ export default function SaveUserCardDetails(props: S) {
     else if (lastFourDigit.length != 4) { alert('please enter card last 4 digit') }
     else {
       const cardDetails = {
-        id: generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
+        id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
         customerId: customerId, ...selectedBank
       };
-      const obj = { id: generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
+      const obj = { id: Utility.generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
       const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
       console.log('first', !!data);
 
@@ -669,7 +669,7 @@ export default function SaveUserCardDetails(props: S) {
               color: "#111"
             }}
           >
-            {capitalizeFirstLetter(item.firstName)} {item.lastName}
+            {Utility.string.getFirstLetterCapitalize(item.firstName)} {item.lastName}
           </Text>
 
           <View style={{ flexDirection: "row" }}>

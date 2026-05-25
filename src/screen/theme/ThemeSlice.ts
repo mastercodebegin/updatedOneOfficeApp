@@ -1,6 +1,6 @@
 // themeSlice.ts
 import { createSlice } from '@reduxjs/toolkit';
-import { getLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, setLocalData } from '../../utilies/storageUtility';
 import { asyncStorageKeyName } from '../../utilies/Constants';
 
 const getInitialMode = () => {

@@ -1,6 +1,6 @@
 import firestore, { addDoc, doc, getDoc, Timestamp, updateDoc } from '@react-native-firebase/firestore';
 import auth from '@react-native-firebase/auth';
-import { getLocalData, setLocalData } from '../utilies/storageService';
+import { getLocalData, setLocalData } from '../utilies/storageUtility';
 import { asyncStorageKeyName } from '../utilies/Constants';
 import { getApp } from '@react-native-firebase/app';
 import { serverTimestamp } from '@react-native-firebase/firestore';
@@ -14,7 +14,7 @@ import {
   getDocs,
 } from '@react-native-firebase/firestore';
 import { CreateFileInput } from 'src/db/fileLocalService';
-import { DateHelper } from '../../src/utilies/DateHelper';
+import { Utility } from 'src/utilies/Utilities';
 
 const returnDataHandler = (docSnap: any) => {
   if (!docSnap.exists()) return null;
@@ -160,7 +160,7 @@ export const FirebaseService = {
   async getUpdatedFilesByUserId() {
     try {
       const userId = getUserId();
-      const lastsyncTime = DateHelper.getFirebaseTimeStampByMillis();
+      const lastsyncTime = Utility.date.getFirebaseTimeStampByMillis();
       console.log(' getUpdatedFilesByUserId');
       console.log(' LastsyncTime get:', lastsyncTime);
       console.log(' LastsyncTime get:', typeof lastsyncTime);

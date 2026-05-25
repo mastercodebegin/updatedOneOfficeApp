@@ -1,7 +1,6 @@
 
-import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageUtility';
 import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
-import { DateHelper } from '../../utilies/DateHelper';
 import { CreateFileInput, FileLocalService } from '../../db/fileLocalService';
 import { FirebaseService } from '../../service/FirebaseService';
 import { GoogleDriveService } from '../../db/googleDriveService';
@@ -11,7 +10,7 @@ import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constan
 import { folder } from 'jszip';
 import firebase from '@react-native-firebase/app';
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
-import { getImageUriByOS } from '../../utilies/Utilities';
+import { Utility } from '../../utilies/Utilities';
 
 
 export const syncAll = async () => {
@@ -23,7 +22,7 @@ export const syncAll = async () => {
 
   
   await pushFilesToGoogleDrive()
-  const time = DateHelper.getFirebaseTimeStampByMillis()
+  const time = Utility.date.getFirebaseTimeStampByMillis()
   console.log('before folders maxUpdatedAt finish=========', time);
   const maxUpdatedAt = await syncFoldersFromFirebaseToLocal()
   console.log('folders maxUpdatedAt finish=========', maxUpdatedAt);
@@ -196,7 +195,7 @@ const insertOrUpdateFiles = async (
 
 
   for (const remote of firebaseFiles) {
-    const updatedAt = DateHelper.getMillis(remote);
+    const updatedAt = Utility.date.getMillis(remote);
     console.log('remote', remote);
     const local = localFilesMap.get(remote.firebaseId);
     console.log('remote.firebaseId', remote);
@@ -494,7 +493,7 @@ const insertOrUpdateFolder = async (localFoldersMap: Map<string, any>, firebaseF
     const local = localFoldersMap.get(remote.firebaseId); // find matching local folder using firebaseId
     console.log('local', local);
     console.log('local', local);
-    const remoteUpdatedAt = DateHelper.getMillis(remote)
+    const remoteUpdatedAt = Utility.date.getMillis(remote)
     console.log('remote.updatedAt:', remote.updatedAt, remoteUpdatedAt);
     console.log('local.updatedAt:', local?.updatedAt, typeof local?.updatedAt);
     if (!local) { // if folder does NOT exist in local DB
@@ -546,7 +545,7 @@ const insertOrUpdateFolder = async (localFoldersMap: Map<string, any>, firebaseF
     }
   }
   if (firebaseFolders.length > 0 && maxUpdatedAt == 0) {
-    const time = DateHelper.getMillis(firebaseFolders[0])
+    const time = Utility.date.getMillis(firebaseFolders[0])
     console.log('time from firebase folder', time);
     // maxUpdatedAt = time
   }
@@ -585,7 +584,7 @@ const deleteSyncFolders = async (localFolders: any, firebaseFolders: any) => {
       const match = firebaseFolders.find((f: any) => f.firebaseId === local.firebaseId);
 
       if (match) {
-        const updatedAt = DateHelper.getMillis(match);
+        const updatedAt = Utility.date.getMillis(match);
         console.log('updatedAt:', updatedAt);
 
         if (updatedAt > maxUpdatedAt) {

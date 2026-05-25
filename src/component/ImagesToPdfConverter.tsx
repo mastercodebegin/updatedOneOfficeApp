@@ -280,7 +280,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
 
           <View style={[styles.fileNameParentView, { height: scaledSize(50) }]}>
             <View style={[styles.fileNameView]}>
-              <Text style={{ fontSize: scaledSize(14), letterSpacing:1 }}>{capitalizeFirstLetter(item?.name)}</Text>
+              <Text style={{ fontSize: scaledSize(14), letterSpacing:1 }}>{Utility.string.getFirstLetterCapitalize(item?.name)}</Text>
             </View>
             <View style={styles.dateAndSizeParentView}>
               <View style={styles.dateView}>

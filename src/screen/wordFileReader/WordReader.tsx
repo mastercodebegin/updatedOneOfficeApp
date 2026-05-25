@@ -41,7 +41,7 @@ import {
     ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 import DocxGenerator from './Docxgenerator';
-import { navigateToBack, scaledSize } from '../../utilies/Utilities';
+import {  scaledSize, Utility } from '../../utilies/Utilities';
 import HeaderComponent from '../../component/CustomHeader';
 import CustomSpinner from '../../component/CustomSpinner';
 
@@ -242,7 +242,7 @@ const WordReader = (props:S) => {
             <View style={{ height: scaledSize(40), flexDirection: 'row',
             backgroundColor:'white'
                 ,elevation:4 }}>
-               <HeaderComponent title='' onPress={async () => navigateToBack()}/>
+               <HeaderComponent title='' onPress={async () => Utility.navigation.navigateToBack()}/>
             </View>
             <View style={{ flex: 1, padding: isLoading?scaledSize(0):scaledSize(14) }}>
                 {htmlData ? (
