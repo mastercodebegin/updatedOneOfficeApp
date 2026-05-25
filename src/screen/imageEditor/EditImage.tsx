@@ -20,7 +20,7 @@ import CustomeButton from '../../component/CustomButton';
 import DocumentPicker from 'react-native-document-picker';
 import ImagePicker from 'react-native-image-crop-picker';
 
-import { generateUniqueNumber, getImageUriByOS, scaledSize } from '../../utilies/Utilities';
+import { generateUniqueNumber, getImageUriByOS, scaledSize, Utility } from '../../utilies/Utilities';
 import { Fonts } from '../../assets/fonts/GlobalFonts';
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
@@ -77,7 +77,7 @@ const ImageOverlay = (props: S) => {
     }, [writtenSignature])
 
     useEffect(() => {
-        setEditedImage(getImageUriByOS(imageUri))
+        setEditedImage(Utility.getImageUriByOS(imageUri))
     }, [])
 
 

@@ -52,9 +52,15 @@ export const widthFromPercentage = wp;
 export const heightFromPercentage = hp;
 
 
-export const generateUniqueNumber = () => {
+ const generateUniqueNumber = () => {
   return Math.floor(Math.random() * (100000 - 1 + 1)) + Math.floor(Math.random() * 100 * 9);
 };
+
+interface S {
+  isMultipleSelection?: boolean,
+  fileTypes?: Array<any>
+  isBase64?: boolean
+}
 
 export const VECTOR_ICON_LIBRARIES = {
   AntDesign,
@@ -76,36 +82,29 @@ export const VECTOR_ICON_LIBRARIES = {
 
 // ✅ Type for autocompletion support
 export type IconLibraryType = keyof typeof VECTOR_ICON_LIBRARIES;
-export const getDate = (item) => {
+// export const getDate = (item) => {
 
-  // const day=item?.mtime?.getDate()
-  // const month=item?.mtime?.getMonth()
-  // const year=item?.mtime?.getFullYear()
 
-  // return `${day} - ${month} - ${year}`
 
-  const mtimeDate = typeof item == 'object' ? item : item !== undefined ? new Date(item) : new Date();
+//   const mtimeDate = typeof item == 'object' ? item : item !== undefined ? new Date(item) : new Date();
 
-  // Check if mtimeDate is a valid Date object
-  try {
+//   try {
 
-    if (mtimeDate) {
-      // const date = new Date(item);
-      const day = mtimeDate.getDate();
-      const month = mtimeDate.getMonth() + 1; // Months are 0-based, so add 1 to get the actual month.
-      const year = mtimeDate.getFullYear();
+//     if (mtimeDate) {
+//       const day = mtimeDate.getDate();
+//       const month = mtimeDate.getMonth() + 1; 
 
-      return `${day} - ${month} - ${year}`;
-    }
-    else {
-      console.log('Invalid date string:', item);
-    }
-  }
-  catch (error) {
-    console.log('Error in getDate:', error);
-    return 'Invalid date string';
-  }
-}
+//       return `${day} - ${month} - ${year}`;
+//     }
+//     else {
+//       console.log('Invalid date string:', item);
+//     }
+//   }
+//   catch (error) {
+//     console.log('Error in getDate:', error);
+//     return 'Invalid date string';
+//   }
+// }
 
 export const getFileSize = (size) => {
   // console.log('getFileSize',size);
@@ -147,7 +146,9 @@ export const getPotraitAndLandscapeDimensions = () => {
 
 
 
-export const fileShare = async (url: string, name: string,) => {
+ const fileShare = async (url: string, name: string,) => {
+
+  
   console.log('url: ' + url);
   const extension = url.split('.').pop(); // Get the file extension from the URL
   console.log('extension======', extension);
@@ -383,30 +384,30 @@ export const getConvertedPdfFileFromPhoneStorage = async () => {
   return arr;
 };
 
-export const convertImagesToPdf = async (imagesPath: Array<string>, name: string) => {
+// export const createImagesToPdf = async (imagesPath: Array<string>, name: string) => {
 
-  try {
-    const options = {
-      imagePaths: imagesPath,
-      name: name,
-      maxSize: { // optional maximum image dimension - larger images will be resized
-        width: 900,
-        height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
-      },
-      quality: 1,
-    };
-    console.log('options', options);
+//   try {
+//     const options = {
+//       imagePaths: imagesPath,
+//       name: name,
+//       maxSize: { // optional maximum image dimension - larger images will be resized
+//         width: 900,
+//         height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
+//       },
+//       quality: 1,
+//     };
+//     console.log('options', options);
 
-    const pdf = await RNImageToPdf.createPDFbyImages(options);
+//     const pdf = await RNImageToPdf.createPDFbyImages(options);
 
-    console.log('typeof>>>>>>>>>>', pdf.filePath);
-    return pdf.filePath
+//     console.log('typeof>>>>>>>>>>', pdf.filePath);
+//     return pdf.filePath
 
-  } catch (e) {
-    console.log('error-----', e);
-  }
-}
-export const shareApp = () => {
+//   } catch (e) {
+//     console.log('error-----', e);
+//   }
+// }
+ const shareApp = () => {
   Platform.OS == 'android' ?
     Share.open({ url: AppShare.ANDROID_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', }) :
     Share.open({ url: AppShare.IOS_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', })
@@ -416,7 +417,7 @@ export const setNavigator = (nav) => {
   navigator = nav;
 };
 
-export const navigateTo = (routeName, params?, resetStack = false) => {
+ const navigateTo = (routeName, params?, resetStack = false) => {
   if (resetStack) {
     navigationRef.dispatch(
       CommonActions.reset({
@@ -433,7 +434,7 @@ export const navigateTo = (routeName, params?, resetStack = false) => {
     );
   }
 };
-export function navigateToBack() {
+ function navigateToBack() {
   if (navigationRef.isReady()) {
     navigationRef.goBack();
   }
@@ -473,19 +474,14 @@ export const toastForDeleteFile = (toast: any, message: string) => {
   });
 }
 
-export const getImageUriByOS = (uri: string) => {
+ const getImageUriByOS = (uri: string) => {
   if (!uri) return '';
 
   return uri.startsWith('file://') ? uri : `file://${uri}`;
 };
-export { RNImageToPdf }
 
-interface S {
-  isMultipleSelection?: boolean,
-  fileTypes?: Array<any>
-  isBase64?: boolean
-}
-export const DocumentPicker = async (props: S) => {
+
+ const DocumentPicker = async (props: S) => {
   const { isMultipleSelection = false, fileTypes = [], isBase64 = false } = props
 
   try {
@@ -523,7 +519,7 @@ export const DocumentPicker = async (props: S) => {
   }
 }
 
-export const createImagesToPdf = async (images: Array<any>) => {
+ const createImagesToPdf = async (images: Array<any>) => {
   console.log('images to convert in pdf>>>>>>', images);
 
   try {
@@ -533,15 +529,15 @@ export const createImagesToPdf = async (images: Array<any>) => {
       return;
     }
 
-    const imagePaths: string[] = images.map((item: any) =>
-      Platform.OS === 'ios'
-        ? (typeof item === 'string' ? item : item.path)
-        : (typeof item === 'string'
-          ? item.replace('file://', '')
-          : item.path.replace('file://', ''))
-    );
+    // const imagePaths: string[] = images.map((item: any) =>
+    //   Platform.OS === 'ios'
+    //     ? (typeof item === 'string' ? item : item.path)
+    //     : (typeof item === 'string'
+    //       ? item.replace('file://', '')
+    //       : item.path.replace('file://', ''))
+    // );
 
-    const pages = imagePaths.map(path => ({
+    const pages = images.map(path => ({
       imagePath: path,
     }));
 
@@ -560,4 +556,17 @@ export const createImagesToPdf = async (images: Array<any>) => {
   } catch (e) {
     console.log('error-----', e);
   }
+}
+
+export const Utility= {
+createImagesToPdf,
+DocumentPicker,
+getImageUriByOS,
+navigateToBack,
+navigateTo,
+fileShare,
+shareApp,
+generateUniqueNumber,
+getFileSize,
+
 }

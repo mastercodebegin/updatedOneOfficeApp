@@ -2,7 +2,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, Dimensions, ActivityIndi
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mediumBG, MSExcel, MSOffice, MSPowerPoint, smallBG } from '../../assets/GlobalImages'
 import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants'
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShare, fileShareMultiple, generateUniqueNumber, navigateToBack, RNImageToPdf, scaledSize } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShareMultiple, generateUniqueNumber, navigateToBack, RNImageToPdf, scaledSize, Utility } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -25,7 +25,6 @@ import Share from 'react-native-share';
 import CustomLinearGradientView from '../../component/CustomLinearGradientView';
 import LinearGradient from 'react-native-linear-gradient';
 import EditImage from '../imageEditor/EditImage';
-import { getImageUriByOS } from '../../utilies/Utilities';
 import { Fonts } from '../../assets/fonts/GlobalFonts';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
@@ -35,6 +34,8 @@ import { FolderLocalService } from '../../db/folderLocalService';
 import { useTheme } from '../theme/useTheme';
 import { Theme } from '../theme/ThemeConfig';
 import ConfirmationDialog from '../../component/ConfirmationDialog';
+import CustomRenameModal from '../../component/CustomRenameModal';
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 
 export default function DisplayMultipleDocumentImage(props: any) {
 
@@ -52,6 +53,8 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [imageUrls, setImageUrls] = useState([]);
   const [fileName, setFileName] = useState('')
   const [isShowFileNameModal, setIsShowFileNameModal] = useState(false);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isNewFile, setIsNewFile] = useState(false);
   const [isShowEditImage, setIsShowEditImage] = useState(false);
   const [isShowDeleteImageConfirmation, setIsShowDeleteImageConfirmation] = useState(false);
@@ -60,7 +63,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const destinationPath = `/storage/emulated/0/Android/data/${CONSTANT.PACKAGE_NAME}/documents/`;
   const itemId = props.route.params.id
   const refForDocShare = useRef<BottomSheetModal>(null);
-const {theme,mode,toggleTheme}= useTheme()
+  const { theme, mode, toggleTheme } = useTheme()
   const { folderId } = props.route.params
   useEffect(() => {
     console.log('props',);
@@ -68,9 +71,10 @@ const {theme,mode,toggleTheme}= useTheme()
 
       setData(props.route.params.files)
       setFolderName(props.route.params.folderName)
-    }},)
+    }
+  },)
 
-      const styles = useMemo(() => {
+  const styles = useMemo(() => {
     return createStyles(theme, mode)
   }, [theme])
 
@@ -95,17 +99,18 @@ const {theme,mode,toggleTheme}= useTheme()
     console.log('rename file====');
 
     if (fileName.length == 0) {
-      alert('Please enter a file name')
+      setIsShowErrorModal(true)
+      setErrorMessage('Please enter a valid file name')
       return false
     }
     console.log('existing file', existingFile);
 
     let existingFileTemp = await FileLocalService.getFileById(existingFile.id)
     console.log('existingFileTemp', existingFileTemp);
-    
+
     existingFileTemp.displayName = fileName + '.jpg'
     await FileLocalService.renameFile(existingFile.id, existingFileTemp)
-    console.log('updateFile' );
+    console.log('updateFile');
     const updatedFolder = await FileLocalService.getFilesByFolder(existingFileTemp.folderId)
     setData(updatedFolder)
 
@@ -366,6 +371,11 @@ const {theme,mode,toggleTheme}= useTheme()
   // };
 
   const copyFilesToDirectory = async () => {
+    if (fileName.length == 0) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Please enter a valid file name')
+      return false
+    }
     try {
       console.log('scanned images:', images);
 
@@ -387,9 +397,9 @@ const {theme,mode,toggleTheme}= useTheme()
           : `${baseTimestamp}`;
 
         let displayName = `${baseName}`;
-        console.log('display name',displayName);
-        
-        let finalName = `${ baseName + "_"+Date.now() }.${extension}`;
+        console.log('display name', displayName);
+
+        let finalName = `${baseName + "_" + Date.now()}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ if already exists → add random
@@ -404,8 +414,8 @@ const {theme,mode,toggleTheme}= useTheme()
 
         await RNFS.copyFile(uri, destinationFilePath);
 
-       const createdFile= await FileLocalService.createFile({
-          name:  finalName,
+        const createdFile = await FileLocalService.createFile({
+          name: finalName,
           displayName: displayName,
           size: 0,
           lastModified: Date.now(),
@@ -414,7 +424,7 @@ const {theme,mode,toggleTheme}= useTheme()
           isDeleted: 0,
           folderFirebaseId: '',
         });
-        console.log('createdFile====',createdFile);
+        console.log('createdFile====', createdFile);
       }
 
 
@@ -467,7 +477,7 @@ const {theme,mode,toggleTheme}= useTheme()
           <Image
             resizeMode="contain"
             // resizeMethod='auto'
-            source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
+            source={{ uri: Utility.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
             style={{
               height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
             }}
@@ -479,7 +489,7 @@ const {theme,mode,toggleTheme}= useTheme()
           <View style={styles.overlayActions}>
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={() => fileShare(item.path, item.name)}
+              onPress={() => Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH+item.name, item.name)}
             >
               <MaterialIcons
                 name="share"
@@ -501,8 +511,8 @@ const {theme,mode,toggleTheme}= useTheme()
 
             <TouchableOpacity
               style={styles.iconButton}
-              onPress={() =>{
-               setIsShowDeleteImageConfirmation(true)
+              onPress={() => {
+                setIsShowDeleteImageConfirmation(true)
                 setSelectedFileIds([item.id])
               }
               }
@@ -517,7 +527,7 @@ const {theme,mode,toggleTheme}= useTheme()
         </View>
 
         {/* File Name */}
-        <Text style={{...styles.fileName,fontFamily:Fonts.regular, }} numberOfLines={1}>
+        <Text style={{ ...styles.fileName, fontFamily: Fonts.regular, }} numberOfLines={1}>
           {capitalizeFirstLetter(item.displayName)?.replace(/\.[^/.]+$/, '')}
           {/* {item.name} */}
         </Text>
@@ -594,66 +604,20 @@ const {theme,mode,toggleTheme}= useTheme()
       </Modal>
     )
   }
-  const renderFileReNameModal = () => {
-    return (
-      <Overlay isVisible={isShowFileNameModal}>
-        <View style={{ height: scaledSize(180), width: scaledSize(300), backgroundColor: 'white', }}>
-          <View style={{ height: scaledSize(50), backgroundColor: 'white', flexDirection: 'row' }}>
-            <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'center' }}>
-              <Text style={{
-                fontSize: scaledSize(14), fontFamily: FONTS.QuicksandBold,
-                textAlign: 'center', marginTop: scaledSize(4),
-              }}>
-                {isNewFile ? 'Enter File Name' : 'Update File Name'}
-              </Text>
-            </View>
-            <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              {/* <TouchableOpacity onPress={() => { setIsShowFileNameModal(false)}}> */}
-              <TouchableOpacity onPress={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}>
-                <MaterialIcons name='close'
-                  size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(10) }}>
-            <CustomInputBox
-              onChangeText={setFileName} value={fileName} placeholder='Enter name' />
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(30) }}>
-            <CustomeButton name='Save' onPress={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}
-              buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, }} textStyle={{ color: 'white' }} />
-          </View>
 
-        </View>
-      </Overlay>
-    )
-  }
 
   const generatePdf = async (data: any) => {
-    const arr = await data.map(path => path.path)
+    console.log('data',data);
+    
+    const arr = await data.map((path:any) => CONSTANT.SAVED_DOCUMENTS_PATH+path.name)
     console.log('arr', arr);
+   const url =  await Utility.createImagesToPdf(arr,folderName)
+   console.log('url',url);
+   await Utility.fileShare(url,'testpdf')
+   
 
 
-    try {
-      const options = {
-        imagePaths: arr,
-        name: folderName,
-        maxSize: { // optional maximum image dimension - larger images will be resized
-          width: 900,
-          height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
-        },
-        quality: 1,
-      };
-      console.log('options', options);
 
-      const pdf = await RNImageToPdf.createPDFbyImages(options);
-
-      console.log('typeof>>>>>>>>>>', pdf.filePath);
-      sharePdfFiles(pdf.filePath, folderName)
-
-    } catch (e) {
-      console.log('error-----', e);
-    }
   }
 
   const sharePdfFiles = (data: any, name: string) => {
@@ -719,49 +683,49 @@ const {theme,mode,toggleTheme}= useTheme()
 
   }
 
- const renderHeaderNoSelection = () => {
-  return (
-    <SafeAreaView style={styles.header}>
+  const renderHeaderNoSelection = () => {
+    return (
+      <SafeAreaView style={styles.header}>
 
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.iconBtn}
-        onPress={() => {
-          setMultidelete(false)
-          setSelectedFileIds([])
-          navigateToBack()
-        }}
-      >
-        <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
-      </TouchableOpacity>
-
-      {/* Title */}
-      <Text style={styles.title} numberOfLines={1}>
-        {capitalizeFirstLetter(props.route.params?.folderName)}
-      </Text>
-
-      {/* Right Actions */}
-      <View style={styles.rightActions}>
-
+        {/* Back Button */}
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => generatePdf(data)}
+          onPress={() => {
+            setMultidelete(false)
+            setSelectedFileIds([])
+            navigateToBack()
+          }}
         >
-          <Text style={styles.iconLabel}>PDF</Text>
+          <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => shareFile(data)}
-        >
-          <MaterialIcons name="share" size={22} color={theme.iconColor} />
-        </TouchableOpacity>
+        {/* Title */}
+        <Text style={styles.title} numberOfLines={1}>
+          {capitalizeFirstLetter(props.route.params?.folderName)}
+        </Text>
 
-      </View>
+        {/* Right Actions */}
+        <View style={styles.rightActions}>
 
-    </SafeAreaView>
-  )
-}
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => generatePdf(data)}
+          >
+            <Text style={styles.iconLabel}>PDF</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={() => shareFile(data)}
+          >
+            <MaterialIcons name="share" size={22} color={theme.iconColor} />
+          </TouchableOpacity>
+
+        </View>
+
+      </SafeAreaView>
+    )
+  }
   const renderHeaderMultiSelection = () => {
     return (
       <View style={styles.multiHeader}>
@@ -779,8 +743,8 @@ const {theme,mode,toggleTheme}= useTheme()
 
 
         {/* Count Badge */}
-        <View style={{...styles.iconBtn,left:10}}>
-          <Text style={{...styles.iconLabel,padding:6,fontFamily:Fonts.regular,fontSize:scaledSize(12)}}>
+        <View style={{ ...styles.iconBtn, left: 10 }}>
+          <Text style={{ ...styles.iconLabel, padding: 6, fontFamily: Fonts.regular, fontSize: scaledSize(12) }}>
             {selectedFileIds.length}
           </Text>
         </View>
@@ -826,16 +790,14 @@ const {theme,mode,toggleTheme}= useTheme()
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
       {/* <StatusBar backgroundColor={'black'}/> */}
-      <View style={{height:50,backgroundColor:'red'}}>
 
       {isMultiDelete ?
         renderHeaderMultiSelection()
         :
         renderHeaderNoSelection()
       }
-      </View>
       <View style={{ flex: .5, }}>
-        
+
 
         <FlatList
           // display to item inrow
@@ -843,14 +805,14 @@ const {theme,mode,toggleTheme}= useTheme()
           data={data}
           renderItem={renderItem}
         />
-                      <Switch
-                trackColor={{ false: '#767577', true: 'green' }}
-                thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
-                ios_backgroundColor="#3e3e3e"
-                onValueChange={() => toggleTheme()}
-                value={mode == 'dark' ? true : false}
-      
-              />
+        <Switch
+          trackColor={{ false: '#767577', true: 'green' }}
+          thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={() => toggleTheme()}
+          value={mode == 'dark' ? true : false}
+
+        />
       </View>
 
       <LinearGradient colors={['#0081A7', '#00AFB9']}
@@ -864,14 +826,17 @@ const {theme,mode,toggleTheme}= useTheme()
         </TouchableOpacity>
       </LinearGradient>
 
-      {renderFileReNameModal()}
       {renderImageView()}
-      
+{/* Later we will complete implement image editing in next version */}
       <Modal visible={isShowEditImage} style={{ flex: 1, backgroundColor: 'black' }}>
         <View style={{ flex: 1, backgroundColor: 'red' }}>
-          {<EditImage onPressBack={handlePressBack} imageUri={editImageUri} signaturePath={(v: any) => getImageUriByOS(v)} />}
+          {<EditImage onPressBack={handlePressBack} imageUri={editImageUri} signaturePath={(v: any) => Utility.getImageUriByOS(v)} />}
         </View>
       </Modal>
+      {/* End Image Editing */}
+
+
+
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
         <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
@@ -896,32 +861,41 @@ const {theme,mode,toggleTheme}= useTheme()
           </View>
         </View>
       </CustomBottomSheet>
-<ConfirmationDialog visible={isShowDeleteImageConfirmation}
- onCancel={()=>setIsShowDeleteImageConfirmation(false)}
- onSubmit={()=>deleteMultipleFolder()}
- mode='delete'
- />
-
+      <ConfirmationDialog visible={isShowDeleteImageConfirmation}
+        onCancel={() => setIsShowDeleteImageConfirmation(false)}
+        onSubmit={() => deleteMultipleFolder()}
+        mode='delete'
+      />
+      <CustomRenameModal isVisible={isShowFileNameModal}
+        heading='Rename File'
+        subHeading='Enter a new file name'
+        placeholder='File name'
+        onChangeText={setFileName}
+        value={fileName}
+        onCancel={() => setIsShowFileNameModal(false)}
+        onSubmit={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }} />
+      <CustomErrorMsgModal isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
     </SafeAreaView>
   )
 }
 
 
-const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   card: {
     marginHorizontal: scaledSize(14),
     marginTop: scaledSize(14),
     borderRadius: scaledSize(10),
     backgroundColor: theme.bgColor,
     overflow: 'hidden',
-    borderWidth:.5,
+    borderWidth: .5,
     elevation: 4,
-    borderColor:theme.secondaryTextColor
+    borderColor: theme.secondaryTextColor
   },
 
   imageWrapper: {
     width: '100%',
-    height: scaledSize(180), 
+    height: scaledSize(180),
 
   },
 
@@ -935,7 +909,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
     height: scaledSize(38),
     justifyContent: 'center',
     alignItems: 'center',
-    color:theme.iconColor
+    color: theme.iconColor
   },
 
   headerRight: {
@@ -971,7 +945,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
     fontSize: scaledSize(13),
     bottom: scaledSize(4),
     letterSpacing: 1,
-    color:theme.primaryTextColor
+    color: theme.primaryTextColor
   },
   // ************************
   multiHeader: {
@@ -983,8 +957,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
 
     paddingHorizontal: scaledSize(10),
 
-    borderBottomWidth: 1,
-    },
+  },
 
 
 
@@ -1011,52 +984,52 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
     marginRight: scaledSize(8),
   },
   header: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: theme.bgColor,
-  // marginTop:20,
-  paddingHorizontal: 8,
-  paddingVertical: 10,
-  // borderBottomWidth: 0.5,
-  // borderBottomColor: '#ddd',
-},
-title: {
-  flex: 1,
-  fontSize: scaledSize(16),
-  left:scaledSize(10),
-  fontWeight: '500',
-  color: theme.primaryTextColor,
-  marginHorizontal: scaledSize(8),
-  fontFamily:Fonts.regular,
-  letterSpacing:1
-},
-// iconBtn: {
-//   width: 36,
-//   height: 36,
-//   borderRadius: 8,
-//   alignItems: 'center',
-//   justifyContent: 'center',
-// },
-iconBtn: {
-  height: 38,
-  paddingHorizontal: 8,
-  borderRadius: 6,
-  backgroundColor: theme.buttonBGColor,   // dark filled background
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: 4,
-},
-iconLabel: {
-  fontSize: 11,
-  fontWeight: '700',
-  color: theme.primaryTextColor,             // white text on dark bg
-  letterSpacing: 0.5,
-},
-rightActions: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgColor,
+    // marginTop:20,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    // borderBottomWidth: 0.5,
+    // borderBottomColor: '#ddd',
+  },
+  title: {
+    flex: 1,
+    fontSize: scaledSize(16),
+    left: scaledSize(10),
+    fontWeight: '500',
+    color: theme.primaryTextColor,
+    marginHorizontal: scaledSize(8),
+    fontFamily: Fonts.regular,
+    letterSpacing: 1
+  },
+  // iconBtn: {
+  //   width: 36,
+  //   height: 36,
+  //   borderRadius: 8,
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  // },
+  iconBtn: {
+    height: 38,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: theme.buttonBGColor,   // dark filled background
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  iconLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.primaryTextColor,             // white text on dark bg
+    letterSpacing: 0.5,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
 });
 
 

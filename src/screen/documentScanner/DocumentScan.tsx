@@ -6,7 +6,7 @@ import { Button, Overlay } from 'react-native-elements';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
+import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, heightFromPercentage, RNImageToPdf, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'
@@ -789,7 +789,7 @@ export const DocumentScan = () => {
       // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
       const files = await FileLocalService.getFilesByFolder(item.id)
-      navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
+      Utility.navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
       console.log('files=======', files);
 
     }
@@ -1070,7 +1070,7 @@ export const DocumentScan = () => {
           <View style={styles.thumbnailWrapper}>
             <Image
               source={{
-                uri: getImageUriByOS(
+                uri: Utility.getImageUriByOS(
                   destinationPath + item?.coverUri,
                 ),
               }}
