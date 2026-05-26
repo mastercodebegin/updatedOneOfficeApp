@@ -151,6 +151,7 @@ modalOverlay: {
     marginTop: scaledSize(6),
 
     fontSize: scaledSize(12),
+    letterSpacing:.5,
 
     color: '#8B93A7',
   },

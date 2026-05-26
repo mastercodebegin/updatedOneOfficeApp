@@ -288,15 +288,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setImageUrls(data)
       onSelectFolders(item)
     }
-    // else {
-    //   const urls = data.map((item) => ({ url: 'file:' + item.path }));
-    //   console.log('urls----', urls);
-
-    //   setImageUrls(urls);
-    //   setIsImageView(true)
-    //   setFileName(item.name)
-    //   setImagePath(item.path)
-    // }
+ 
   }
   // const copyFilesToDirectory = async () => {
   //   console.log('folderName', folderName);
@@ -466,7 +458,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         onLongPress={() => onLongPressItem(item)}
         onPress={() => onPressItem(item)}
         style={[
-          styles.card,
+          styles.card,{backgroundColor:'yellow'},
           {
             borderColor: isSelected ? theme.themeColor : 'transparent',
             borderWidth: isSelected ? .5 : 0,
@@ -477,7 +469,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
         <View style={styles.imageWrapper}>
           <Image
-            resizeMode="contain"
+            resizeMode="center"
             // resizeMethod='auto'
             source={{ uri: Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
             style={{
@@ -533,7 +525,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         </View>
 
         {/* File Name */}
-        <Text style={{ ...styles.fileName, fontFamily: Fonts.regular, }} numberOfLines={1}>
+        <Text style={{ ...styles.fileName, fontFamily: Fonts.regular,position:'absolute' }} numberOfLines={1}>
           {Utility.string.getFirstLetterCapitalize(item.displayName)?.replace(/\.[^/.]+$/, '')}
           {/* {item.name} */}
         </Text>
@@ -543,18 +535,19 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
 
 
-  const generatePdf = async (data: any) => {
-    console.log('data', data);
+  const generatePdf = async (data: Array<any>) => {
+    console.log('data>>>>>', data);
+    if(data.length==0){
+      setIsShowErrorModal(true)
+      setErrorMessage('Please select file')
+      return
+    }
 
     const arr = await data.map((path: any) => CONSTANT.SAVED_DOCUMENTS_PATH + path.name)
-    console.log('arr', arr);
-    const url = await Utility.createImagesToPdf(arr, folderName)
-    console.log('url', url);
-    await Utility.fileShare(url, 'testpdf')
-
-
-
-
+    console.log('arr>>>>>', arr);
+    const url = await Utility.images.createImagesToPdf(arr,folderName)
+    console.log('url>>>>>>>>>>>>>>>>>>', url);
+    await Utility.fileShare(url)
   }
 
   const sharePdfFiles = (data: any, name: string) => {
@@ -603,11 +596,16 @@ export default function DisplayMultipleDocumentImage(props: any) {
       setIsNewFile(true)
     }
   }
-  const shareFile = (items: any) => {
+  const shareFile = (items: Array<any>) => {
+    if(items.length==0){
+      setIsShowErrorModal(true)
+      setErrorMessage('Please select file ')
+      return
+    }
     console.log('shared', items);
     let data = []
     const folderFiles = items.map(element => ({
-      path: element.path
+      path: CONSTANT.SAVED_DOCUMENTS_PATH+element.name
     }));
 
     data = [...data, ...folderFiles]; // Accumulate file paths from all folders
@@ -799,7 +797,6 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
       <CustomBottomSheet title='Option' headerColor={theme.bgColor}
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
-          {/* <Text style={{color:theme.primaryTextColor}}>Share as</Text> */}
         <View style={{ flexDirection: 'row', gap: scaledSize(10), 
           marginBottom: scaledSize(10),marginTop:scaledSize(5) }}>
           <TouchableOpacity style={styles.shareCard} onPress={() => generatePdf(selectedFileIds)}>
@@ -831,13 +828,15 @@ export default function DisplayMultipleDocumentImage(props: any) {
         mode='delete'
       />
       <CustomRenameModal isVisible={isShowFileNameModal}
-        heading='Rename File'
+        heading={isNewFile?'File Name':'Rename File'}
         subHeading='Enter a new file name'
         placeholder='File name'
         onChangeText={setFileName}
         value={fileName}
         onCancel={() => setIsShowFileNameModal(false)}
-        onSubmit={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }} />
+        onSubmit={() => { isNewFile ? copyFilesToDirectory() : renameFolder() }}
+        submitBtnTitle={isNewFile?'Submit':'Rename'}
+        />
       <CustomErrorMsgModal isVisible={isShowErrorModal}
         onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
     </SafeAreaView>
@@ -858,14 +857,18 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   imageWrapper: {
+    backgroundColor:'red',
+    justifyContent:'center',
+    alignItems:'center',
     width: '100%',
-    height: scaledSize(180),
+    height: scaledSize(200),
+    
 
   },
 
   image: {
-    width: '100%',
-    height: '100%',
+    width: '80%',
+    height: '80%',
   },
 
   headerIcon: {

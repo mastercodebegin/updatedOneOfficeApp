@@ -125,12 +125,19 @@ export const getPotraitAndLandscapeDimensions = () => {
 
 
 
-const fileShare = async (url: string, name: string,) => {
+const fileShare = async (url: string) => {
 
 
   console.log('url: ' + url);
   const extension = url.split('.').pop(); // Get the file extension from the URL
   console.log('extension======', extension);
+const name =
+ url
+  .split('/')
+  .pop()
+  ?.split('.')
+  .slice(0,-1)
+  .join('.')
 
   const mimeType = getMimeType(extension); // Get the MIME type based on the extension
 
@@ -498,7 +505,7 @@ const DocumentPicker = async (props: S) => {
   }
 }
 
-const createImagesToPdf = async (images: Array<any>) => {
+const createImagesToPdf = async (images: Array<any>,name:string) => {
   console.log('images to convert in pdf>>>>>>', images);
 
   try {
@@ -517,12 +524,12 @@ const createImagesToPdf = async (images: Array<any>) => {
     // );
 
     const pages = images.map(path => ({
-      imagePath: path,
+      imagePath:  path
     }));
 
     const options = {
       pages: pages,
-      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
+      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${name}.pdf`,
     };
     console.log('options', options);
 
