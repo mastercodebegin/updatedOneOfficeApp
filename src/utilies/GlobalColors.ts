@@ -1,4 +1,6 @@
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
   TRANSPARENT: 'transparent',
   white: 'rgb(255,255,255)',
@@ -45,7 +47,7 @@ export const FONTS = {
   'QuicksandBold': 'Quicksand-Bold',
   'bold': 'CrimsonText-Bold',
   'PTSerifBold': 'PTSerif-Bold',
-  'regular': 'PTSerif-Regular',
+  'regular': Platform.select({ android: 'sans-serif', ios: undefined, default: undefined }),
   'italic': 'PTSerif-Italic'
 };
 export const ModalWindowColor={

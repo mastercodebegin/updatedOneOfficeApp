@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, Image, Dimensions, ActivityIndicator, SafeAreaView, BackHandler, StyleSheet, StatusBar } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Dimensions, ActivityIndicator, SafeAreaView, BackHandler, StyleSheet, StatusBar, TextInput, Animated } from 'react-native'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mediumBG, MSExcel, MSOffice, MSPowerPoint, smallBG } from '../../assets/GlobalImages'
 import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants'
@@ -38,6 +38,7 @@ import CustomRenameModal from '../../component/CustomRenameModal';
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomImagesViewSlider from '../../component/CustomImagesViewSlider';
 import CustomFAB from '../../component/CustomFAB';
+import CustomSortModal from '../../component/CustomSortModal';
 
 export default function DisplayMultipleDocumentImage(props: any) {
 
@@ -62,11 +63,39 @@ export default function DisplayMultipleDocumentImage(props: any) {
   const [isShowDeleteImageConfirmation, setIsShowDeleteImageConfirmation] = useState(false);
   const [folderName, setFolderName] = useState('')
   const [editImageUri, setEditImageUri] = useState('')
+  const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>('grid')
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const [isSearchVisible, setIsSearchVisible] = useState(false)
   const destinationPath = `/storage/emulated/0/Android/data/${CONSTANT.PACKAGE_NAME}/documents/`;
   const itemId = props.route.params.id
   const refForDocShare = useRef<BottomSheetModal>(null);
+  const searchOpacity = useRef(new Animated.Value(0)).current;
   const { theme, mode, toggleTheme } = useTheme()
   const { folderId } = props.route.params
+
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+  ];
   useEffect(() => {
     console.log('props',);
     if (data.length == 0) {
@@ -78,7 +107,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   const styles = useMemo(() => {
     return createStyles(theme, mode)
-  }, [theme])
+  }, [theme, mode])
 
   useEffect(() => {
     // This will be triggered when Screen A comes into focus
@@ -241,6 +270,19 @@ export default function DisplayMultipleDocumentImage(props: any) {
     ConfirmPopup(() => deleteSingleFile(item));
   };
 
+  const closeDeleteConfirmation = () => {
+    setIsShowDeleteImageConfirmation(false)
+
+    if (!isMultiDelete) {
+      setSelectedFileIds([])
+    }
+  }
+
+  const submitDeleteConfirmation = () => {
+    setIsShowDeleteImageConfirmation(false)
+    deleteMultipleFolder()
+  }
+
   const checkisFolderSelected = (id: number) => {
     // console.log('selectedfolder', selectedFileIds);
 
@@ -283,11 +325,9 @@ export default function DisplayMultipleDocumentImage(props: any) {
   }
   const onLongPressItem = (item: any) => {
     setMultidelete(true)
-    if (isMultiDelete) {
-      // setting imageurl if image view open accidently while longpress
-      setImageUrls(data)
-      onSelectFolders(item)
-    }
+    // setting imageurl if image view open accidently while longpress
+    setImageUrls(data)
+    onSelectFolders(item)
  
   }
   // const copyFilesToDirectory = async () => {
@@ -450,85 +490,159 @@ export default function DisplayMultipleDocumentImage(props: any) {
     setEditImageUri(item.path)
   }
 
+  const getFileDateLabel = (item: any) => {
+    const dateValue = item?.createdAt || item?.lastModified || item?.updatedAt;
+
+    if (!dateValue) {
+      return '';
+    }
+
+    return Utility.date.getDateByMomentFormat(new Date(dateValue) as any, 'DD MMM YYYY');
+  }
+
+  const getFileTitle = (item: any) => {
+    const title = item?.displayName || item?.name || '';
+    return Utility.string.getFirstLetterCapitalize(title)?.replace(/\.[^/.]+$/, '');
+  }
+
+  const getFileTime = (item: any) => {
+    return item?.createdAt || item?.lastModified || item?.updatedAt || 0;
+  }
+
+  const getSortedFiles = () => {
+    let sorted = [...data];
+
+    if (searchQuery.trim().length > 0) {
+      const query = searchQuery.trim().toLowerCase();
+
+      sorted = sorted.filter((item: any) =>
+        getFileTitle(item).toLowerCase().includes(query)
+      );
+    }
+
+    switch (selectedSort) {
+      case 'oldest':
+        return sorted.sort((a: any, b: any) => getFileTime(a) - getFileTime(b));
+
+      case 'name_asc':
+        return sorted.sort((a: any, b: any) => getFileTitle(a).localeCompare(getFileTitle(b)));
+
+      case 'name_desc':
+        return sorted.sort((a: any, b: any) => getFileTitle(b).localeCompare(getFileTitle(a)));
+
+      case 'latest':
+      default:
+        return sorted.sort((a: any, b: any) => getFileTime(b) - getFileTime(a));
+    }
+  }
+
+  const toggleLayoutMode = () => {
+    setLayoutMode(layoutMode === 'list' ? 'grid' : 'list')
+  }
+
+  const openSearch = () => {
+    setIsSearchVisible(true)
+    searchOpacity.setValue(0)
+    Animated.timing(searchOpacity, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const closeSearch = () => {
+    Animated.timing(searchOpacity, {
+      toValue: 0,
+      duration: 140,
+      useNativeDriver: true,
+    }).start(() => {
+      setSearchQuery('')
+      setIsSearchVisible(false)
+    })
+  }
+
   const renderItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
+    const isGridLayout = layoutMode === 'grid';
+
     return (
       <TouchableOpacity
         activeOpacity={0.9}
         onLongPress={() => onLongPressItem(item)}
         onPress={() => onPressItem(item)}
         style={[
-          styles.card,{backgroundColor:'yellow'},
-          {
-            borderColor: isSelected ? theme.themeColor : 'transparent',
-            borderWidth: isSelected ? .5 : 0,
-          },
+          isGridLayout ? styles.gridCard : styles.card,
+          isSelected && styles.selectedCard,
         ]}
       >
-        {/* Image Container */}
-
-        <View style={styles.imageWrapper}>
-          <Image
-            resizeMode="center"
-            // resizeMethod='auto'
-            source={{ uri: Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
-            style={{
-              height: '100%', width: '100%', top: scaledSize(0), alignSelf: 'flex-end'
-            }}
+        <View style={[styles.thumbnailBox, isGridLayout && styles.gridThumbnailBox]}>
+          <MaterialCommunityIcons
+            name="image-outline"
+            size={scaledSize(34)}
+            color={mode === 'dark' ? '#46D3E0' : '#00A5B5'}
           />
+          <RNImage
+            source={{ uri: Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + item.name) }}
+            style={styles.thumbnailImage}
+            resizeMode="cover"
+          />
+        </View>
 
+        <View style={[styles.itemContent, isGridLayout && styles.gridItemContent]}>
+          <Text style={styles.fileTitle} numberOfLines={1}>
+            {getFileTitle(item)}
+          </Text>
 
+          <Text style={styles.fileDate} numberOfLines={1}>
+            {getFileDateLabel(item)}
+          </Text>
 
-          {/* Overlay Actions */}
-          <View style={styles.overlayActions}>
-            <TouchableOpacity
-              disabled={isMultiDelete}
-              style={styles.iconButton}
-              onPress={() => Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH + item.name, item.name)}
-            >
-              <MaterialIcons
-                name="share"
-                size={18}
-                color={theme.iconColor}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              disabled={isMultiDelete}
-              style={styles.iconButton}
-              onPress={() => onPressEditFile(item)}
-            >
-              <MaterialIcons
-                disabled={isMultiDelete}
-                name="edit"
-                size={18}
-                color={theme.iconColor}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.iconButton}
-              disabled={isMultiDelete}
-              onPress={() => {
-                setIsShowDeleteImageConfirmation(true)
-                setSelectedFileIds([item.id])
-              }
-              }
-            >
-              <MaterialIcons
-                name="delete"
-                size={18}
-                color={theme.deleteIconColor}
-              />
-            </TouchableOpacity>
+          <View style={styles.typePill}>
+            <View style={styles.typeDot} />
+            <Text style={styles.typeText}>IMAGE</Text>
           </View>
         </View>
 
-        {/* File Name */}
-        <Text style={{ ...styles.fileName, fontFamily: Fonts.regular,position:'absolute' }} numberOfLines={1}>
-          {Utility.string.getFirstLetterCapitalize(item.displayName)?.replace(/\.[^/.]+$/, '')}
-          {/* {item.name} */}
-        </Text>
+        <View style={[styles.actionColumn, isGridLayout && styles.gridActionRow]}>
+          <TouchableOpacity
+            disabled={isMultiDelete}
+            style={styles.actionButton}
+            onPress={() => onPressEditFile(item)}
+          >
+            <MaterialIcons
+              name="edit"
+              size={scaledSize(20)}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            disabled={isMultiDelete}
+            onPress={() => {
+              setIsShowDeleteImageConfirmation(true)
+              setSelectedFileIds([item])
+            }}
+          >
+            <MaterialIcons
+              name="delete"
+              size={scaledSize(20)}
+              color={theme.deleteIconColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            disabled={isMultiDelete}
+            style={styles.actionButton}
+            onPress={() => Utility.fileShare(CONSTANT.SAVED_DOCUMENTS_PATH + item.name, item.name)}
+          >
+            <MaterialIcons
+              name="share"
+              size={scaledSize(20)}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -722,6 +836,55 @@ export default function DisplayMultipleDocumentImage(props: any) {
       </View>
     )
   }
+
+  const renderListControls = () => {
+    return (
+      <View style={styles.listControls}>
+        <TouchableOpacity
+          style={styles.controlBtn}
+          onPress={openSearch}
+        >
+          <MaterialIcons name="search" size={scaledSize(18)} color={theme.iconColor} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.controlBtn}
+          onPress={() => setIsShowSortModal(true)}
+        >
+          <MaterialIcons name="sort" size={scaledSize(18)} color={theme.iconColor} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.controlBtn}
+          onPress={toggleLayoutMode}
+        >
+          <MaterialIcons
+            name={layoutMode === 'list' ? 'view-module' : 'view-list'}
+            size={scaledSize(18)}
+            color={theme.iconColor}
+          />
+        </TouchableOpacity>
+
+        {isSearchVisible && (
+          <Animated.View style={[styles.searchBox, { opacity: searchOpacity }]}>
+            <MaterialIcons name="search" size={scaledSize(20)} color={mode === 'dark' ? '#9CA3AF' : '#8A94AE'} />
+            <TextInput
+              autoFocus
+              style={styles.searchInput}
+              placeholder="Search"
+              placeholderTextColor={mode === 'dark' ? '#9CA3AF' : '#8A94AE'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <TouchableOpacity onPress={closeSearch} style={styles.clearSearchBtn}>
+              <MaterialIcons name="close" size={scaledSize(18)} color={mode === 'dark' ? '#9CA3AF' : '#8A94AE'} />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+      </View>
+    )
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
       {/* <StatusBar backgroundColor={'black'}/> */}
@@ -731,14 +894,17 @@ export default function DisplayMultipleDocumentImage(props: any) {
         :
         renderHeaderNoSelection()
       }
+      {!isMultiDelete && renderListControls()}
       <View style={{ flex: 1, }}>
 
 
         <FlatList
-          // display to item inrow
-          // numColumns={2}
-          data={data}
+          key={layoutMode}
+          numColumns={layoutMode === 'grid' ? 2 : 1}
+          data={getSortedFiles()}
           renderItem={renderItem}
+          contentContainerStyle={layoutMode === 'grid' ? styles.gridListContent : undefined}
+          columnWrapperStyle={layoutMode === 'grid' ? styles.gridColumnWrapper : undefined}
         />
         <Switch
           trackColor={{ false: '#767577', true: 'green' }}
@@ -823,9 +989,22 @@ export default function DisplayMultipleDocumentImage(props: any) {
         </TouchableOpacity>
       </CustomBottomSheet>
       <ConfirmationDialog visible={isShowDeleteImageConfirmation}
-        onCancel={() => setIsShowDeleteImageConfirmation(false)}
-        onSubmit={() => deleteMultipleFolder()}
+        onCancel={closeDeleteConfirmation}
+        onSubmit={submitDeleteConfirmation}
         mode='delete'
+      />
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setSelectedSort('latest')
+          setIsShowSortModal(false)
+        }}
+        onPressApply={(sort) => {
+          setSelectedSort(sort)
+          setIsShowSortModal(false)
+        }}
+        onPressClose={() => setIsShowSortModal(false)}
       />
       <CustomRenameModal isVisible={isShowFileNameModal}
         heading={isNewFile?'File Name':'Rename File'}
@@ -846,29 +1025,76 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
 const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   card: {
-    marginHorizontal: scaledSize(14),
-    marginTop: scaledSize(14),
-    borderRadius: scaledSize(10),
+    minHeight: scaledSize(134),
+    marginHorizontal: scaledSize(18),
+    marginTop: scaledSize(16),
+    paddingLeft: scaledSize(18),
+    paddingRight: scaledSize(14),
+    paddingVertical: scaledSize(20),
+    borderRadius: scaledSize(28),
     backgroundColor: theme.bgColor,
-    overflow: 'hidden',
-    borderWidth: .5,
+    borderWidth: scaledSize(1),
+    borderColor: theme.borderColor,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: mode === 'dark' ? '#000000' : '#9CA3AF',
+    shadowOffset: { width: 0, height: scaledSize(10) },
+    shadowOpacity: mode === 'dark' ? 0.24 : 0.14,
+    shadowRadius: scaledSize(18),
+    elevation: 5,
+  },
+
+  selectedCard: {
+    borderColor: theme.themeColor,
+    borderWidth: scaledSize(1.5),
+  },
+
+  gridListContent: {
+    paddingHorizontal: scaledSize(18),
+    paddingBottom: scaledSize(16),
+  },
+
+  gridColumnWrapper: {
+    justifyContent: 'space-between',
+  },
+
+  gridCard: {
+    width: (Dimensions.get('window').width - scaledSize(54)) / 2,
+    minHeight: scaledSize(220),
+    marginTop: scaledSize(16),
+    padding: scaledSize(12),
+    borderRadius: scaledSize(18),
+    backgroundColor: theme.bgColor,
+    borderWidth: scaledSize(1),
+    borderColor: theme.borderColor,
+    alignItems: 'stretch',
+    shadowColor: mode === 'dark' ? '#000000' : '#9CA3AF',
+    shadowOffset: { width: 0, height: scaledSize(8) },
+    shadowOpacity: mode === 'dark' ? 0.22 : 0.12,
+    shadowRadius: scaledSize(14),
     elevation: 4,
-    borderColor: theme.secondaryTextColor
   },
 
-  imageWrapper: {
-    backgroundColor:'red',
-    justifyContent:'center',
-    alignItems:'center',
+  thumbnailBox: {
+    width: scaledSize(72),
+    height: scaledSize(72),
+    borderRadius: scaledSize(18),
+    backgroundColor: mode === 'dark' ? '#14383D' : '#DDF5F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+
+  gridThumbnailBox: {
     width: '100%',
-    height: scaledSize(200),
-    
-
+    height: scaledSize(104),
+    borderRadius: scaledSize(12),
   },
 
-  image: {
-    width: '80%',
-    height: '80%',
+  thumbnailImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
 
   headerIcon: {
@@ -891,28 +1117,147 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginLeft: scaledSize(4),
   },
 
-  overlayActions: {
-    position: 'absolute',
-    top: scaledSize(6),
-    right: scaledSize(6),
-    flexDirection: 'column',
+  itemContent: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: scaledSize(16),
+    marginRight: scaledSize(10),
+    minWidth: 0,
   },
 
-  iconButton: {
+  gridItemContent: {
+    marginLeft: 0,
+    marginRight: 0,
+    marginTop: scaledSize(10),
+    justifyContent: 'flex-start',
+  },
+
+  fileTitle: {
+    fontSize: scaledSize(15),
+    lineHeight: scaledSize(20),
+    fontFamily: Fonts.regular,
+    fontWeight: '400',
+    color: theme.primaryTextColor,
+    letterSpacing: 0.5,
+  },
+
+  fileDate: {
+    marginTop: scaledSize(6),
+    fontSize: scaledSize(12),
+    lineHeight: scaledSize(17),
+    fontFamily: Fonts.regular,
+    color: mode === 'dark' ? '#9CA3AF' : '#8A94AE',
+    letterSpacing: 0.5,
+  },
+
+  typePill: {
+    marginTop: scaledSize(9),
+    height: scaledSize(22),
+    paddingHorizontal: scaledSize(12),
+    borderRadius: scaledSize(14),
+    backgroundColor: mode === 'dark' ? '#103B40' : '#E0F7F8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+
+  typeDot: {
+    width: scaledSize(7),
+    height: scaledSize(7),
+    borderRadius: scaledSize(7),
+    backgroundColor: '#0097A7',
+    marginRight: scaledSize(7),
+  },
+
+  typeText: {
+    fontSize: scaledSize(11),
+    lineHeight: scaledSize(14),
+    fontFamily: Fonts.regular,
+    fontWeight: '400',
+    color: '#0097A7',
+    letterSpacing: 0.5,
+  },
+
+  actionColumn: {
+    width: scaledSize(44),
+    height: scaledSize(104),
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'center',
+  },
+
+  actionButton: {
+    minWidth: scaledSize(38),
+    height: scaledSize(32),
+    paddingHorizontal: scaledSize(8),
+    borderRadius: scaledSize(6),
     backgroundColor: theme.buttonBGColor,
-    borderRadius: scaledSize(20),
-    padding: scaledSize(4),
-    marginBottom: scaledSize(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: scaledSize(8),
+    paddingHorizontal: scaledSize(18),
+    paddingTop: scaledSize(8),
+    paddingBottom: scaledSize(4),
+    backgroundColor: theme.bgContainor,
+    minHeight: scaledSize(52),
+  },
+
+  searchBox: {
+    position: 'absolute',
+    left: scaledSize(18),
+    right: scaledSize(18),
+    top: scaledSize(8),
+    height: scaledSize(40),
+    borderRadius: scaledSize(8),
+    paddingHorizontal: scaledSize(10),
+    backgroundColor: theme.buttonBGColor,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 2,
     elevation: 2,
   },
 
-  fileName: {
-    marginTop: scaledSize(8),
-    marginHorizontal: scaledSize(10),
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    paddingVertical: 0,
+    marginLeft: scaledSize(8),
     fontSize: scaledSize(13),
-    bottom: scaledSize(4),
-    letterSpacing: 1,
-    color: theme.primaryTextColor
+    fontFamily: Fonts.regular,
+    letterSpacing: 0.5,
+    color: theme.primaryTextColor,
+  },
+
+  clearSearchBtn: {
+    width: scaledSize(28),
+    height: scaledSize(28),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  controlBtn: {
+    width: scaledSize(30),
+    height: scaledSize(30),
+    borderRadius: scaledSize(8),
+    backgroundColor: theme.buttonBGColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  gridActionRow: {
+    width: '100%',
+    height: scaledSize(32),
+    marginTop: scaledSize(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'auto',
   },
   // ************************
   multiHeader: {
@@ -953,7 +1298,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.bgColor,
+    backgroundColor: 'transparent',
     // marginTop:20,
     paddingHorizontal: 8,
     paddingVertical: 10,
@@ -1034,5 +1379,3 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: theme.deleteIconColor,
   },
 });
-
-
