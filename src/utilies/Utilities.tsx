@@ -505,7 +505,7 @@ const DocumentPicker = async (props: S) => {
   }
 }
 
-const createImagesToPdf = async (images: Array<any>,name:string) => {
+const createImagesToPdf = async (images: Array<{path:string}>,name:string) => {
   console.log('images to convert in pdf>>>>>>', images);
 
   try {

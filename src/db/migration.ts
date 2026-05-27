@@ -82,6 +82,19 @@ CREATE TABLE IF NOT EXISTS folders (
       )
     `);
 
+    // 💿 CONVERTED PDFS TABLE
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS converted_pdfs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL,
+        size INTEGER,
+        createdAt INTEGER NOT NULL
+      );
+    `);
+
+
+
 
     // ⚡ Indexes (safe to run multiple times)
     await db.executeSql(`

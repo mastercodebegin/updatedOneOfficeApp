@@ -2,7 +2,7 @@ import { StackActions } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler,Animated, Linking } from 'react-native'
 import Pdf from 'react-native-pdf';
-import { fileShare, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
+import {  heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
 
 import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
@@ -74,7 +74,7 @@ const PdfViewer = (props: any) => {
     setNumber(0), setVisible(false)
     //props.navigation.goBack()
     Linking.getInitialURL = async () => null; 
-    navigateToBack()
+    Utility.navigation.navigateToBack()
   }
   const headerComp = () => {
     return (
@@ -97,7 +97,7 @@ const PdfViewer = (props: any) => {
           </View>
         </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => fileShare(props?.route?.params?.uri, props?.route?.params?.name)}>
+          <TouchableOpacity onPress={() => Utility.fileShare(props?.route?.params?.uri, props?.route?.params?.name)}>
             <View style={{
               height: scaledSize(30),
               width: scaledSize(30),

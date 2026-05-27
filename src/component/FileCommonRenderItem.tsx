@@ -29,6 +29,8 @@ interface S {
   onLongPress: any;
   isItemSelected: boolean;
   selectedItems: Array<any>;
+  isShowEditBtn?: boolean;
+  onPressEditFile?: (item: any) => void;
   index: number;
 }
 
@@ -42,6 +44,8 @@ export const FileCommonRenderItem = (props: S) => {
     isItemSelected,
     selectedItems,
     onPressItem,
+    isShowEditBtn = false,
+    onPressEditFile = () => { },
     index,
   } = props;
 
@@ -113,6 +117,18 @@ export const FileCommonRenderItem = (props: S) => {
         </TouchableOpacity>
 
         <View style={styles.actionContainer}>
+          {isShowEditBtn && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => onPressEditFile(item)}
+            >
+              <MaterialIcons
+                name="edit"
+                size={scaledSize(20)}
+                color={theme.iconColor}
+              />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => setIsShowDeleteConfirmation(true)}
@@ -229,7 +245,7 @@ const createStyles = (theme: Theme, mode: string) =>
       marginLeft: 'auto',
       flexDirection: "row",
       alignItems: "center",
-      gap: scaledSize(4),
+      gap: scaledSize(8),
     },
     actionButton: {
       width: scaledSize(34),
