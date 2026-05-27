@@ -544,6 +544,46 @@ const createImagesToPdf = async (images: Array<any>,name:string) => {
   }
 }
 
+export const sortFiles = (sortType: string, files: any[]) => {
+  // Create a shallow copy to avoid mutating the original array
+  const sortedFiles = [...files];
+
+  switch (sortType) {
+    case 'latest':
+      return sortedFiles.sort((a, b) => new Date(b.mtime).getTime() - new Date(a.mtime).getTime());
+
+    case 'oldest':
+      return sortedFiles.sort((a, b) => new Date(a.mtime).getTime() - new Date(b.mtime).getTime());
+
+    case 'name_asc':
+      return sortedFiles.sort((a, b) => {
+        const aIsNumeric = /^\d/.test(a.name);
+        const bIsNumeric = /^\d/.test(b.name);
+
+        if (aIsNumeric && !bIsNumeric) return 1; // a (numeric) comes after b (alphabetic)
+        if (!aIsNumeric && bIsNumeric) return -1; // a (alphabetic) comes before b (numeric)
+
+        return a.name.localeCompare(b.name); // both are same type
+      });
+
+    case 'name_desc':
+      return sortedFiles.sort((a, b) => {
+        const aIsNumeric = /^\d/.test(a.name);
+        const bIsNumeric = /^\d/.test(b.name);
+
+        if (aIsNumeric && !bIsNumeric) return 1; // a (numeric) comes after b (alphabetic)
+        if (!aIsNumeric && bIsNumeric) return -1; // a (alphabetic) comes before b (numeric)
+
+        return b.name.localeCompare(a.name); // both are same type, reverse order
+      });
+
+    case 'size':
+      return sortedFiles.sort((a, b) => b.size - a.size);
+    default:
+      return files; // Return original if no valid sortType
+  }
+};
+
 export const Utility = {
   string: {
     getFirstLetterCapitalize
@@ -573,5 +613,6 @@ export const Utility = {
   shareApp,
   generateUniqueNumber,
   getFileSize,
+  sortFiles,
 
 }

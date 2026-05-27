@@ -270,8 +270,9 @@ async getAllFolders() {
       return data;
 
     } catch (error) {
-      console.error('getActiveFolders error:', error);
-      throw error;
+
+      console.log('getActiveFolders error:', error);
+      // throw error;
     }
   },
 

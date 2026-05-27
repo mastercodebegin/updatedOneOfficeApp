@@ -5,7 +5,7 @@ import { Timestamp } from "@react-native-firebase/firestore"
 
 export const getDateFromString = (dateStr: string) => {
 
-    const date = new Date(dateStr)
+    const date = dateStr?new Date(dateStr):new Date()
     return date
 
 }

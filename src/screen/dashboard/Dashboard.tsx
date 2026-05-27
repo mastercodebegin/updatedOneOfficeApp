@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
+  Switch,
   Text, StyleSheet,
   View, TouchableOpacity, SafeAreaView
   , useWindowDimensions, Image,
@@ -10,7 +11,7 @@ import {
   ScrollView,
   Button,
 } from 'react-native';
-import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, heightFromPercentage, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
+import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile, Utility, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import StaticServer from 'react-native-static-server';
 // const StaticServer = require('react-native-static-server').default;
@@ -67,12 +68,14 @@ import { FirebaseService } from '../../service/FirebaseService';
 import { GoogleDriveService } from '../../db/googleDriveService';
 import { AuthService } from '../../service/AuthService';
 
+import CustomSortModal from '../../component/CustomSortModal';
+import { useTheme } from '../theme/useTheme';
 const pdfs = [
   {
     "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
     "name": "4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
     "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
+    "size": 7227299
   },
   {
     "ctime": null, "id": 826185, "mtime": "2024-10-17T09:51:47.024Z",
@@ -81,12 +84,53 @@ const pdfs = [
     "size": 722729
   },
   {
-    "ctime": null, "id": 8262185, "mtime": "2024-10-17T09:51:47.024Z",
+    "ctime": null, "id": 8262185, "mtime": "2024-10-18T09:51:47.024Z",
     "name": "Axis.pdf",
     "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
+    "size": 8222999
   },
 ]
+
+const renderfiles = {
+  pdfFiles: [
+    {
+      "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
+      "name": "Monthly_Report.pdf",
+      "path": "/storage/emulated/0/Download/Monthly_Report.pdf",
+      "size": 722729
+    },
+    {
+      "ctime": null, "id": 826185, "mtime": "2024-09-11T19:21:27.024Z",
+      "name": "Project_Proposal.pdf",
+      "path": "/storage/emulated/0/Download/Project_Proposal.pdf",
+      "size": 120384
+    },
+  ],
+  wordFiles: [
+    {
+      "ctime": null, "id": 91234, "mtime": "2024-10-16T11:30:00.000Z",
+      "name": "Meeting_Notes.docx",
+      "path": "/storage/emulated/0/Documents/Meeting_Notes.docx",
+      "size": 25600
+    },
+  ],
+  xlsxFiles: [
+    {
+      "ctime": null, "id": 75312, "mtime": "2024-10-15T14:00:15.000Z",
+      "name": "Budget_2024.xlsx",
+      "path": "/storage/emulated/0/Documents/Budget_2024.xlsx",
+      "size": 512000
+    },
+  ],
+  pptFiles: [
+    {
+      "ctime": null, "id": 48291, "mtime": "2024-10-14T09:05:45.000Z",
+      "name": "Presentation_Q3.pptx",
+      "path": "/storage/emulated/0/Download/Presentation_Q3.pptx",
+      "size": 2048000
+    },
+  ]
+};
 
 function Dashboard({ navigation, route }) {
 
@@ -103,7 +147,7 @@ function Dashboard({ navigation, route }) {
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
 
-
+  // generate sample file data for renderfiles
   const createDoc = () => {
     const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
     // user logged in flow new user
@@ -397,6 +441,35 @@ const pushFolders = async () => {
     pptFiles: [],
   });
   const readPdfFileRef = React.useRef(null)
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+    {
+      id: 'size',
+      name: 'Size',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
   const [convertedFiles, setConvertedFiles] = useState(
     []);
@@ -429,6 +502,7 @@ const pushFolders = async () => {
   const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+  const { theme, mode, toggleTheme } = useTheme();
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -445,7 +519,7 @@ const pushFolders = async () => {
     }
   };
 
-
+// generate sample file data for renderfiles
 
 
   const getPermission = async () => {
@@ -485,7 +559,7 @@ const pushFolders = async () => {
 
     setDocuments(files)
     setIsLoading(false)
-    setUniqueNumber(generateUniqueNumber())
+    setUniqueNumber(Utility.generateUniqueNumber())
   }
 
   const readPdfFiles = async () => {
@@ -497,7 +571,7 @@ const pushFolders = async () => {
 
     setDocuments(files)
     setIsLoading(false)
-    setUniqueNumber(generateUniqueNumber())
+    setUniqueNumber(Utility.generateUniqueNumber())
   }
   useEffect(() => {
 
@@ -520,7 +594,7 @@ const pushFolders = async () => {
             //  console.log('all files function called',files);
             setDocuments(files)
             setIsLoading(false)
-            setUniqueNumber(generateUniqueNumber())
+            setUniqueNumber(Utility.generateUniqueNumber())
 
 
           }
@@ -716,10 +790,14 @@ const pushFolders = async () => {
     switch (route.key) {
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
-          ref={readPdfFileRef} pdfFiles={documents.pdfFiles}
+          ref={readPdfFileRef} 
+          pdfFiles={pdfs} 
+          // pdfFiles={documents.pdfFiles} 
+          selectedSort={selectedSort}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
+        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading} 
+        selectedSort={selectedSort}/>;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -731,10 +809,10 @@ const pushFolders = async () => {
   const renderTabBar = (props: any) => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: COLORS.THEME_COLOR, height: 1 }}
-      style={{ backgroundColor: 'white', color: 'black', }}
-      activeColor={COLORS.THEME_COLOR}
-      inactiveColor='gray'
+      indicatorStyle={{ backgroundColor: theme.themeColor, height: 1 }}
+      style={{ backgroundColor: theme.bgContainor }}
+      activeColor={theme.themeColor}
+      inactiveColor={theme.secondaryTextColor}
       lazy
       lalazyPreloadDistance={1}
       onTabPress={({
@@ -745,6 +823,10 @@ const pushFolders = async () => {
         setScreenName(route.title);
 
 
+      }}
+      labelStyle={{
+        color: theme.primaryTextColor,
+        textTransform: 'capitalize',
       }}
 
     />
@@ -764,7 +846,7 @@ const pushFolders = async () => {
     }
     else {
 
-      navigateTo('MultiplePdfView', pdfs)
+      Utility.navigation.navigateTo('MultiplePdfView', pdfs)
       dispatch(checkIsUserViewedPdf(true))
     }
   }
@@ -790,29 +872,35 @@ const pushFolders = async () => {
         {response.files.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
           <MaterialIcons
             name="picture-as-pdf"
-            size={scaledSize(20)}
+            size={scaledSize(22)}
             color={COLORS.THEME_COLOR}
           />
           {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
         </TouchableOpacity>}
 
 
+        <TouchableOpacity onPress={() => setIsShowSortModal(true)} style={{ right: scaledSize(4) }}>
+          <MaterialCommunityIcons
+            name="sort"
+            size={scaledSize(22)} color={theme.primaryTextColor} />
+        </TouchableOpacity>
 
-        <TouchableOpacity onPress={addCardDetails}>
-          <Feather name="user" size={scaledSize(20)} color="#555" />
+
+        <TouchableOpacity onPress={addCardDetails} style={{ right: scaledSize(4) }}>
+          <Feather name="user" size={scaledSize(22)} color={theme.primaryTextColor} />
         </TouchableOpacity>
 
         <MaterialCommunityIcons
           name="refresh"
           size={scaledSize(22)}
-          color="#555"
+          color={theme.primaryTextColor}
           onPress={() => readPdfFiles()}
         />
 
         <TouchableOpacity onPress={openFile}>
 
           {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
-          <Feather name="folder" size={scaledSize(18)} color={COLORS.THEME_COLOR} />
+          <Feather name="folder" size={scaledSize(20)} color={theme.themeColor} />
         </TouchableOpacity>
 
         <CustomMenu
@@ -846,7 +934,7 @@ const pushFolders = async () => {
 
 
     try {
-      const res: any = await DocumentPicker({ isMultipleSelection: false })
+      const res: any = await Utility.images.DocumentPicker({ isMultipleSelection: false })
       let fileExtension = ''
       let uri = ''
 
@@ -891,41 +979,26 @@ const pushFolders = async () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} >
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
 
       <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
         <CustomSpinner isLoading={isLoading} />
       </View>
       <LinearGradient
-        colors={['white', 'white']}
+        colors={[theme.bgContainor, theme.bgContainor]}
 
-        style={{ flex: .2, flexDirection: 'column', backgroundColor: 'red' }}>
+        style={{ flex: .2, flexDirection: 'column' }}>
         <ScrollView style={{ flex: 1 }}>
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
-
-                  <Button title="Login" onPress={handleLogin} />
-                  <Button title="Sync" onPress={syncAll} />
-                  <Button title="CREATE" onPress={async () => {
-                    console.log('hi');
-                    
-                    const created = await FolderLocalService.createFolder
-                      ('', 'name-voter-1' + Math.random(),
-                        null, 'coveruri', 'gooleDrivefolderName', 0)
-                    console.log('created', created);
-
-                  }} />
-                  <Button title="Update" onPress={async () => {  
-                    await FolderLocalService.updateFolderById({id:1,name:Math.random().toString(),isDeleted:0})
-                   }} />
-                  {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
-                </View>
-
-                {user && (
-                  <Text>Welcome: {user.user?.name}</Text>
-                )}
+              <View style={{ flex: 1, justifyContent: 'center', paddingLeft: scaledSize(16) }}>
+                <Switch
+                  trackColor={{ false: '#767577', true: 'green' }}
+                  thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={() => toggleTheme()}
+                  value={mode == 'dark' ? true : false}
+                />
               </View>
             </View>
 
@@ -938,7 +1011,9 @@ const pushFolders = async () => {
                 placeholder="Search"
                 style={{
                   borderRadius: scaledSize(45), letterSpacing: 1, height: scaledSize(44),
-                  backgroundColor: '#F3F4F6',
+                  backgroundColor: theme.bgColor,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
                 }}
                 onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
                 placeholderTextColor="#9CA3AF"
@@ -967,7 +1042,7 @@ const pushFolders = async () => {
         </ScrollView>
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
 
         <TabView
           renderTabBar={renderTabBar}
@@ -985,6 +1060,16 @@ const pushFolders = async () => {
       <Modal visible={isShowCardModal}>
         <SaveUserCardDetails onPress={() => setIsShowCardModal(false)} />
       </Modal>
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
     </SafeAreaView>
   );
 }

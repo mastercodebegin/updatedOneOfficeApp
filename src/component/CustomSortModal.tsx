@@ -6,7 +6,7 @@ import { Theme } from '../../src/screen/theme/ThemeConfig';
 
 
 interface CustomSortModalProps {
-    data:Array<[]>,
+    data:Array<any>,
     isvisible: boolean;  // You can add props here if needed, such as:
     onPressApply: (sort: string) => void; // visible: boolean;
     onPressClear: () => void; // onClose: () => void;

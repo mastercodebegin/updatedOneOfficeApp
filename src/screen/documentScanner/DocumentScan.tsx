@@ -973,23 +973,26 @@ export const DocumentScan = () => {
 
         {/* Top Row */}
         <View style={styles.topRow}>
-          <View>
-            <Text style={styles.workspaceText}>
-              {/* WORKSPACE */}
-            </Text>
-
-            <Text style={styles.heading}>
-              My{' '}
-              <Text style={styles.primaryText}>
-                Documents
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scaledSize(10) }}>
+            <Switch
+              trackColor={{ false: '#767577', true: 'green' }}
+              thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
+              ios_backgroundColor="#3e3e3e"
+              onValueChange={() => toggleTheme()}
+              value={mode == 'dark' ? true : false}
+            />
+            <View>
+              <Text style={styles.heading}>
+                My{' '}
+                <Text style={styles.primaryText}>
+                  Documents
+                </Text>
               </Text>
-            </Text>
+            </View>
           </View>
 
           <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
-            <LinearGradient
-              colors={mode === 'light' ? ['white', 'white'] :
-                [theme.buttonBGColor, theme.buttonBGColor]}
+            <LinearGradient colors={[theme.buttonBGColor, theme.buttonBGColor]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.uploadButton}>
@@ -1000,7 +1003,7 @@ export const DocumentScan = () => {
                 color={mode === 'light' ? 'white' : color}
               /> */}
               <Text style={{
-                color: mode === 'light' ? theme.iconColor : theme.iconColor,
+                color: theme.iconColor,
                 letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
               }}>AK</Text>
             </LinearGradient>
@@ -2253,30 +2256,6 @@ export const DocumentScan = () => {
       </Overlay>
       <CustomSpinner isLoading={isLoading} />
 
-      <View style={{
-        height: scaledSize(100), width: '80%',
-        flexDirection: 'row', justifyContent: "space-between"
-      }}>
-        {/* <Image
-          resizeMode="contain"
-          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + '1777791940638Ght.jpg') }}
-          style={{
-            height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
-          }}
-        /> */}
-        <Switch
-          trackColor={{ false: '#767577', true: 'green' }}
-          thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
-          ios_backgroundColor="#3e3e3e"
-          onValueChange={() => toggleTheme()}
-          value={mode == 'dark' ? true : false}
-
-        />
-        {/* {renderButton()} */}
-        {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
-            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
-      </View>
-
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
         <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
@@ -2349,7 +2328,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       theme.bgContainor
   },
   card: {
-    height: scaledSize(120),
+    height: scaledSize(130),
     flexDirection: 'row',
 
     alignItems: 'center',
@@ -2368,16 +2347,17 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     borderWidth: 1,
     borderColor: theme.borderColor,
-    shadowOpacity: 0.18,
+    shadowColor: mode === 'dark' ? '#000' : '#9CA3AF',
+    shadowOpacity: mode === 'dark' ? 0.25 : 0.2,
 
-    shadowRadius: scaledSize(10),
+    shadowRadius: scaledSize(12),
 
     shadowOffset: {
       width: 0,
-      height: scaledSize(4),
+      height: scaledSize(8),
     },
 
-    elevation: mode === 'dark' ? 4 : 0,
+    elevation: 8,
 
   },
 
@@ -2518,16 +2498,6 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     justifyContent: 'space-between',
 
     alignItems: 'center',
-  },
-
-  workspaceText: {
-    fontSize: scaledSize(14),
-
-    letterSpacing: 0.5,
-
-    color: theme.secondaryTextColor,
-
-    fontWeight: '600',
   },
 
   heading: {

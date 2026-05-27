@@ -1,6 +1,6 @@
 import { View, Text, FlatList } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile } from '../../utilies/Utilities'
+import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, sortFiles, toastForDeleteFile, Utility } from '../../utilies/Utilities'
 import CustomMenu from '../../component/Menu'
 import { FileCommonRenderItem } from '../../component/FileCommonRenderItem'
 import { MSOffice, PdfIcon } from '../../assets/GlobalImages'
@@ -19,15 +19,17 @@ interface S {
   onReLoad: Function
   isLoading: boolean
   wordFiles: Array<{ name: string }>,
+  selectedSort: string
 }
 interface File {
   name: string;
   path: string;
   size: number;
+  id: number;
 }
 
 export default function WordFilesList(props: S) {
-  const { searchValue, wordFiles, isLoading ,onReLoad} = props
+  const { searchValue, wordFiles, isLoading, onReLoad, selectedSort } = props
   const [files, setFiles] = useState<File[]>([]);
   const toast = useToast();
   const isFocused = useIsFocused();
@@ -68,7 +70,12 @@ export default function WordFilesList(props: S) {
         file.name.toLowerCase().includes(searchValue.toLowerCase())
       );
     } else {
-      return files;
+      if (selectedSort) {
+        return Utility.sortFiles(selectedSort, files)
+      }
+      else {
+        return files;
+      }
     }
   };
 
@@ -77,8 +84,8 @@ export default function WordFilesList(props: S) {
       <View style={{ flex: 1 }}>
         {wordFiles.length > 0 ? (
           <FlatList data={getFiles()}
-            //   renderItem={({ item }) => <Text>Hi</Text>}
-            renderItem={({ item }) => <FileCommonRenderItem
+            renderItem={({ item, index }) => <FileCommonRenderItem
+              index={index}
               item={item} icon={MSOffice} onPressDeleteFile={deleteFileHandler} screenName='WordReader' />}
           // keyExtractor={(item) => item}
           // refreshControl={<RefreshControl

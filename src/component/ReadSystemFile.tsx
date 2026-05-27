@@ -1,42 +1,20 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-// import { Text } from 'react-native';
-import { DocumentDirectoryPath, writeFile, readDir, readFile } from 'react-native-fs';
 import {
   Text, StyleSheet,
-  FlatList, View, TouchableOpacity, Image,
-  SafeAreaView, KeyboardAvoidingView, ActivityIndicator, RefreshControl,
+  FlatList, View, TouchableOpacity, Image, 
+  SafeAreaView, 
 } from 'react-native';
-import { ConfirmPopup, deleteFile, fileShare, getDate, getFileSize, scaledSize, widthFromPercentage } from '../utilies/Utilities';
+import { ConfirmPopup, deleteFile, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon } from '../assets/GlobalImages';
 import RootView from './RootView';
-import RNFetchBlob from 'rn-fetch-blob';
-import ConfirmationDialog from './ConfirmationDialog';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import RNFS from 'react-native-fs';
 
-// import Icon from 'react-native-vector-icons/AntDesign';
-// import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-// import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-// import Icon from 'react-native-vector-icons/Feather';
-import Icon from 'react-native-vector-icons/Ionicons';
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
 
-import { FontAwesomeIcon, } from '@fortawesome/react-native-fontawesome'
-// import { faEllipsisVertical,faTimesRectangle} from '@fortawesome/free-solid-svg-icons'
-import { IconPack } from '@fortawesome/free-regular-svg-icons'
 
-import CustomMenu from './Menu';
-import { Button, Menu, Divider, Provider } from 'react-native-paper';
-import DocumentPicker from 'react-native-document-picker';
-import { Searchbar } from 'react-native-paper'
-import Share from 'react-native-share';
-import Spinner from 'react-native-loading-spinner-overlay/lib';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import BannerAddMob from './admob/CustomBannerAdd';
 import CustomBannerAdd from './admob/CustomBannerAdd';
 import { Fonts } from '../assets/fonts/GlobalFonts';
-import { color } from 'react-native-elements/dist/helpers';
 import CustomSpinner from './CustomSpinner';
 import { useDispatch, useSelector } from 'react-redux'
 import {  checkIsUserViewedPdf, updateSelectedPdf } from '../screen/dashboard/FileSlice';
@@ -44,6 +22,7 @@ import { forwardRef, useImperativeHandle } from 'react';
 import { asyncStorageKeyName } from '../utilies/Constants';
 import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomeButton from './CustomButton';
+import { useTheme } from '../screen/theme/useTheme';
 import VideoAdScreen from './admob/VideoAdd';
 
 interface S {
@@ -51,34 +30,29 @@ interface S {
   onReLoad: Function
   isLoading: boolean,
   pdfFiles: Array<{ name: string }>
+  selectedSort: string
 }
 const ReadSystemFile = forwardRef((props: S, ref) => {
-  const { searchValue, pdfFiles, onReLoad, isLoading } = props
+  const { searchValue, pdfFiles, onReLoad, isLoading, selectedSort } = props
   const [selectedItem, setSelectedItem] = useState([])
-
   const [pdfData, setPdfData] = useState([]);
-
-  // const [isLoading, setIsLoading] = useState(false)
-  const [randomNumber, setRandomNumber] = useState(1)
-  const navigation = useNavigation()
   const dispatch = useDispatch()
   const isFocused = useIsFocused();
+  const { theme } = useTheme();
   const response = useSelector((state) => state.FileSlice);
+
 
 
   useImperativeHandle(ref, () => ({
     //when user reload data from dashboard
     async readPdfFiles() {
       console.log('useImperativeHandle-------');
-
-      // setIsLoading(true)
-      // const files = await getFilesFromPhoneByFileExtention()
-      // setIsLoading(false)
     },
   }));
 
 
   useEffect(() => {
+console.log('pdfdata===',pdfFiles);
 
     if (isFocused) {
       // console.log('viewpdf----------',response.isUserViewedPdf)
@@ -103,7 +77,11 @@ if(response.isUserViewedPdf)
         file.name.toLowerCase().includes(searchValue.toLowerCase())
       );
     } else {
-      return pdfData;
+      if (selectedSort) {
+        return Utility.sortFiles(selectedSort, pdfData)
+      }
+      else
+        return pdfData;
     }
   };
 
@@ -191,7 +169,7 @@ if(response.isUserViewedPdf)
     });
   }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
       <View style={{ position: 'relative', top: scaledSize(10) }}>
         <CustomSpinner isLoading={isLoading} />
       </View>
@@ -200,14 +178,16 @@ if(response.isUserViewedPdf)
       <View style={{ flex: 1, }}>
         {pdfFiles.length > 0 ?
           <FlatList data={getFiles()}
-            renderItem={({ item }) => <FileCommonRenderItem
+            renderItem={({ item,index }) => <FileCommonRenderItem
               item={item} icon={PdfIcon}
               selectedItems={selectedItem}
               onPressItem={(v: any) => onPressItem(v)}
               isItemSelected={checkisFolderSelected(item?.id)}
               onLongPress={(v: any) => onLongPress(v)}
               onPressDeleteFile={deleteFileHandler}
-              screenName='PdfViewer' />}
+              screenName='PdfViewer' 
+              index={index}
+              />}
           // keyExtractor={(item) => item}
           // refreshControl={<RefreshControl
           //   colors={["red", "red"]}
