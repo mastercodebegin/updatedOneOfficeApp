@@ -1,10 +1,12 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSharedValue } from "react-native-reanimated";
 import React, { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle, } from 'react'
-import { Title } from 'react-native-paper';
-import { COLORS } from '../utilies/GlobalColors';
 import { useTheme } from '../screen/theme/useTheme';
+import { scaledSize } from '../utilies/Utilities';
+import { Theme } from '../screen/theme/ThemeConfig';
+import CustomVectorIcon from './CustomVectorIcon';
+import { Fonts } from '../assets/fonts/GlobalFonts';
 interface S {
   title: string,
   children: any,
@@ -18,8 +20,7 @@ const CustomBottomSheet = forwardRef((props: S, ref) => {
   const { theme, mode } = useTheme()
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['70%', '60%', '90%'], []);
-  const bottomSheetValue = useSharedValue(424)
-  const { bottomShitSnapPoints = snapPoints, headerColor = COLORS.THEME_COLOR, nocheColor = theme.iconColor } = props
+  const { title, bottomShitSnapPoints: bottomSheetSnapPoints = snapPoints } = props
 
   useImperativeHandle(ref, () => ({
     //@ts-ignore
@@ -27,59 +28,89 @@ const CustomBottomSheet = forwardRef((props: S, ref) => {
     close: () => bottomSheetModalRef.current?.close(),
 
   }));
+
+  const handleClose = () => {
+    bottomSheetModalRef.current?.close();
+  };
+
+  const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
+
+
+
   return (
     <BottomSheetModal
       ref={bottomSheetModalRef}
       index={1}
       handleIndicatorStyle={{
-        backgroundColor: theme.secondaryTextColor
+        backgroundColor: theme.secondaryTextColor,
+        width: scaledSize(40),
       }}
-
-      snapPoints={bottomShitSnapPoints}
-      backgroundStyle={{ backgroundColor: theme.buttonBGColor }}
+      snapPoints={bottomSheetSnapPoints}
+      backgroundStyle={{ backgroundColor: theme.bgColor }}
       onChange={(v) => {
         if (v === -1 && typeof props.onClose === 'function') {
           props.onClose();
         }
       }}
-
     >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={[styles.header,{backgroundColor:theme.bgColor}]}>
+          <Text style={[styles.title,{color:theme.primaryTextColor}]}>{title}</Text>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <CustomVectorIcon
+              iconLibrary="Ionicons"
+              iconName="close"
+              size={scaledSize(20)}
+              style={{ color: theme.primaryTextColor }}
+            />
+          </TouchableOpacity>
+        </View>
 
-
-
-      {/* Content */}
-      <BottomSheetScrollView
-
-        style={{ backgroundColor: theme.bgContainor, flex: 1 }} // Adjust as needed
-      >
-        {props.children}
-
-      </BottomSheetScrollView>
+        {/* Content */}
+        <BottomSheetScrollView
+          style={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {props.children}
+        </BottomSheetScrollView>
+      </View>
     </BottomSheetModal>
   );
 });
 
-const styles = StyleSheet.create({
-  customHeader: {
-    backgroundColor: 'purple',
-    padding: 16,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  headerText: {
-    // color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-
-});
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      paddingHorizontal: scaledSize(20),
+      paddingBottom: scaledSize(16),
+      paddingTop: scaledSize(4),
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: scaledSize(18),
+      fontFamily: Fonts.medium,
+      letterSpacing: 0.5,
+      color: theme.primaryTextColor, // This will be overridden by theme, just a fallback
+    },
+    closeButton: {
+      height: scaledSize(32),
+      width: scaledSize(32),
+      borderRadius: scaledSize(16),
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.buttonBGColor, // This will be overridden by theme
+    },
+    contentContainer: {
+      flex: 1,
+    },
+  });
+  
 
 export default CustomBottomSheet;

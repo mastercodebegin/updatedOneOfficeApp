@@ -858,7 +858,7 @@ const pushFolders = async () => {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'flex-end',
-          gap: scaledSize(24),
+          gap: scaledSize(16),
           marginRight: scaledSize(4)
         }}
       >

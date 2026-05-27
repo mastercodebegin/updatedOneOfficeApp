@@ -40,7 +40,7 @@ export const lightTheme: Theme = {
   primaryTextColor: '#000000',
   secondaryTextColor: '#000000',
   iconColor: '#000000',
-  borderColor: '#EEF2F7',
+  borderColor: '#d3d3d3',
   themeColor: '#47b16a',
   buttonBGColor:'#F5F5F5',
   themeSecondaryColor:'#47b16a',

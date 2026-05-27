@@ -37,9 +37,12 @@ import { COLORS, FONTS } from './src/utilies/GlobalColors';
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
 import Ionicons from 'react-native-vector-icons/Ionicons'
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import SaveUserCardDetails from './src/screen/dashboard/SaveUserCardDetails';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { initDB } from './src/db/migration';
 
+import { useTheme } from './src/screen/theme/useTheme';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
 // import { checkForUpdate } from './src/utilies/InAppUpdates'
@@ -54,11 +57,13 @@ export default function App(props) {
   const [result, setResult] = React.useState(false);
   const size = scaledSize(24)
   const screensData = [
-    { name: 'Scan', component: DocumentScan, focus: <FontAwesome5 name='camera' color={COLORS.THEME_COLOR} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, unFocus: <FontAwesome5 name='camera' color={'gray'} size={size + 10} style={{ marginBottom: scaledSize(4) }} />, },
-    { name: 'Documents', component: Dashboard, focus: <Ionicons name='documents' color={COLORS.THEME_COLOR} size={size} />, unFocus: <Ionicons name='documents' color={'gray'} size={size} /> },
-    { name: 'Converter', component: ImagesToPdfConverter, focus: <FontAwesome name='refresh' color={COLORS.THEME_COLOR} size={size} />, unFocus: <FontAwesome name='refresh' color={'gray'} size={size} />, },
-
+    { name: 'Documents', component: Dashboard, focus: (color) => <Ionicons name='documents' color={color} size={size} />, unFocus: (color) => <Ionicons name='documents-outline' color={color} size={size} /> },
+    { name: 'Scan', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color} 
+    size={size + 4} style={{ marginBottom: scaledSize(4) }}  /> },
+    { name: 'Converter', component: ImagesToPdfConverter, focus: (color) => <Ionicons name='swap-horizontal' color={color} size={size} />, unFocus: (color) => <Ionicons name='swap-horizontal-outline' color={color} size={size} /> },
+    { name: 'Settings', component: SaveUserCardDetails, focus: (color) => <Ionicons name='settings' color={color} size={size} />, unFocus: (color) => <Ionicons name='settings-outline' color={color} size={size} /> },
   ]
+
   const BottomTabs = createBottomTabNavigator();
 
   // React.useEffect(() => {
@@ -131,12 +136,27 @@ export default function App(props) {
 
 
   function MyTabs() {
+    const { theme, mode } = useTheme();
     return (
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          // backgroundColor:'red'
-          height: heightFromPercentage(7),
+          backgroundColor: theme.bgColor,
+          height: heightFromPercentage(8),
+          borderTopWidth: 1,
+          position: 'absolute',
+          borderTopColor: theme.borderColor,
+          bottom: 0,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -3,
+          },
+          shadowOpacity: mode === 'dark' ? 0.2 : 0.05,
+          shadowRadius: 5,
+
+
         }
       }}>
         {screensData.map((item, key) =>
@@ -151,7 +171,7 @@ export default function App(props) {
             })}
             options={{
               tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(2) }}>
-                {focused ? item.focus : item.unFocus}
+                {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
               </View>),
               tabBarLabel: ({ focused }) => (
                 <></>
@@ -185,6 +205,7 @@ export default function App(props) {
                   <Stack.Screen name="DocumentScan" component={DocumentScan} />
                   <Stack.Screen name="DisplayMultipleDocumentImage" component={DisplayMultipleDocumentImage} />
                   <Stack.Screen name="XslxFilesList" component={XslxFilesList} />
+                  <Stack.Screen name="Settings" component={SaveUserCardDetails} />
                   <Stack.Screen name="PPTFilesList" component={PPTFilesList} />
                   <Stack.Screen name="ImagesToPdfConverter" component={ImagesToPdfConverter} />
                   <Stack.Screen name="contactus" component={ContactUs} />

@@ -1,18 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Image,
   TouchableOpacity,
   Text,
 } from "react-native";
-import { View } from 'react-native';
+import { View } from "react-native";
 
 import {
-  ConfirmPopup,
   getFileSize,
   scaledSize,
   Utility,
-  widthFromPercentage,
 } from "../utilies/Utilities";
 
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -20,6 +18,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { Fonts } from "../assets/fonts/GlobalFonts";
 import { useTheme } from "../screen/theme/useTheme";
 import { Theme } from "../screen/theme/ThemeConfig";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 interface S {
   item: any;
@@ -47,12 +46,9 @@ export const FileCommonRenderItem = (props: S) => {
   } = props;
 
   const { theme, mode } = useTheme();
+  const [isShowDeleteConfirmation, setIsShowDeleteConfirmation] = useState(false);
 
   const styles = createStyles(theme, mode);
-
-  const handleDeletePress = (item: any) => {
-    ConfirmPopup(() => onPressDeleteFile(item));
-  };
 
   const openFile = (item: any) => {
     if (screenName === "PdfViewer") {
@@ -87,61 +83,69 @@ export const FileCommonRenderItem = (props: S) => {
   };
 
   return (
-    <View
-      style={[
-        styles.card,{marginTop:index==0?scaledSize(6):0},
-        isItemSelected && styles.selectedCard,
-      ]}
-    >
-      <View style={styles.iconContainer}>
-        <Image source={icon} style={styles.icon} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.touchable}
-        onPress={onPressItemHandler}
-        onLongPress={() => onLongPress(item)}
+    <>
+      <View
+        style={[styles.card, { marginTop: index == 0 ? scaledSize(6) : 0 }, isItemSelected && styles.selectedCard]}
       >
-        <View style={styles.fileNameParentView}>
-          <Text
-            numberOfLines={1}
-            style={styles.fileName}
-          >
-            {item?.name}
-          </Text>
-
-          <View style={styles.dateAndSizeParentView}>
-            <Text style={styles.metaText}>
-              {Utility.date.getDateByMomentFormat(item.mtime)}
-            </Text>
-            <Text style={{...styles.metaText,top:scaledSize(2)}}>
-              {getFileSize(item?.size)}
-            </Text>
-          </View>
+        <View style={styles.iconContainer}>
+          <Image source={icon} style={styles.icon} />
         </View>
-      </TouchableOpacity>
-
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => handleDeletePress(item)}>
-          <MaterialIcons
-            name="delete"
-            size={scaledSize(20)}
-            color={theme.deleteIconColor}
-          />
-        </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => Utility.fileShare(item.path)}
+          style={styles.touchable}
+          onPress={onPressItemHandler}
+          onLongPress={() => onLongPress(item)}
         >
-          <MaterialIcons
-            name="share"
-            size={scaledSize(20)}
-            color={theme.themeColor}
-          />
+          <View style={styles.fileNameParentView}>
+            <Text numberOfLines={1} style={styles.fileName}>
+              {item?.name}
+            </Text>
+
+            <View style={styles.dateAndSizeParentView}>
+              <Text style={styles.metaText}>
+                {Utility.date.getDateByMomentFormat(item.mtime)}
+              </Text>
+              <Text style={{ ...styles.metaText, top: scaledSize(2) }}>
+                {getFileSize(item?.size)}
+              </Text>
+            </View>
+          </View>
         </TouchableOpacity>
+
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => setIsShowDeleteConfirmation(true)}
+          >
+            <MaterialIcons
+              name="delete"
+              size={scaledSize(20)}
+              color={theme.deleteIconColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ ...styles.actionButton, left: scaledSize(4) }}
+            onPress={() => Utility.fileShare(item.path)}
+          >
+            <MaterialIcons
+              name="share"
+              size={scaledSize(20)}
+              color={theme.themeColor}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+      <ConfirmationDialog
+        visible={isShowDeleteConfirmation}
+        onCancel={() => setIsShowDeleteConfirmation(false)}
+        onSubmit={() => {
+          onPressDeleteFile(item);
+          setIsShowDeleteConfirmation(false);
+        }}
+        mode="delete"
+      />
+    </>
   );
 };
 
@@ -230,7 +234,7 @@ const createStyles = (theme: Theme, mode: string) =>
     actionButton: {
       width: scaledSize(34),
       height: scaledSize(34),
-      borderRadius: scaledSize(17),
+      borderRadius: scaledSize(6),
       backgroundColor: theme.buttonBGColor,
       justifyContent: 'center',
       alignItems: 'center',

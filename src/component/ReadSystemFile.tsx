@@ -24,6 +24,7 @@ import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomeButton from './CustomButton';
 import { useTheme } from '../screen/theme/useTheme';
 import VideoAdScreen from './admob/VideoAdd';
+import CustomEmptyState from './CustomEmptyState';
 
 interface S {
   searchValue: string
@@ -67,7 +68,7 @@ if(response.isUserViewedPdf)
       }
     }
 
-  },)
+  },[])
 
 
   const getFiles = () => {
@@ -196,30 +197,13 @@ if(response.isUserViewedPdf)
           //}
           />
           :
-          <View style={{ flex: 1, justifyContent: "center", alignItems: 'center' }}>
-            {!isLoading ? <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <Text>No files found</Text>
-              <TouchableOpacity style={{ height: scaledSize(40), width: scaledSize(300) }}>
-                <CustomeButton onPress={() => onReLoad()} name='Reload' 
-                 textStyle={{ color: 'blue',  }}
-                  ></CustomeButton>
-              </TouchableOpacity>
-              <View style={{ height: scaledSize(30), width: scaledSize(130) }}>
-              </View>
-            </View> : <></>}
-          </View>
-
+          <CustomEmptyState onPressReload={onReLoad} />
         }
-
       </View>
+        
 
-      <View style={{
-        height: scaledSize(50), width: '100%',
-      }}>
-        {/* <Button onPress={deleteAsyncStorage}>delete</Button> */}
-        <CustomBannerAdd />
-        {/* <VideoAdScreen/> */}
-      </View>
+
+      
 
 
 

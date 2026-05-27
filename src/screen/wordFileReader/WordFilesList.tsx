@@ -10,7 +10,7 @@ import { Image } from 'react-native'
 import { asyncStorageKeyName } from '../../utilies/Constants'
 import { useIsFocused } from '@react-navigation/native'
 import CustomeButton from '../../component/CustomButton'
-
+import CustomEmptyState from '../../component/CustomEmptyState'
 
 // import { FileType, getAllFilesFromPhoneStorage } from '../../utilies/Utilities'
 
@@ -95,17 +95,7 @@ export default function WordFilesList(props: S) {
           //}
           />
         ) :
-          <View style={{ flex: 1, justifyContent: "center", alignItems: 'center' }}>
-            {!isLoading ? <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <Text>No files found</Text>
-              <View style={{ height: scaledSize(40), width: scaledSize(300) }}>
-                <CustomeButton onPress={() => onReLoad()} name='Reload'
-                 textStyle={{color:'blue'}}></CustomeButton>
-              </View>
-              <View style={{ height: scaledSize(30), width: scaledSize(130) }}>
-              </View>
-            </View> : <></>}
-          </View>
+          <CustomEmptyState onPressReload={onReLoad} />
         }
 
       </View>
