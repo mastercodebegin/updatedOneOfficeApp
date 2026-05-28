@@ -1,6 +1,7 @@
 import {
   View, Text, ScrollView,
   TouchableOpacity, StyleSheet, Image, Modal,
+  TextInput,
   SafeAreaView,
   FlatList, Alert,
 } from 'react-native'
@@ -35,6 +36,7 @@ import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { Dropdown } from 'react-native-element-dropdown'
+import { useTheme } from '../theme/useTheme'
 
 
 const data = [
@@ -69,6 +71,8 @@ interface S {
 }
 export default function SaveUserCardDetails(props: S) {
   const { onPress } = props
+  const { theme, mode } = useTheme()
+
   const [isShowAddCardModal, setIsShowAddCardModal] = useState(false)
   const [isEditUserShowModal, setIsEditUserShowModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string, mobileNumber: string }>()
@@ -94,6 +98,9 @@ export default function SaveUserCardDetails(props: S) {
   const [updatedCardNumber, setUpdatedCardNumber] = React.useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // const [cardI, setDropDownCard] = useState<any>();
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const styles = React.useMemo(() => createStyles(theme, mode), [theme, mode]);
+
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
     if (isCap == undefined) {
       Alert.alert(
@@ -572,10 +579,10 @@ export default function SaveUserCardDetails(props: S) {
       <View style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
+        backgroundColor: theme.bgColor,
         paddingVertical: 10,
         borderBottomWidth: 0.5,
-        borderColor: "#eee"
+        borderColor: theme.borderColor
       }}>
 
         <Image
@@ -593,13 +600,14 @@ export default function SaveUserCardDetails(props: S) {
 
           <Text style={{
             fontSize: scaledSize(12),
-            fontWeight: "500"
+            fontWeight: "500",
+            color: theme.primaryTextColor
           }}>
             {item.bankName}
           </Text>
 
           <Text style={{
-            color: "#777",
+            color: theme.secondaryTextColor,
             marginTop: 2
           }}>
             Card ending •••• {item.lastFourDigit}
@@ -615,7 +623,7 @@ export default function SaveUserCardDetails(props: S) {
           <MaterialCommunityIcons
             name="pencil"
             size={20}
-            color={COLORS.THEME_COLOR}
+            color={theme.themeColor}
           />
 
         </TouchableOpacity>
@@ -627,7 +635,7 @@ export default function SaveUserCardDetails(props: S) {
           <MaterialCommunityIcons
             name="delete"
             size={20}
-            color="red"
+            color={theme.deleteIconColor}
           />
 
         </TouchableOpacity>
@@ -643,12 +651,12 @@ export default function SaveUserCardDetails(props: S) {
         style={{
           width: "94%",
           alignSelf: "center",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: theme.bgColor,
           borderRadius: 14,
           padding: 16,
           marginVertical: 10,
           borderWidth: 1,
-          borderColor: "#E5E7EB"
+          borderColor: theme.borderColor
         }}
       >
 
@@ -666,7 +674,7 @@ export default function SaveUserCardDetails(props: S) {
               fontSize: scaledSize(14),
               fontWeight: "600",
               letterSpacing: .5,
-              color: "#111"
+              color: theme.primaryTextColor
             }}
           >
             {Utility.string.getFirstLetterCapitalize(item.firstName)} {item.lastName}
@@ -680,7 +688,7 @@ export default function SaveUserCardDetails(props: S) {
               <MaterialCommunityIcons
                 name="pencil"
                 size={20}
-                color={COLORS.THEME_COLOR}
+                color={theme.themeColor}
               />
             </TouchableOpacity>
 
@@ -688,7 +696,7 @@ export default function SaveUserCardDetails(props: S) {
               <MaterialCommunityIcons
                 name="delete"
                 size={20}
-                color="red"
+                color={theme.deleteIconColor}
               />
             </TouchableOpacity>
           </View>
@@ -704,15 +712,15 @@ export default function SaveUserCardDetails(props: S) {
             marginBottom: 18,
             flexDirection: "row",
             justifyContent: "space-between",
-            borderWidth: 1,
-            borderColor: "#EFEFEF",
+            borderWidth: .5,
+            borderColor: theme.borderColor,
           }}
         >
           {/* LEFT LABELS */}
           <View>
             <Text
               style={{
-                color: "#7A7A7A",
+                color: theme.secondaryTextColor,
                 fontSize: 14,
                 marginBottom: 10,
               }}
@@ -722,7 +730,7 @@ export default function SaveUserCardDetails(props: S) {
 
             <Text
               style={{
-                color: "#7A7A7A",
+                color: theme.secondaryTextColor,
                 fontSize: 14,
               }}
             >
@@ -737,7 +745,7 @@ export default function SaveUserCardDetails(props: S) {
                 fontSize: 15,
                 // fontWeight: "500",
                 marginBottom: 10,
-                color: "#333",
+                color: theme.primaryTextColor,
                 letterSpacing: .5
               }}
             >
@@ -748,7 +756,7 @@ export default function SaveUserCardDetails(props: S) {
               style={{
                 fontSize: 15,
                 // fontWeight: "500",
-                color: "#333",
+                color: theme.primaryTextColor,
                 letterSpacing: .5
               }}
             >
@@ -762,7 +770,8 @@ export default function SaveUserCardDetails(props: S) {
           style={{
             fontSize: scaledSize(12),
             fontWeight: "600",
-            marginBottom: scaledSize(10),
+            marginBottom: scaledSize(12),
+            color: theme.primaryTextColor,
             letterSpacing: .5
           }}
         >
@@ -795,12 +804,12 @@ export default function SaveUserCardDetails(props: S) {
           <MaterialCommunityIcons
             name="plus"
             size={20}
-            color={COLORS.THEME_COLOR}
+            color={theme.themeColor}
           />
 
           <Text
             style={{
-              color: COLORS.THEME_COLOR,
+              color: theme.themeColor,
               fontSize: 15,
               marginLeft: 4,
               fontWeight: "500"
@@ -1016,7 +1025,7 @@ const renderAddCardDetails = () => {
         <View
           style={{
             width: scaledSize(340),
-            backgroundColor: "white",
+            backgroundColor: theme.bgColor,
             borderRadius: 14,
             paddingVertical: 20,
             paddingHorizontal: 18,
@@ -1037,6 +1046,7 @@ const renderAddCardDetails = () => {
               style={{
                 fontFamily: FONTS.QuicksandBold,
                 fontSize: scaledSize(16),
+                color: theme.primaryTextColor,
                 letterSpacing: 1,
               }}
             >
@@ -1054,8 +1064,8 @@ const renderAddCardDetails = () => {
               value={selectedBank.id}
               placeholder="Select Bank"
               containerStyle={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
+                borderWidth: .5,
+                borderColor: theme.borderColor,
                 borderRadius: 8,
                 height: 48,
                 paddingHorizontal: 10,
@@ -1104,7 +1114,7 @@ const renderAddCardDetails = () => {
             name="Add"
             onPress={() => addCard()}
             buttonStyle={{
-              backgroundColor: COLORS.THEME_COLOR,
+              backgroundColor: theme.themeColor,
               height: 48,
               borderRadius: 8,
             }}
@@ -1116,8 +1126,8 @@ const renderAddCardDetails = () => {
   );
 };
   return (
-    <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
-      <View style={{ height: scaledSize(50), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
+      <View style={{ height: scaledSize(50), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.bgColor }}>
         <View style={{ flex: 1 }}>
 
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
@@ -1126,14 +1136,15 @@ const renderAddCardDetails = () => {
               left: scaledSize(10),
             }}>
               {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
-              {/* <Ionicons name='arrow-back-circle-outline' color={'white'} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={onPress} color='black' size={18} />
+              {/* <Ionicons name='arrow-back-circle-outline' color={theme.iconColor} size={scaledSize(30)} onPress={ props.onPress}/> */}
+              <CustomBackIcon onPress={onPress} color={theme.iconColor} size={18} />
               {/* </TouchableOpacity> */}
             </View>
             <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
               <Text style={{
                 fontFamily: Fonts.regular,
                 fontSize: scaledSize(12),
+                color: theme.primaryTextColor,
                 letterSpacing: 1,
               }}>
                 Users
@@ -1146,7 +1157,7 @@ const renderAddCardDetails = () => {
       </View>
 
 
-      <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
+      <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
 
         {userDetails.length > 0 ? (
           <FlatList
@@ -1168,7 +1179,7 @@ const renderAddCardDetails = () => {
 
             <View style={{
               width: '100%',
-              backgroundColor: '#fff',
+              backgroundColor: theme.bgColor,
               borderRadius: 16,
               padding: 25,
               alignItems: 'center',
@@ -1179,7 +1190,7 @@ const renderAddCardDetails = () => {
               <MaterialCommunityIcons
                 name="credit-card-lock-outline"
                 size={60}
-                color="#0F9D9A"
+                color={theme.themeColor}
                 style={{ marginBottom: 15 }}
               />
 
@@ -1188,6 +1199,7 @@ const renderAddCardDetails = () => {
                 fontSize: scaledSize(18),
                 fontFamily: Fonts.bold,
                 marginBottom: 10,
+                color: theme.primaryTextColor,
                 textAlign: 'center'
               }}>
                 Credit Card Statement Password
@@ -1198,7 +1210,7 @@ const renderAddCardDetails = () => {
                 fontSize: scaledSize(12),
                 fontFamily: Fonts.regular,
                 textAlign: 'flex-start',
-                color: '#555',
+                color: theme.secondaryTextColor,
                 left: scaledSize(10),
                 lineHeight: scaledSize(20)
               }}>
@@ -1229,123 +1241,172 @@ const renderAddCardDetails = () => {
       </View>
 {renderAddCardDetails()}
       <Modal visible={isShowAddUserDetailsModal} transparent animationType='fade' >
-        <View style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}>
-          <View style={{
-            height: scaledSize(650),
-            width: scaledSize(350), backgroundColor: 'white', borderWidth: .5, borderColor: '#d3d3d3',
-            alignItems: 'center', borderRadius: scaledSize(10), padding: scaledSize(20)
-          }}>
-
-            <View style={{ flexDirection: 'row', height: scaledSize(80) }}>
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Feather name='user' size={scaledSize(40)} color={COLORS.THEME_COLOR} style={{ bottom: scaledSize(20) }} />
-                <Text style={{
-                  fontFamily: FONTS.QuicksandBold,
-                  fontSize: scaledSize(14), letterSpacing: 1,
-                }}>
-                  Add User Details</Text>
-
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={styles.headerIconContainer}>
+                <Feather name='user-plus' size={scaledSize(28)} color={theme.themeColor} />
               </View>
-              <View style={{ flex: .14, justifyContent: 'center', marginBottom: scaledSize(30) }}>
-                <CustomCloseIcon onPress={() => { setIsShowAddUserDetailsModal(false), setBankName('') }} color='black' />
+              <View>
+                <Text style={styles.modalTitle}>Add User Details</Text>
+                <Text style={styles.modalSubtitle}>Store user and card information securely</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.closeButton} onPress={() => { setIsShowAddUserDetailsModal(false), setBankName('') }}>
+              <CustomCloseIcon color={theme.iconColor} style={{fontSize:scaledSize(16),
+              bottom:1}}
+               iconSize={scaledSize(14)}
+              onPress={()=>setIsShowAddUserDetailsModal(false)} />
+            </TouchableOpacity>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+              {/* Personal Info Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="account-circle-outline" size={22} color={theme.themeColor} />
+                  <Text style={styles.sectionTitle}>Personal Information</Text>
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'firstName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter First Name'
+                    onChangeText={setFirstName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('firstName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'lastName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Last Name'
+                    onChangeText={setLastName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('lastName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'mobile' && styles.focusedInput]}>
+                  <FontAwesome5 name='mobile-alt' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Mobile Number'
+                    onChangeText={setMobileNumber}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('mobile')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={styles.sectionDivider} />
               </View>
 
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox placeholder='Enter First Name' onChangeText={setFirstName}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox placeholder='Enter Last Name' onChangeText={setLastName}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={[styles.inputView,]}>
-              <CustomInputBox placeholder='Enter Mobile Number' onChangeText={setMobileNumber}
-                isNumberKeyboard={true} maxLength={10}
-                CustomIcon={<FontAwesome5 name='mobile' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-
-            <View style={[styles.inputView, {
-              borderBottomWidth: scaledSize(0),
-              height: scaledSize(40), borderBottomColor: COLORS.inActiveBorderColor
-            }]}>
-              <TouchableOpacity style={[{
-                bottom: scaledSize(0), borderWidth: .5, borderRadius: scaledSize(10), borderColor: COLORS.THEME_COLOR,
-                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                height: scaledSize(36)
-              }]} onPress={() => setIsShowCalendar(true)}>
-                <View style={{ flexDirection: 'row', }}>
-                  <TouchableOpacity style={{ marginLeft: scaledSize(6), }} onPress={() => setIsShowCalendar(true)}>
-
-                    <AntDesign name='calendar' color={COLORS.THEME_COLOR} size={20} />
-                  </TouchableOpacity>
-
-                  <Text style={{ color: COLORS.textColor, marginLeft: scaledSize(16), }}>
-                    {selectedDate ? selectedDate : 'Select date'}</Text>
+              {/* Card Info Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="credit-card-outline" size={22} color={theme.themeColor} />
+                  <Text style={styles.sectionTitle}>Card Information</Text>
                 </View>
 
-                <View>
-                  {/* <Text style={{ color:selectedDate?'black': 'gray', marginRight: scaledSize(30), fontWeight: '600' }}>
-                    { selectedDate ? selectedDate :'DD-MM-YYYY'}</Text> */}
+                <Dropdown
+                  style={[styles.inputContainer, focusedField === 'bank' && styles.focusedInput]}
+                  placeholderStyle={styles.dropdownPlaceholder}
+                  selectedTextStyle={styles.dropdownSelectedText}
+                  inputSearchStyle={styles.dropdownInputSearch}
+                  iconStyle={styles.dropdownIcon}
+                  containerStyle={{ backgroundColor: theme.bgContainor, borderRadius: 12, borderColor: theme.borderColor }}
+                  itemTextStyle={{ color: theme.primaryTextColor }}
+                  activeColor={theme.bgColor}
+                  data={bankList}
+                  labelField="label"
+                  valueField="id"
+                  placeholder="Select bank"
+                  value={selectedBank.id}
+                  onFocus={() => setFocusedField('bank')}
+                  onBlur={() => setFocusedField(null)}
+                  onChange={item => {
+                    selectBankOnAddUser(item);
+                  }}
+                  renderLeftIcon={() => (
+                    selectedBank.value ?
+                      <Image source={BANK_LOGOS[selectedBank.value.bankName]} style={styles.bankIcon} />
+                      : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+                  )}
+                />
+
+                <TouchableOpacity style={[styles.inputContainer, focusedField === 'dob' && styles.focusedInput]} onPress={() => { setIsShowCalendar(true); setFocusedField('dob') }}>
+                  <AntDesign name='calendar' color={theme.secondaryTextColor} size={20} style={styles.inputIcon} />
+                  <Text style={[styles.textInput, { color: selectedDate ? theme.primaryTextColor : theme.secondaryTextColor, marginLeft: 0, top: 2 }]}>
+                    {selectedDate ? selectedDate : 'Select Expiry Date'}
+                  </Text>
+                </TouchableOpacity>
+
+                {isCustomerIdRequired && (
+                  <View style={[styles.inputContainer, focusedField === 'customerId' && styles.focusedInput]}>
+                    <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                    <TextInput
+                      placeholder='Enter Customer ID'
+                      onChangeText={setCustomerId}
+                      style={styles.textInput}
+                      placeholderTextColor={theme.secondaryTextColor}
+                      onFocus={() => setFocusedField('customerId')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                )}
+
+                <View style={[styles.inputContainer, focusedField === 'last4' && styles.focusedInput]}>
+                  <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Last 4 Digit Card Number'
+                    onChangeText={setLastFourDigit}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('last4')}
+                    onBlur={() => setFocusedField(null)}
+                  />
                 </View>
+              </View>
 
+              {/* <View style={styles.secureInfoCard}>
+                <MaterialCommunityIcons name="shield-check-outline" size={20} color={theme.themeColor} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.secureInfoText}>Your information is secure</Text>
+                  <Text style={styles.secureInfoSubText}>We never store full card details</Text>
+                </View>
+              </View> */}
+            </ScrollView>
 
-              </TouchableOpacity>
-
-            </View>
-
-            <View style={{
-              justifyContent: 'center', alignItems: 'center', height: scaledSize(30),
-              marginTop: scaledSize(10), width: widthFromPercentage(84)
-            }}>
-              <CustomDropdown data={bankList} placeholder='Select bank'
-                onSelect={(v) => selectBankOnAddUser(v)}
-                value={selectedBank.id}
-                LeftIcon={() => selectedBank.value ?
-                  <Image source={BANK_LOGOS[selectedBank.value.bankName]} style={{ height: 20, width: 20 }} />
-                  :
-                  <CustomVectorIcon iconLibrary="MaterialDesignIcons" iconName="bank"
-                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8) }} />
-                }
+            <View style={styles.footer}>
+              <CustomeButton
+                name='Save Details'
+                buttonStyle={styles.saveButton}
+                textStyle={styles.saveButtonText}
+                onPress={() => addUserDetail()}
               />
             </View>
-
-            {isCustomerIdRequired && <View style={{ height: scaledSize(50), width: scaledSize(326), marginTop: scaledSize(18) }}>
-              <CustomInputBox placeholder='Enter Customer ID'
-                onChangeText={setCustomerId}
-                CustomIcon={<Entypo name='user' color={COLORS.THEME_COLOR} size={28} />}
-              />
-            </View>}
-            <View style={[styles.inputView, { marginTop: scaledSize(20) }]}>
-              <CustomInputBox placeholder=' Last 4 Digit Card Number'
-                onChangeText={setLastFourDigit} isNumberKeyboard maxLength={4}
-                CustomIcon={<Entypo name='credit-card' color={COLORS.THEME_COLOR} size={28} />}
-              />
-            </View>
-            <View style={{ height: scaledSize(40), width: scaledSize(326), marginTop: scaledSize(30) }}>
-              <CustomeButton name='Save' buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, borderRadius: 10 }}
-                textStyle={{ color: 'white' }} onPress={() => addUserDetail()} />
-            </View>
-
           </View>
         </View>
-
       </Modal>
       <Modal visible={isEditUserShowModal} transparent animationType='fade' >
 
         <View style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}>
           <View style={{
             height: scaledSize(400),
-            width: scaledSize(350), backgroundColor: 'white', borderWidth: .2,
+            width: scaledSize(350), backgroundColor: theme.bgColor, borderWidth: .2,
             alignItems: 'center', borderRadius: scaledSize(10), padding: 20, paddingTop: 10
           }}>
 
             <View style={{ flexDirection: 'row', height: scaledSize(80) }}>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={{
+                  color: theme.primaryTextColor,
                   fontFamily: FONTS.QuicksandBold,
                   fontSize: scaledSize(14), letterSpacing: 1,
                 }}>
@@ -1427,7 +1488,7 @@ const renderAddCardDetails = () => {
     </View>
   )
 }
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
   labelView: {
     width: '50%', alignItems: 'flex-start',
@@ -1442,11 +1503,13 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
     letterSpacing: 1
   },
   text: {
     fontFamily: FONTS.QuicksandBold,
     fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
     letterSpacing: .5
   },
   seperator: {
@@ -1455,7 +1518,7 @@ const styles = StyleSheet.create({
   },
   userCard: {
     width: "94%",
-    backgroundColor: "#fff",
+    backgroundColor: theme.bgColor,
     borderRadius: 16,
     padding: 16,
     marginVertical: 10,
@@ -1464,5 +1527,175 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5
+  },
+  focusedInput: {
+    borderColor: theme.themeColor,
+    borderWidth: 1.5,
+    elevation: 4
+  },
+  // New Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: theme.bgColor,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    width: '92%',
+    maxHeight: '85%',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  headerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: theme.bgContainor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  modalSubtitle: {
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+    marginTop: 4,
+  },
+  modalTitle: {
+    fontSize: scaledSize(16),
+    fontWeight: '700',
+    color: theme.primaryTextColor,
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: theme.borderColor,
+    marginVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: scaledSize(14),
+    fontWeight: '500',
+    color: theme.themeColor,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgContainor,
+    height: 58,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: mode === 'dark' ? 0.1 : 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 12,
+    opacity: 0.9,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+    padding: 0, // to remove default padding
+  },
+  dropdownPlaceholder: {
+    fontSize: scaledSize(14),
+    color: theme.secondaryTextColor,
+  },
+  dropdownSelectedText: {
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+  },
+  dropdownInputSearch: {
+    height: 40,
+    fontSize: 16,
+    backgroundColor: theme.bgContainor,
+    color: theme.primaryTextColor
+  },
+  dropdownIcon: {
+    width: 20,
+    height: 20,
+  },
+  bankIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  secureInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgContainor,
+    padding: 14,
+    borderRadius: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+  },
+  secureInfoText: {
+    fontSize: scaledSize(13),
+    fontWeight: '500',
+    color: theme.primaryTextColor,
+  },
+  secureInfoSubText: {
+    fontSize: scaledSize(12),
+    color: theme.secondaryTextColor,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 28,
+    backgroundColor: theme.bgColor, // to cover content underneath
+  },
+  saveButton: {
+    backgroundColor: theme.themeColor,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   }
 })
