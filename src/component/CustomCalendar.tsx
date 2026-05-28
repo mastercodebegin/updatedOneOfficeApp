@@ -1,113 +1,215 @@
-import React, { Component } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
-  View
+  View,
+  TouchableOpacity
 } from 'react-native';
 import CalendarPicker from 'react-native-calendar-picker';
 import { scaledSize, widthFromPercentage } from '../utilies/Utilities';
-import { COLORS } from '../utilies/GlobalColors';
-import { Fonts } from '../assets/fonts/GlobalFonts';
-import CustomeButton from './CustomButton';
-import { color } from 'react-native-elements/dist/helpers';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 
 interface S {
-  onSelectDate: any,
-  onCancelPress:Function
-
+  onSelectDate: (date: any) => void,
+  onCancelPress: () => void
 }
 
-interface SS {
-  selectedStartDate: any,
+export default function CustomCalendar(props: S) {
+  const { onSelectDate, onCancelPress } = props;
+  const { theme, mode } = useTheme();
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
 
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-}
-
-
-export default class CustomCalendar extends Component<S, SS> {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectedStartDate: new Date(),
-    };
-    this.onDateChange = this.onDateChange.bind(this);
-  }
-
- monthColor='black'
- dateColor='black'
-
-
-  componentDidUpdate() {
-    console.log(this.state.selectedStartDate);
-    this.props.onSelectDate(this.state.selectedStartDate)
-
-  }
-  onDateChange(date) {
-    this.setState({
-      selectedStartDate: date,
-    });
-  }
-
-  customDayHeaderStylesCallback = () => {
-    return {
-      style: {
-        backgroundColor: 'transparent', // Keep background transparent or customize it
-      },
-      textStyle: {
-        color: COLORS.THEME_COLOR, // Change this to your desired color for week names
-        fontWeight: 'bold',
-      },
-    };
+  const onDateChange = (date) => {
+    setSelectedDate(date);
   };
-  // BUTTON_PURPLE: '#813BE3',
-  // LIGHT_PURPLE: '#b078ff',
 
-  render() {
-    const { selectedStartDate } = this.state;
-    const startDate = selectedStartDate ? selectedStartDate.toString() : '';
-    return (
-      <View style={[{ width: scaledSize(430), alignSelf: 'center', backgroundColor: 'white', height: scaledSize(400),borderRadius:4 }]}>
-        <CalendarPicker
-          onDateChange={this.onDateChange}
-          yearTitleStyle={{ fontSize: scaledSize(14), marginLeft: scaledSize(20), }}
-          yearTitle
-          previousComponent={<Icon name="caret-back" size={24} color={COLORS.THEME_COLOR} />}
-          nextComponent={<Icon name="caret-forward-outline" size={24} color={COLORS.THEME_COLOR} />}
+  const handleConfirm = () => {
+    onSelectDate(selectedDate);
+  };
 
-          // previousTitleStyle={{ fontSize: scaledSize(14), fontFamily: Fonts.bold,color:'#813BE3' }}
-          // nextTitleStyle={{ color: '#813BE3', fontSize: scaledSize(14), fontFamily: Fonts.bold }}
-          // initialView={{backgroundColor:COLORS.purple,}}
-          textStyle={{ color:this.dateColor }}
-          todayTextStyle={{ color: 'white', }}
-          todayBackgroundColor={COLORS.THEME_COLOR}
-          selectedDayColor={'#813BE3'}
-          selectedDayTextColor={'white'}
+  const today = new Date();
+  const customDatesStyles = [{
+    date: today,
+    style: styles.todayStyle,
+    textStyle: styles.todayTextStyle,
+  }];
 
-          // customDayHeaderStyles={this.customDayHeaderStylesCallback}
+  return (
+    <View style={styles.container}>
+      <View style={styles.dragIndicator} />
+      <CalendarPicker
+        onDateChange={onDateChange}
+        width={widthFromPercentage(82)}
+        headerWrapperStyle={styles.headerWrapper}
+        monthTitleStyle={styles.monthTitle}
+        yearTitleStyle={styles.yearTitle}
+        previousComponent={
+          <View style={styles.arrowContainer}>
+            <Icon name="chevron-back" size={24} color={theme.themeColor} />
+          </View>
+        }
+        nextComponent={
+          <View style={styles.arrowContainer}>
+            <Icon name="chevron-forward" size={24} color={theme.themeColor} />
+          </View>
+        }
+        dayLabelsWrapper={styles.weekLabelsWrapper}
+        dayOfWeekStyles={styles.weekDayLabel}
+        dayStyle={styles.dayContainer}
+        textStyle={styles.dayText}
+        selectedDayStyle={styles.selectedDay}
+        selectedDayTextStyle={styles.selectedDayText}
+        todayBackgroundColor={'transparent'} // Handled by customDatesStyles
+        todayTextStyle={styles.todayTextStyle} // Handled by customDatesStyles
+        customDatesStyles={customDatesStyles}
+        disabledDatesTextStyle={styles.disabledDateText}
+      />
 
-
-
-        />
-
-        <View style={{ height: scaledSize(40), width: widthFromPercentage(90), alignSelf: 'center',
-          marginTop:scaledSize(20) }}>
-          <CustomeButton name='Done' onPress={() => this.props.onCancelPress()} 
-          buttonStyle={{backgroundColor:COLORS.THEME_COLOR,
-            // borderWidth:.5,borderColor:COLORS.THEME_COLOR,
-            borderRadius:scaledSize(6)}} 
-          textStyle={{color:'white',fontSize:scaledSize(12),letterSpacing:2}} />
-        </View>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.cancelButton} onPress={onCancelPress}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+          <Text style={styles.confirmButtonText}>Confirm</Text>
+        </TouchableOpacity>
       </View>
-    );
-  }
+    </View>
+  );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
+    width: '92%',
+    alignSelf: 'center',
+    backgroundColor: theme.bgContainor,
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: theme.borderColor,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  headerWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 0, // No extra padding
+    marginBottom: 20,
+  },
+  arrowContainer: {
+    height: 52,
+    width: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.buttonBGColor,
+  },
+  monthTitle: {
+    fontSize: scaledSize(18),
+    fontWeight: '700',
+    color: theme.primaryTextColor,
+  },
+  yearTitle: {
+    fontSize: scaledSize(18),
+    fontWeight: '700',
+    color: theme.primaryTextColor,
+  },
+  weekLabelsWrapper: {
+    borderBottomWidth: 0,
+    paddingBottom: 10,
+  },
+  weekDayLabel: {
+    fontSize: scaledSize(12),
+    color: theme.secondaryTextColor,
+    fontWeight: '500',
+  },
+  dayContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayText: {
+    color: theme.primaryTextColor,
+    fontSize: scaledSize(14),
+  },
+  selectedDay: {
+    backgroundColor: theme.themeColor,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: theme.themeColor,
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  selectedDayText: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  todayStyle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: theme.themeColor,
+    backgroundColor: 'transparent',
+  },
+  todayTextStyle: {
+    color: theme.themeColor,
+    fontWeight: '700',
+  },
+  disabledDateText: {
+    opacity: 0.35,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 12,
+  },
+  cancelButton: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    marginTop: scaledSize(100),
-
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: theme.primaryTextColor,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 18,
+    // borderWidth:.5,borderColor:theme.themeColor,
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: theme.themeColor,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

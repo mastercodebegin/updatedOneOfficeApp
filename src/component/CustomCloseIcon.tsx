@@ -7,7 +7,7 @@ import { COLORS } from '../utilies/GlobalColors';
 
 interface S {
     iconSize?: number
-    style:TextStyle
+    style?:TextStyle
     onPress: Function
     color?:string
 }
