@@ -38,6 +38,7 @@ import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { useTheme } from '../theme/useTheme'
 import ConfirmationDialog from '../../component/ConfirmationDialog'
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
+import { Theme } from '../theme/ThemeConfig'
 
 
 const data = [
@@ -600,7 +601,7 @@ export default function SaveUserCardDetails(props: S) {
         flexDirection: "row",
         alignItems: "center",
         // backgroundColor: theme.bgColor,
-        borderWidth:1,
+        borderWidth:.5,
         paddingHorizontal:2,
         height:scaledSize(74),
         // width:400,
@@ -671,7 +672,7 @@ export default function SaveUserCardDetails(props: S) {
           padding: scaledSize(18),
           marginVertical: scaledSize(14),
           marginHorizontal: scaledSize(16),
-          borderWidth: 1,
+          borderWidth: .5,
           borderColor: theme.borderColor,
           elevation: 5,
           shadowColor: '#000',
@@ -1051,7 +1052,7 @@ const renderAddCardDetails = () => {
             }}>
               {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
               {/* <Ionicons name='arrow-back-circle-outline' color={theme.iconColor} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={onPress} color={theme.iconColor} size={18} />
+              <CustomBackIcon onPress={()=>{Utility.navigation.navigateToBack()}} color={theme.iconColor} size={18} />
               {/* </TouchableOpacity> */}
             </View>
             <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
@@ -1299,67 +1300,81 @@ const renderAddCardDetails = () => {
         </View>
       </Modal>
       <Modal visible={isEditUserShowModal} transparent animationType='fade' >
-
-        <View style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}>
-          <View style={{
-            height: scaledSize(400),
-            width: scaledSize(350), backgroundColor: theme.bgColor, borderWidth: .2,
-            alignItems: 'center', borderRadius: scaledSize(10), padding: 20, paddingTop: 10
-          }}>
-
-            <View style={{ flexDirection: 'row', height: scaledSize(80) }}>
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{
-                  color: theme.primaryTextColor,
-                  fontFamily: FONTS.QuicksandBold,
-                  fontSize: scaledSize(14), letterSpacing: 1,
-                }}>
-                  Update User Details</Text>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContainer, { maxHeight: 'none' }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.headerIconContainer}>
+                <Feather name='user-check' size={scaledSize(28)} color={theme.themeColor} />
               </View>
-              <View style={{ flex: .14, justifyContent: 'center', marginBottom: scaledSize(30) }}>
-                <CustomCloseIcon onPress={() => setIsEditUserShowModal(false)} color='black' />
+              <View>
+                <Text style={styles.modalTitle}>Update User Details</Text>
+                <Text style={styles.modalSubtitle}>Edit personal information</Text>
               </View>
-
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.firstName} onChangeText={(v) => setFirstName(v)}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.lastName} onChangeText={(v) => setLastName(v)}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.mobileNumber} onChangeText={(v) => setMobileNumber(v)}
-                isNumberKeyboard={true} maxLength={10}
-                CustomIcon={<FontAwesome5 name='mobile' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
             </View>
 
-            <View style={[styles.inputView, { borderBottomWidth: scaledSize(.2), height: scaledSize(40), borderBottomColor: COLORS.inActiveBorderColor }]}>
-              <TouchableOpacity style={[{ marginTop: scaledSize(10), flexDirection: 'row', }]} onPress={() => setIsShowCalendar(true)}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setIsEditUserShowModal(false)}>
+              <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => setIsEditUserShowModal(false)} />
+            </TouchableOpacity>
 
-                <TouchableOpacity style={{ marginLeft: scaledSize(6) }} onPress={() => setIsShowCalendar(true)}>
-
-                  <AntDesign name='calendar' color={COLORS.THEME_COLOR} size={20} />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+              <View style={styles.section}>
+                <View style={[styles.inputContainer, focusedField === 'editFirstName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter First Name'
+                    defaultValue={selectedUser?.firstName}
+                    onChangeText={setFirstName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editFirstName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'editLastName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Last Name'
+                    defaultValue={selectedUser?.lastName}
+                    onChangeText={setLastName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editLastName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'editMobile' && styles.focusedInput]}>
+                  <FontAwesome5 name='mobile-alt' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Mobile Number'
+                    defaultValue={selectedUser?.mobileNumber}
+                    onChangeText={setMobileNumber}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editMobile')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <TouchableOpacity style={[styles.inputContainer, focusedField === 'editDob' && styles.focusedInput]} onPress={() => { setIsShowCalendar(true); setFocusedField('editDob') }}>
+                  <AntDesign name='calendar' color={theme.secondaryTextColor} size={20} style={styles.inputIcon} />
+                  <Text style={[styles.textInput, { color: selectedDate || selectedUser?.dob ? theme.primaryTextColor : theme.secondaryTextColor, marginLeft: 0, top: 2 }]}>
+                    {selectedDate || selectedUser?.dob || 'Select Date of Birth'}
+                  </Text>
                 </TouchableOpacity>
+              </View>
+            </ScrollView>
 
-                <Text style={{ color: COLORS.textColor, marginLeft: scaledSize(16), fontWeight: '600' }}>
-                  {selectedDate ? selectedDate : selectedUser?.dob}</Text>
-              </TouchableOpacity>
-
+            <View style={styles.footer}>
+              <CustomeButton
+                name='Update Details'
+                buttonStyle={styles.saveButton}
+                textStyle={styles.saveButtonText}
+                onPress={() => updateUser({ firstName: firstName, lastName: lastName, dob: selectedDate ? selectedDate : selectedUser?.dob, mobileNumber: mobileNumber })}
+              />
             </View>
-
-
-            <View style={{ height: scaledSize(40), width: '100%', marginTop: scaledSize(10) }}>
-              <CustomeButton name='Update' onPress={() => updateUser({ firstName: firstName, lastName: lastName, dob: selectedDate ? selectedDate : dateOfBirth, mobileNumber: mobileNumber })} />
-            </View>
-
           </View>
         </View>
-
       </Modal>
 
       <Modal visible={isShowCalendar} transparent animationType='fade'  >
@@ -1492,7 +1507,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     width: scaledSize(55),
     height: scaledSize(55),
     borderRadius: scaledSize(27.5),
-    backgroundColor: theme.themeOpacity,
+    backgroundColor: theme.bgColor,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: scaledSize(10),
@@ -1659,7 +1674,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   focusedInput: {
     borderColor: theme.themeColor,
-    borderWidth: 1.5,
+    borderWidth: .7,
     elevation: 4
   },
   // New Modal Styles
@@ -1715,7 +1730,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     backgroundColor: theme.buttonBGColor,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: .5,
     borderColor: theme.borderColor,
   },
   section: {
@@ -1724,8 +1739,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: scaledSize(12),
+    gap:scaledSize(8),
   },
 
   sectionTitle: {
@@ -1737,20 +1752,20 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgContainor,
-    height: 58,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    borderWidth: 1,
+    height: scaledSize(44),
+    borderRadius: scaledSize(14),
+    paddingHorizontal: scaledSize(14),
+    marginTop: scaledSize(10),
+    borderWidth: .5,
     borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: mode === 'dark' ? 0.1 : 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: scaledSize(2),
+    elevation: scaledSize(2),
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: scaledSize(10),
     opacity: 0.9,
   },
   textInput: {
@@ -1789,7 +1804,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     padding: scaledSize(12),
     borderRadius: scaledSize(14),
     marginTop: scaledSize(16),
-    borderWidth: 1,
+    borderWidth: .5,
     borderColor: theme.borderColor,
   },
   secureInfoText: {
@@ -1809,7 +1824,9 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     paddingHorizontal: scaledSize(20),
     paddingTop: scaledSize(10),
     paddingBottom: scaledSize(24),
-    backgroundColor: theme.bgColor, // to cover content underneath
+    backgroundColor: theme.bgColor,
+    borderBottomLeftRadius: scaledSize(24),
+    borderBottomRightRadius: scaledSize(24),
   },
   saveButton: {
     // backgroundColor: theme.themeColor,
