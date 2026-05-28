@@ -10,6 +10,7 @@ import { scaledSize, widthFromPercentage } from '../utilies/Utilities';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
+import { FONTS } from '../utilies/GlobalColors';
 
 interface S {
   onSelectDate: (date: any) => void,
@@ -111,22 +112,25 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginBottom: 20,
   },
   arrowContainer: {
-    height: 52,
-    width: 52,
-    borderRadius: 26,
+    height: 40,
+    width: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.buttonBGColor,
+    // backgroundColor: theme.buttonBGColor,
   },
   monthTitle: {
-    fontSize: scaledSize(18),
-    fontWeight: '700',
+    fontSize: scaledSize(16),
+    // fontWeight: '700',
+    letterSpacing:1,
     color: theme.primaryTextColor,
   },
   yearTitle: {
-    fontSize: scaledSize(18),
-    fontWeight: '700',
+    fontSize: scaledSize(16),
+    // fontWeight: '700',
     color: theme.primaryTextColor,
+    fontFamily:FONTS.regular,
+    letterSpacing:.5
   },
   weekLabelsWrapper: {
     borderBottomWidth: 0,
@@ -138,8 +142,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontWeight: '500',
   },
   dayContainer: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -150,9 +154,9 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   selectedDay: {
     backgroundColor: theme.themeColor,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     elevation: 4,
     shadowColor: theme.themeColor,
     shadowOpacity: 0.4,
@@ -161,19 +165,16 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   selectedDayText: {
     color: 'white',
-    fontWeight: '700',
+    // fontWeight: '700',
   },
   todayStyle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: theme.themeColor,
     backgroundColor: 'transparent',
+    color: theme.themeColor,
+    // fontWeight: '700',
   },
   todayTextStyle: {
     color: theme.themeColor,
-    fontWeight: '700',
+    // fontWeight: '700',
   },
   disabledDateText: {
     opacity: 0.35,
