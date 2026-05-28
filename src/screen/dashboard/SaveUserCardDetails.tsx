@@ -37,6 +37,7 @@ import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { useTheme } from '../theme/useTheme'
 import ConfirmationDialog from '../../component/ConfirmationDialog'
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
 
 
 const data = [
@@ -103,23 +104,14 @@ export default function SaveUserCardDetails(props: S) {
   const [isUserDeleteConfirmationVisible, setIsUserDeleteConfirmationVisible] = useState(false);
   const [userToDeleteIndex, setUserToDeleteIndex] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const styles = React.useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
     if (isCap == undefined) {
-      Alert.alert(
-        'Sorry ',
-        'we could not generate the password please check user details again',
-        [
-          {
-            text: '',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          { text: 'Ok', onPress: () => console.log('Yes Pressed') },
-        ],
-        { cancelable: false }
-      )
+      setErrorMessage('Sorry, we could not generate the password. Please check user details again.');
+      setIsShowErrorModal(true);
       return true
     }
     if (isCap) {
@@ -433,22 +425,42 @@ export default function SaveUserCardDetails(props: S) {
 
   const addUserDetail = async () => {
     console.log('selectedbank', selectedBank);
-    console.log('last', lastName);
-    console.log('mobileNumber', mobileNumber);
-    console.log('date', selectedDate);
-    console.log('bankName', bankName);
-    console.log('last4', lastFourDigit);
-    if (firstName.length == 0) { alert('please enter first name') }
-    else if (lastName.length == 0) { alert('please enter last name') }
-    else if (mobileNumber.length < 10) { alert('please enter valid mobile number') }
-    else if (selectedDate == null) { alert('please select date') }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (isCustomerIdRequired) {
-      if (customerId.length == 0) { alert('please enter customer id') }
+    if (firstName.length == 0) {
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (lastFourDigit.length != 4) { alert('please enter card last 4 digit') }
-    else {
+    if (lastName.length == 0) {
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (mobileNumber.length < 10) {
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (selectedDate == null) {
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (bankName.length == 0) {
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (isCustomerIdRequired && customerId.length == 0) {
+      setErrorMessage('Please enter customer id');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (lastFourDigit.length != 4) {
+      setErrorMessage('Please enter the last 4 digits of the card');
+      setIsShowErrorModal(true);
+      return;
+    }
+
       const cardDetails = {
         id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
         customerId: customerId, ...selectedBank
@@ -479,7 +491,7 @@ export default function SaveUserCardDetails(props: S) {
 
 
       }
-    }
+    
 
 
   }
@@ -537,20 +549,24 @@ export default function SaveUserCardDetails(props: S) {
 
   const checkValidation = () => {
     if (firstName.length == 0) {
-      alert('please enter first name')
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
       return false
     }
     if (lastName.length == 0) {
-      alert('please enter last name')
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
       return false
     }
     if (mobileNumber.length < 10) {
-      alert('please enter valid mobile number')
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
       return false
 
     }
     if (selectedDate == null) {
-      alert('please select date')
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
       return false
     }
 
@@ -824,27 +840,31 @@ export default function SaveUserCardDetails(props: S) {
     const filteredCard = user.cards.find((card: any) => card.bankName == bankName && card.lastFourDigit == lastFourDigit)
     console.log('filtered card', filteredCard);
     if (bankName.length == 0) {
-      alert('Please select a bank');
-      return true
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
+      return;
     }
     if (filteredCard != undefined) {
-      alert('card is already added');
-      return true
+      setErrorMessage('Card is already added');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (lastFourDigit.length != 4) {
-      alert('Please enter card Last 4 digit ');
-      return true
+    if (lastFourDigit.length != 4) {
+      setErrorMessage('Please enter card Last 4 digit');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
-      alert('Please enter customer-id');
-      return true
+    if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
+      setErrorMessage('Please enter customer-id');
+      setIsShowErrorModal(true);
+      return;
     }
     // if(selectedBank)
     const obj = {
       bankName: bankName,
       lastFourDigit: lastFourDigit,
       customerId: customerId,
-      id: generateUniqueNumber(),
+      id: Utility.generateUniqueNumber(),
       ...selectedBank
     };
 
@@ -940,106 +960,80 @@ export default function SaveUserCardDetails(props: S) {
   }
 const renderAddCardDetails = () => {
   return (
-    <Modal visible={isShowAddCardModal} transparent animationType="fade">
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.3)",
-        }}
-      >
-        <View
-          style={{
-            width: scaledSize(340),
-            backgroundColor: theme.bgColor,
-            borderRadius: 14,
-            paddingVertical: 20,
-            paddingHorizontal: 18,
-            elevation: 6,
-          }}
-        >
-
+    <Modal visible={isShowAddCardModal} transparent animationType='fade' >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContainer}>
           {/* Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: FONTS.QuicksandBold,
-                fontSize: scaledSize(16),
-                color: theme.primaryTextColor,
-                letterSpacing: 1,
-              }}
-            >
-              Add Card Details
-            </Text>
-
-            <CustomCloseIcon onPress={() => clearState()} />
+          <View style={styles.modalHeader}>
+            <View style={styles.headerIconContainer}>
+              <MaterialCommunityIcons name='credit-card-plus-outline' size={scaledSize(28)} color={theme.themeColor} />
+            </View>
+            <View>
+              <Text style={styles.modalTitle}>Add New Card</Text>
+              <Text style={styles.modalSubtitle}>Link a new card to this user</Text>
+            </View>
           </View>
 
-          {/* Bank Dropdown */}
-          <View style={{ marginBottom: 15 }}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => clearState()}>
+            <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => clearState()} />
+          </TouchableOpacity>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {/* Bank Dropdown */}
             <CustomDropdown
               data={bankList}
-              onSelect={(v: any) => onSelectBank(v)}
+              placeholder="Select bank"
+              onSelect={(item) => onSelectBank(item)}
               value={selectedBank.id}
-              placeholder="Select Bank"
-              LeftIcon={() =>
-                selectedBank.value ? (
-                  <Image
-                    source={BANK_LOGOS[selectedBank.value.bankName]}
-                    style={{ height: 20, width: 20 }}
-                  />
-                ) : (
-                  <CustomVectorIcon
-                    iconLibrary="MaterialDesignIcons"
-                    iconName="bank"
-                    style={{ fontSize: 18, marginRight: 6 }}
-                  />
-                )
-              }
+              onFocuse={() => setFocusedField('addCardBank')}
+              onBlur={() => setFocusedField(null)}
+              LeftIcon={() => (
+                selectedBank.value ?
+                  <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
+                  : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+              )}
             />
-          </View>
 
-          {/* Card Number */}
-          <View style={{ marginBottom: scaledSize(15),height:scaledSize(40) }}>
-            <CustomInput
-              onChangeText={(v) => setLastFourDigit(v)}
-              maxLength={4}
-              isPhoneKeyBoard
-              placeholder="Enter Last 4 Digit Card Number"
-            />
-          </View>
-
-          {/* Customer Id */}
-          {isCustomerIdRequired && (
-            <View style={{ marginBottom: 20,height:scaledSize(40)}}>
-              <CustomInput
-                onChangeText={(v) => setCustomerId(v)}
-                placeholder="Enter Customer Id"
+            {/* Card Number */}
+            <View style={[styles.inputContainer, focusedField === 'addCardLast4' && styles.focusedInput]}>
+              <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+              <TextInput
+                placeholder='Last 4 Digits of Card'
+                onChangeText={(v) => setLastFourDigit(v)}
+                maxLength={4}
+                keyboardType="number-pad"
+                style={styles.textInput}
+                placeholderTextColor={theme.secondaryTextColor}
+                onFocus={() => setFocusedField('addCardLast4')}
+                onBlur={() => setFocusedField(null)}
               />
             </View>
-          )}
+
+            {/* Customer Id */}
+            {isCustomerIdRequired && (
+              <View style={[styles.inputContainer, focusedField === 'addCardCustomerId' && styles.focusedInput]}>
+                <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                <TextInput
+                  placeholder='Enter Customer ID'
+                  onChangeText={(v) => setCustomerId(v)}
+                  style={styles.textInput}
+                  placeholderTextColor={theme.secondaryTextColor}
+                  onFocus={() => setFocusedField('addCardCustomerId')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+            )}
+          </ScrollView>
 
           {/* Button */}
-          <View style={{height:40,marginTop:scaledSize(10)}}>
-
-          <CustomeButton
-            name="Add"
-            onPress={() => addCard()}
-            buttonStyle={{
-              backgroundColor: theme.themeColor,
-              height: 48,
-              borderRadius: 8,
-            }}
+          <View style={styles.footer}>
+            <CustomeButton
+              name="Add Card"
+              onPress={() => addCard()}
+              buttonStyle={styles.saveButton}
+              textStyle={styles.saveButtonText}
             />
-            </View>
+          </View>
         </View>
       </View>
     </Modal>
@@ -1425,6 +1419,12 @@ const renderAddCardDetails = () => {
         }}
         mode="delete"
         message="Are you sure you want to delete this user?" />
+
+      <CustomErrorMsgModal
+        isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)}
+        errorMessage={errorMessage}
+      />
 
     </View>
   )
@@ -1812,14 +1812,18 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     backgroundColor: theme.bgColor, // to cover content underneath
   },
   saveButton: {
-    backgroundColor: theme.themeColor,
-    height: scaledSize(50),
-    borderRadius: scaledSize(16),
+    // backgroundColor: theme.themeColor,
+    borderWidth:.5,
+    borderColor: theme.themeColor,
+    height: scaledSize(44),
+    borderRadius: scaledSize(14),
+    width:'50%',
+    alignSelf:'center',
     justifyContent: 'center',
     alignItems: 'center',
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: theme.themeColor,
     fontSize: scaledSize(14),
     fontWeight: '600',
   }
