@@ -45,10 +45,12 @@ export default function CustomErrorMsgModal(props: S) {
         {/* Icon */}
         <View
           style={{
-            width: scaledSize(64),
-            height: scaledSize(64),
-            borderRadius: scaledSize(40),
-            backgroundColor: isDark ? '#2A2A2C' : '#F5F5F5',
+            width: scaledSize(70),
+            height: scaledSize(70),
+            borderRadius: scaledSize(46),
+            borderWidth:1,
+            borderColor:'red',
+            // backgroundColor: isDark ? '#2A2A2C' : '#F5F5F5',
             justifyContent: 'center',
             alignItems: 'center',
             marginBottom: scaledSize(14),
@@ -87,7 +89,7 @@ export default function CustomErrorMsgModal(props: S) {
       
 
         {/* Buttons */}
-        <View style={{ flexDirection: 'row', width: '100%', gap: 10 }}>
+        <View style={{ flexDirection: 'row', width: '50%', }}>
 
           <TouchableOpacity
             activeOpacity={0.7}
@@ -95,10 +97,10 @@ export default function CustomErrorMsgModal(props: S) {
             style={{
               flex: 1,
               height: scaledSize(40),
-              borderRadius: scaledSize(12),
+              borderRadius: scaledSize(8),
               borderWidth: 1.5,
               top:scaledSize(10),
-              borderColor: isDark ? '#38383A' : '#E5E7EB',
+              borderColor: isDark ? 'gray' : '#E5E7EB',
               justifyContent: 'center',
               alignItems: 'center',
             }}
@@ -106,12 +108,12 @@ export default function CustomErrorMsgModal(props: S) {
             <Text
               style={{
                 fontSize: scaledSize(14),
-                letterSpacing:1,
+                letterSpacing:2,
                 color: isDark ? '#8E8E93' : '#6B7280',
                 fontFamily: Fonts.regular,
               }}
             >
-              close
+              Close
             </Text>
           </TouchableOpacity>
 
@@ -174,21 +176,21 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 10,
+    marginTop: scaledSize(20),
   },
   dismissButton: {
     flex: 1,
-    height: 46,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: mode === 'dark' ? '#38383A' : '#E5E7EB',
+    height: scaledSize(54),
+    borderRadius: scaledSize(18),
+    borderWidth: 1,
+    borderColor: theme.borderColor,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dismissText: {
     fontSize: scaledSize(14),
-    letterSpacing: 1,
-    color: mode === 'dark' ? '#8E8E93' : '#6B7280',
-    fontFamily: Fonts.regular,
+    letterSpacing: 0.5,
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.medium,
   },
 });

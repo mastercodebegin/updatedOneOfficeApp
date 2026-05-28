@@ -36,6 +36,7 @@ import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { useTheme } from '../theme/useTheme'
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
 import { Theme } from '../theme/ThemeConfig'
 // import CustomDropdown from '../../component/CustomDropDown'
 
@@ -100,6 +101,8 @@ export default function SaveUserCardDetails(props: S) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // const [cardI, setDropDownCard] = useState<any>();
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const styles = React.useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
@@ -435,16 +438,36 @@ export default function SaveUserCardDetails(props: S) {
     console.log('date', selectedDate);
     console.log('bankName', bankName);
     console.log('last4', lastFourDigit);
-    if (firstName.length == 0) { alert('please enter first name') }
-    else if (lastName.length == 0) { alert('please enter last name') }
-    else if (mobileNumber.length < 10) { alert('please enter valid mobile number') }
-    else if (selectedDate == null) { alert('please select date') }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (isCustomerIdRequired) {
-      if (customerId.length == 0) { alert('please enter customer id') }
+    if (firstName.length == 0) {
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
     }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (lastFourDigit.length != 4) { alert('please enter card last 4 digit') }
+    else if (lastName.length == 0) {
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
+    }
+    else if (mobileNumber.length < 10) {
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
+    }
+    else if (selectedDate == null) {
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
+    }
+    else if (bankName.length == 0) {
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
+    }
+    else if (isCustomerIdRequired) {
+      if (customerId.length == 0) {
+        setErrorMessage('Please enter customer id');
+        setIsShowErrorModal(true);
+      }
+    }
+    else if (lastFourDigit.length != 4) {
+      setErrorMessage('Please enter the last 4 digits of your card');
+      setIsShowErrorModal(true);
+    }
     else {
       const cardDetails = {
         id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
@@ -534,20 +557,24 @@ export default function SaveUserCardDetails(props: S) {
 
   const checkValidation = () => {
     if (firstName.length == 0) {
-      alert('please enter first name')
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
       return false
     }
     if (lastName.length == 0) {
-      alert('please enter last name')
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
       return false
     }
     if (mobileNumber.length < 10) {
-      alert('please enter valid mobile number')
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
       return false
 
     }
     if (selectedDate == null) {
-      alert('please select date')
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
       return false
     }
 
@@ -898,19 +925,23 @@ export default function SaveUserCardDetails(props: S) {
     const filteredCard = user.cards.find((card: any) => card.bankName == bankName && card.lastFourDigit == lastFourDigit)
     console.log('filtered card', filteredCard);
     if (bankName.length == 0) {
-      alert('Please select a bank');
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
       return true
     }
     if (filteredCard != undefined) {
-      alert('card is already added');
+      setErrorMessage('Card is already added');
+      setIsShowErrorModal(true);
       return true
     }
     else if (lastFourDigit.length != 4) {
-      alert('Please enter card Last 4 digit ');
+      setErrorMessage('Please enter the last 4 digits of your card');
+      setIsShowErrorModal(true);
       return true
     }
     else if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
-      alert('Please enter customer-id');
+      setErrorMessage('Please enter customer-id');
+      setIsShowErrorModal(true);
       return true
     }
     // if(selectedBank)
@@ -1468,6 +1499,11 @@ const renderAddCardDetails = () => {
         </View>
       {/* </View> */}
       {isShowCardsModal ? displayAllCards() : null}
+      <CustomErrorMsgModal
+        isVisible={isShowErrorModal}
+        errorMessage={errorMessage}
+        onPressClose={() => setIsShowErrorModal(false)}
+      />
 
     </View>
   )
