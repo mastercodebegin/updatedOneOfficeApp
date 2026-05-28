@@ -36,9 +36,7 @@ import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { useTheme } from '../theme/useTheme'
-import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
-import { Theme } from '../theme/ThemeConfig'
-// import CustomDropdown from '../../component/CustomDropDown'
+import ConfirmationDialog from '../../component/ConfirmationDialog'
 
 
 const data = [
@@ -100,9 +98,11 @@ export default function SaveUserCardDetails(props: S) {
   const [updatedCardNumber, setUpdatedCardNumber] = React.useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // const [cardI, setDropDownCard] = useState<any>();
+  const [isShowDeleteConfirmation, setIsShowDeleteConfirmation] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState(null);
+  const [isUserDeleteConfirmationVisible, setIsUserDeleteConfirmationVisible] = useState(false);
+  const [userToDeleteIndex, setUserToDeleteIndex] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const styles = React.useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
@@ -402,10 +402,10 @@ export default function SaveUserCardDetails(props: S) {
     }
     data()
   }, [userDetails])
-  const deleteCardHandler = async (childIndex,) => {
+  const deleteCardHandler = async (childIndex, parentIdx) => {
     // Create a deep copy of the userDetails object at the given parent index
-    let arrStr = JSON.stringify(userDetails[parentIndex]);
-
+    let arrStr = JSON.stringify(userDetails[parentIdx]);
+ 
     console.log('arrStr==========', arrStr);
 
     let arr = JSON.parse(arrStr);
@@ -424,7 +424,7 @@ export default function SaveUserCardDetails(props: S) {
     setSelectedUser(tempUser);
     // Update the userDetails state
     let updatedUserCardDetails = [...userDetails];
-    updatedUserCardDetails[parentIndex] = arr;
+    updatedUserCardDetails[parentIdx] = arr;
 
     // Set the new state
     setUserDetails(updatedUserCardDetails);
@@ -438,36 +438,16 @@ export default function SaveUserCardDetails(props: S) {
     console.log('date', selectedDate);
     console.log('bankName', bankName);
     console.log('last4', lastFourDigit);
-    if (firstName.length == 0) {
-      setErrorMessage('Please enter first name');
-      setIsShowErrorModal(true);
-    }
-    else if (lastName.length == 0) {
-      setErrorMessage('Please enter last name');
-      setIsShowErrorModal(true);
-    }
-    else if (mobileNumber.length < 10) {
-      setErrorMessage('Please enter a valid mobile number');
-      setIsShowErrorModal(true);
-    }
-    else if (selectedDate == null) {
-      setErrorMessage('Please select a date');
-      setIsShowErrorModal(true);
-    }
-    else if (bankName.length == 0) {
-      setErrorMessage('Please select a bank');
-      setIsShowErrorModal(true);
-    }
+    if (firstName.length == 0) { alert('please enter first name') }
+    else if (lastName.length == 0) { alert('please enter last name') }
+    else if (mobileNumber.length < 10) { alert('please enter valid mobile number') }
+    else if (selectedDate == null) { alert('please select date') }
+    else if (bankName.length == 0) { alert('please select bank') }
     else if (isCustomerIdRequired) {
-      if (customerId.length == 0) {
-        setErrorMessage('Please enter customer id');
-        setIsShowErrorModal(true);
-      }
+      if (customerId.length == 0) { alert('please enter customer id') }
     }
-    else if (lastFourDigit.length != 4) {
-      setErrorMessage('Please enter the last 4 digits of your card');
-      setIsShowErrorModal(true);
-    }
+    else if (bankName.length == 0) { alert('please select bank') }
+    else if (lastFourDigit.length != 4) { alert('please enter card last 4 digit') }
     else {
       const cardDetails = {
         id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
@@ -557,24 +537,20 @@ export default function SaveUserCardDetails(props: S) {
 
   const checkValidation = () => {
     if (firstName.length == 0) {
-      setErrorMessage('Please enter first name');
-      setIsShowErrorModal(true);
+      alert('please enter first name')
       return false
     }
     if (lastName.length == 0) {
-      setErrorMessage('Please enter last name');
-      setIsShowErrorModal(true);
+      alert('please enter last name')
       return false
     }
     if (mobileNumber.length < 10) {
-      setErrorMessage('Please enter a valid mobile number');
-      setIsShowErrorModal(true);
+      alert('please enter valid mobile number')
       return false
 
     }
     if (selectedDate == null) {
-      setErrorMessage('Please select a date');
-      setIsShowErrorModal(true);
+      alert('please select date')
       return false
     }
 
@@ -599,7 +575,7 @@ export default function SaveUserCardDetails(props: S) {
       setSelectedUser(item)
 
   }
-  const renderCards = (item, childIndex) => {
+  const renderCards = (item, childIndex, parentIndex) => {
     console.log('renderCards---', item);
 
     return (
@@ -607,24 +583,25 @@ export default function SaveUserCardDetails(props: S) {
       <View style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: theme.bgColor,
-        paddingVertical: 10,
+        // backgroundColor: theme.bgColor,
+        borderWidth:1,
+        paddingHorizontal:2,
+        height:scaledSize(74),
+        // width:400,
+        borderRadius:scaledSize(10),
+        paddingVertical: scaledSize(10),
         borderBottomWidth: 0.5,
         borderColor: theme.borderColor
       }}>
 
-        <Image
-          source={BANK_LOGOS[item.value.bankName]}
-          style={{
-            height: scaledSize(24),
-            width: scaledSize(24),
-            borderRadius: scaledSize(8),
-            marginRight: scaledSize(8)
-          }}
-          resizeMode="contain"
-        />
+        <View style={styles.bankLogoContainer}>
+          <Image
+            source={BANK_LOGOS[item.value.bankName]}
+            style={styles.bankLogo}
+            resizeMode="contain" />
+        </View>
 
-        <View style={{ flex: 1, left: 10 }}>
+        <View style={{ flex: 1, left: scaledSize(10) }}>
 
           <Text style={{
             fontSize: scaledSize(12),
@@ -643,29 +620,25 @@ export default function SaveUserCardDetails(props: S) {
 
         </View>
 
-        <TouchableOpacity
-          onPress={() => editCard(item)}
-          style={{ marginRight: 12 }}
-        >
-
+        <TouchableOpacity onPress={() => editCard(item)} 
+        style={[styles.actionButton, 
+        { backgroundColor: theme.buttonBGColor,marginRight:scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="pencil"
-            size={20}
-            color={theme.themeColor}
+            size={22}
+            color={theme.iconColor}
           />
-
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => deleteCardHandler(childIndex)}
-        >
-
+        <TouchableOpacity onPress={() => {
+          setCardToDelete({ parentIndex: parentIndex, childIndex: childIndex });
+          setIsShowDeleteConfirmation(true);
+        }} style={[styles.actionButton, { backgroundColor: theme.buttonBGColor,right:scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="delete"
-            size={20}
+            size={22}
             color={theme.deleteIconColor}
           />
-
         </TouchableOpacity>
 
       </View>
@@ -677,172 +650,98 @@ export default function SaveUserCardDetails(props: S) {
     return (
       <View
         style={{
-          width: "94%",
-          alignSelf: "center",
-          backgroundColor: theme.bgColor,
-          borderRadius: 14,
-          padding: 16,
-          marginVertical: 10,
+          backgroundColor: theme.bgContainor,
+          borderRadius: scaledSize(20),
+          padding: scaledSize(18),
+          marginVertical: scaledSize(14),
+          marginHorizontal: scaledSize(16),
           borderWidth: 1,
-          borderColor: theme.borderColor
+          borderColor: theme.borderColor,
+          elevation: 5,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: mode === 'dark' ? 0.2 : 0.08,
+          shadowRadius: 6,
         }}
       >
 
         {/* USER HEADER */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12
-          }}
-        >
-          <Text
-            style={{
-              fontSize: scaledSize(14),
-              fontWeight: "600",
-              letterSpacing: .5,
-              color: theme.primaryTextColor
-            }}
-          >
-            {Utility.string.getFirstLetterCapitalize(item.firstName)} {item.lastName}
-          </Text>
-
-          <View style={{ flexDirection: "row" }}>
+        <View style={styles.topSection}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{`${item.firstName?.charAt(0) || ''}${item.lastName?.charAt(0) || ''}`.toUpperCase()}</Text>
+          </View>
+          <View style={styles.nameContainer}>
+            <Text style={styles.userNameText}>
+              {Utility.string.getFirstLetterCapitalize(item.firstName)} {item.lastName}
+            </Text>
+            <Text style={styles.userSubtitle}>Personal Information</Text>
+          </View>
+          <View style={styles.topActions}>
             <TouchableOpacity
               onPress={() => showEditUserModal(item)}
-              style={{ marginRight: 12 }}
+              style={[styles.actionButton, { backgroundColor: theme.buttonBGColor }]}
             >
-              <MaterialCommunityIcons
-                name="pencil"
-                size={20}
-                color={theme.themeColor}
-              />
+              <MaterialCommunityIcons name="pencil" size={22} color={theme.iconColor} />
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => deleteUser(index)}>
-              <MaterialCommunityIcons
-                name="delete"
-                size={20}
-                color={theme.deleteIconColor}
-              />
+            <TouchableOpacity
+              onPress={() => {
+                setUserToDeleteIndex(index);
+                setIsUserDeleteConfirmationVisible(true);
+              }}
+              style={[styles.actionButton, { backgroundColor: theme.buttonBGColor }]}
+            >
+              <MaterialCommunityIcons name="delete" size={22} color={theme.deleteIconColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* USER INFO BOX */}
-        <View
-          style={{
-            // backgroundColor: "#F8F9FB",
-            borderRadius: 16,
-            paddingVertical: 16,
-            paddingHorizontal: 18,
-            marginBottom: 18,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            borderWidth: .5,
-            borderColor: theme.borderColor,
-          }}
-        >
-          {/* LEFT LABELS */}
-          <View>
-            <Text
-              style={{
-                color: theme.secondaryTextColor,
-                fontSize: 14,
-                marginBottom: 10,
-              }}
-            >
-              DOB:
-            </Text>
-
-            <Text
-              style={{
-                color: theme.secondaryTextColor,
-                fontSize: 14,
-              }}
-            >
-              Mobile
-            </Text>
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="calendar-month-outline" size={20} color={theme.secondaryTextColor} style={styles.infoIcon} />
+            <Text style={styles.infoLabel}>DOB:</Text>
+            <Text style={styles.infoValue}>{item.dob}</Text>
           </View>
-
-          {/* RIGHT VALUES */}
-          <View style={{ alignItems: "flex-end" }}>
-            <Text
-              style={{
-                fontSize: 15,
-                // fontWeight: "500",
-                marginBottom: 10,
-                color: theme.primaryTextColor,
-                letterSpacing: .5
-              }}
-            >
-              {item.dob}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 15,
-                // fontWeight: "500",
-                color: theme.primaryTextColor,
-                letterSpacing: .5
-              }}
-            >
-              {'+91 - ' + item.mobileNumber}
-            </Text>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={20} color={theme.secondaryTextColor} style={styles.infoIcon} />
+            <Text style={styles.infoLabel}>Mobile</Text>
+            <Text style={styles.infoValue}>{'+91 - ' + item.mobileNumber}</Text>
           </View>
         </View>
 
-        {/* CARDS TITLE */}
-        <Text
-          style={{
-            fontSize: scaledSize(12),
-            fontWeight: "600",
-            marginBottom: scaledSize(12),
-            color: theme.primaryTextColor,
-            letterSpacing: .5
-          }}
-        >
-          Cards
-        </Text>
+        {/* DIVIDER & CARDS TITLE */}
+        <View style={styles.sectionDivider} />
+        <View style={styles.cardsHeader}>
+          <MaterialCommunityIcons name="credit-card-multiple-outline" size={20} color={theme.themeColor} />
+          <Text style={styles.cardsHeaderText}>Linked Cards</Text>
+        </View>
 
         {/* CARDS LIST */}
         <FlatList
           data={item.cards}
-          renderItem={({ item, index }) => renderCards(item, index)}
+          renderItem={({ item, index: childIndex }) => renderCards(item, childIndex, index)}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}
         />
 
         {/* ADD CARD BUTTON */}
         <TouchableOpacity
-          style={{
-            alignItems: "center",
-            marginTop: 12,
-            flexDirection: "row",
-            justifyContent: "center"
-          }}
           onPress={() => {
             // setIsShowCardsModal(true)
             setIsShowAddCardModal(true)
             setSelectedUser(item)
             setParentIndex(index)
           }}
+          style={styles.addCardButton}
         >
           <MaterialCommunityIcons
             name="plus"
-            size={20}
+            size={24}
             color={theme.themeColor}
           />
 
-          <Text
-            style={{
-              color: theme.themeColor,
-              fontSize: 15,
-              marginLeft: 4,
-              fontWeight: "500"
-            }}
-          >
+          <Text style={styles.addCardButtonText}>
             Add Card
           </Text>
         </TouchableOpacity>
@@ -925,23 +824,19 @@ export default function SaveUserCardDetails(props: S) {
     const filteredCard = user.cards.find((card: any) => card.bankName == bankName && card.lastFourDigit == lastFourDigit)
     console.log('filtered card', filteredCard);
     if (bankName.length == 0) {
-      setErrorMessage('Please select a bank');
-      setIsShowErrorModal(true);
+      alert('Please select a bank');
       return true
     }
     if (filteredCard != undefined) {
-      setErrorMessage('Card is already added');
-      setIsShowErrorModal(true);
+      alert('card is already added');
       return true
     }
     else if (lastFourDigit.length != 4) {
-      setErrorMessage('Please enter the last 4 digits of your card');
-      setIsShowErrorModal(true);
+      alert('Please enter card Last 4 digit ');
       return true
     }
     else if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
-      setErrorMessage('Please enter customer-id');
-      setIsShowErrorModal(true);
+      alert('Please enter customer-id');
       return true
     }
     // if(selectedBank)
@@ -1016,7 +911,7 @@ export default function SaveUserCardDetails(props: S) {
                   {/* <Ionicons name='arrow-back' color={'white'} size={scaledSize(24)} onPress={() => setIsShowCardsModal(false)}
                     style={{ marginLeft: scaledSize(10), }}
                   /> */}
-                  {/* <CustomBackIcon onPress={() => setIsShowCardsModal(false)} color='white' /> */}
+                  <CustomBackIcon onPress={() => setIsShowCardsModal(false)} color='white' />
                 </View>
                 <View style={{
                   flex: 1.3, justifyContent: 'center', alignItems: 'flex-start',
@@ -1099,7 +994,7 @@ const renderAddCardDetails = () => {
                 selectedBank.value ? (
                   <Image
                     source={BANK_LOGOS[selectedBank.value.bankName]}
-                    style={{ height: scaledSize(16), width: scaledSize(16) }}
+                    style={{ height: 20, width: 20 }}
                   />
                 ) : (
                   <CustomVectorIcon
@@ -1133,7 +1028,7 @@ const renderAddCardDetails = () => {
           )}
 
           {/* Button */}
-          <View style={{height:scaledSize(40),marginTop:scaledSize(10)}}>
+          <View style={{height:40,marginTop:scaledSize(10)}}>
 
           <CustomeButton
             name="Add"
@@ -1162,7 +1057,7 @@ const renderAddCardDetails = () => {
             }}>
               {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
               {/* <Ionicons name='arrow-back-circle-outline' color={theme.iconColor} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={()=>Utility.navigation.navigateToBack()} color={theme.iconColor} size={18} />
+              <CustomBackIcon onPress={onPress} color={theme.iconColor} size={18} />
               {/* </TouchableOpacity> */}
             </View>
             <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
@@ -1499,11 +1394,37 @@ const renderAddCardDetails = () => {
         </View>
       {/* </View> */}
       {isShowCardsModal ? displayAllCards() : null}
-      <CustomErrorMsgModal
-        isVisible={isShowErrorModal}
-        errorMessage={errorMessage}
-        onPressClose={() => setIsShowErrorModal(false)}
-      />
+      <ConfirmationDialog
+        visible={isShowDeleteConfirmation}
+        onCancel={() => {
+          setIsShowDeleteConfirmation(false);
+          setCardToDelete(null);
+        }}
+        onSubmit={() => {
+          if (cardToDelete) {
+            deleteCardHandler(cardToDelete.childIndex, cardToDelete.parentIndex);
+            setIsShowDeleteConfirmation(false);
+            setCardToDelete(null);
+          }
+        }}
+        mode="delete"
+        message="Are you sure you want to delete this card?" />
+
+      <ConfirmationDialog
+        visible={isUserDeleteConfirmationVisible}
+        onCancel={() => {
+          setIsUserDeleteConfirmationVisible(false);
+          setUserToDeleteIndex(null);
+        }}
+        onSubmit={() => {
+          if (userToDeleteIndex !== null) {
+            deleteUser(userToDeleteIndex);
+            setIsUserDeleteConfirmationVisible(false);
+            setUserToDeleteIndex(null);
+          }
+        }}
+        mode="delete"
+        message="Are you sure you want to delete this user?" />
 
     </View>
   )
@@ -1534,23 +1455,210 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   seperator: {
     backgroundColor: 'black',
-    height: 0, marginTop: scaledSize(8)
+    height: 0, marginTop: 10
   },
   userCard: {
     width: "94%",
     backgroundColor: theme.bgColor,
-    borderRadius: scaledSize(16),
-    padding: scaledSize(16),
-    marginVertical: scaledSize(10),
+    borderRadius: scaledSize(14),
+    padding: scaledSize(14),
+    marginVertical: scaledSize(8),
     alignSelf: "center",
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: scaledSize(8),
-    elevation: scaledSize(5)
+    shadowRadius: scaledSize(7),
+    elevation: 5
+  },
+  parentCard: {
+    backgroundColor: theme.bgContainor,
+    borderRadius: scaledSize(24),
+    padding: scaledSize(18),
+    marginHorizontal: scaledSize(14),
+    marginTop: scaledSize(14),
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    elevation: scaledSize(6),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: mode === 'dark' ? 0.3 : 0.1,
+    shadowRadius: scaledSize(6),
+  },
+  topSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    width: scaledSize(55),
+    height: scaledSize(55),
+    borderRadius: scaledSize(48),
+    backgroundColor: theme.themeOpacity,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scaledSize(10),
+    shadowColor: theme.themeColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 1,
+    // borderWidth:.5,
+    // borderColor: theme.borderColor
+  },
+  avatarText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.themeColor,
+  },
+  nameContainer: {
+    flex: 1,
+  },
+  userNameText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+  },
+  userSubtitle: {
+    fontSize: 13,
+    color: theme.secondaryTextColor,
+    marginTop: 4,
+  },
+  topActions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    width: scaledSize(46),
+    height: scaledSize(46),
+    borderRadius: scaledSize(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: scaledSize(6),
+  },
+  editButton: {
+    backgroundColor: 'rgba(0,255,150,0.08)',
+  },
+  deleteButton: {
+    backgroundColor: 'rgba(255,0,80,0.08)',
+  },
+  infoCard: {
+    backgroundColor: theme.bgColor,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  infoIcon: {
+    marginRight: 12,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: theme.secondaryTextColor,
+    width: 80,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.primaryTextColor,
+    flex: 1,
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.borderColor,
+    marginVertical: 4,
+  },
+  cardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardsHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.primaryTextColor,
+    marginLeft: 10,
+    letterSpacing: .5,
+  },
+
+  sectionDivider: {
+    height: 1,
+    backgroundColor: theme.borderColor,
+    marginVertical: 20,
+  },
+  cardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.bgColor,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 12,
+  },
+  cardItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bankLogoContainer: {
+    width: scaledSize(40),
+    height: scaledSize(40),
+    borderRadius: scaledSize(20),
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: scaledSize(4),
+  },
+  bankLogo: {
+    width: 28,
+    height: 28,
+  },
+  cardTextContainer: {
+    flex: 1,
+  },
+  bankName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: theme.secondaryTextColor,
+    marginTop: 2,
+  },
+  cardActions: {
+    flexDirection: 'row',
+  },
+  cardActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  addCardButton: {
+    height: scaledSize(60),
+    borderRadius: 20,
+    // borderWidth: .5,
+    borderColor: theme.themeColor,
+    // borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  addCardButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.themeColor,
+    marginLeft: 8,
   },
   focusedInput: {
     borderColor: theme.themeColor,
-    borderWidth: .5,
+    borderWidth: 1.5,
     elevation: 4
   },
   // New Modal Styles
@@ -1598,11 +1706,11 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    right: scaledSize(16),
-    top: scaledSize(10),
-    width: scaledSize(32),
-    height: scaledSize(32),
-    borderRadius: scaledSize(16),
+    right: 20,
+    top: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: theme.buttonBGColor,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1610,19 +1718,15 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     borderColor: theme.borderColor,
   },
   section: {
-    marginBottom: scaledSize(24),
+    marginBottom: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaledSize(12),
-    gap: scaledSize(8),
+    marginBottom: 12,
+    gap: 8,
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: theme.borderColor,
-    marginVertical: scaledSize(12),
-  },
+
   sectionTitle: {
     fontSize: scaledSize(14),
     fontWeight: '500',
@@ -1632,10 +1736,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgContainor,
-    height: scaledSize(50),
-    borderRadius: scaledSize(16),
-    paddingHorizontal: scaledSize(14),
-    marginTop: scaledSize(10),
+    height: 58,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    marginTop: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
@@ -1645,9 +1749,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     elevation: 2,
   },
   inputIcon: {
-    marginRight: scaledSize(12),
+    marginRight: 12,
     opacity: 0.9,
-    // color:theme.themeColor
   },
   textInput: {
     flex: 1,
@@ -1664,27 +1767,27 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: theme.primaryTextColor,
   },
   dropdownInputSearch: {
-    height: scaledSize(36),
-    fontSize: scaledSize(14),
+    height: 40,
+    fontSize: 16,
     backgroundColor: theme.bgContainor,
     color: theme.primaryTextColor
   },
   dropdownIcon: {
-    width: scaledSize(18),
-    height: scaledSize(18),
+    width: 20,
+    height: 20,
   },
   bankIcon: {
-    width: scaledSize(24),
-    height: scaledSize(24),
-    marginRight: scaledSize(10),
+    width: 28,
+    height: 28,
+    marginRight: 12,
   },
   secureInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgContainor,
-    padding: scaledSize(12),
-    borderRadius: scaledSize(14),
-    marginTop: scaledSize(18),
+    padding: 14,
+    borderRadius: 16,
+    marginTop: 20,
     borderWidth: 1,
     borderColor: theme.borderColor,
   },
@@ -1702,21 +1805,21 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: scaledSize(20),
-    paddingTop: scaledSize(10),
-    paddingBottom: scaledSize(24),
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 28,
     backgroundColor: theme.bgColor, // to cover content underneath
   },
   saveButton: {
     backgroundColor: theme.themeColor,
-    height: scaledSize(50),
-    borderRadius: scaledSize(16),
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: scaledSize(14),
+    fontSize: 16,
     fontWeight: '600',
   }
 })
