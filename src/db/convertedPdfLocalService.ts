@@ -52,4 +52,12 @@ export const convertedPdfLocalService = {
     const query = `DELETE FROM ${TABLE_NAME} WHERE id = ?;`;
     await db.executeSql(query, [id]);
   },
+
+  updateConvertedPdf: async (id: number, updates: Partial<ConvertedPdf>) => {
+    const db = await getDB();
+    const setClauses = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const params = [...Object.values(updates), id];
+    const query = `UPDATE ${TABLE_NAME} SET ${setClauses} WHERE id = ?;`;
+    await db.executeSql(query, params);
+  },
 };

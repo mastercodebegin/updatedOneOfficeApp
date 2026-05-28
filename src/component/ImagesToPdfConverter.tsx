@@ -43,6 +43,7 @@ import CustomInput from './CustomInput';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
 import CustomVectorIcon from './CustomVectorIcon';
+import CustomRenameModal from './CustomRenameModal';
 import CustomErrorMsgModal from './CustomErrorMsgModal';
 import CustomSortModal from './CustomSortModal';
 import RNBlobUtil from 'react-native-blob-util';
@@ -78,6 +79,10 @@ const ImagesToPdfConverter = () => {
   const [isShowErrorModal, setIsShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { theme, mode } = useTheme();
+  const [isShowRenameModal, setIsShowRenameModal] = useState(false);
+  const [fileToRename, setFileToRename] = useState(null);
+  const [newFileName, setNewFileName] = useState('');
+
   const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   const [isShowSortModal, setIsShowSortModal] = useState(false)
@@ -272,10 +277,10 @@ const ImagesToPdfConverter = () => {
       item={item}
       icon={PdfIcon}
       isShowEditBtn={true}
-      onPressEditFile={(file) => {
-        // You can open a rename modal here
-        console.log("Rename file:", file);
-        alert(`Rename: ${file.name}`);
+      onPressEditFile={(file: any) => {
+        setFileToRename(file);
+        setNewFileName(file.name.replace(/\.[^/.]+$/, '')); // Set name without extension
+        setIsShowRenameModal(true);
       }}
       onPressDeleteFile={() => { setIsDeleted(true), setFilePath(item) }}
       screenName='PdfViewer'
@@ -286,6 +291,44 @@ const ImagesToPdfConverter = () => {
       index={index}
     />
   )
+
+  const handleRenameSubmit = async () => {
+    if (!fileToRename || !newFileName.trim()) {
+      setErrorMessage('Please enter a valid file name.');
+      setIsShowErrorModal(true);
+      return;
+    }
+
+    const oldPath = fileToRename.path;
+    const oldName = fileToRename.name;
+    const fileExtension = oldName.split('.').pop() || 'pdf';
+    const newNameWithExt = `${newFileName.trim()}.${fileExtension}`;
+
+    if (newNameWithExt === oldName) {
+      setIsShowRenameModal(false);
+      return; // No change needed
+    }
+
+    const newPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${newNameWithExt}`;
+
+    try {
+      await RNFS.moveFile(oldPath, newPath);
+
+      await convertedPdfLocalService.updateConvertedPdf(fileToRename.id, {
+        name: newNameWithExt,
+        path: newPath,
+      });
+
+      fetchConvertedPdfs(); // Refresh the list
+      setIsShowRenameModal(false);
+      setFileToRename(null);
+      setNewFileName('');
+    } catch (error) {
+      console.error('Rename failed:', error);
+      setErrorMessage('Failed to rename the file. Please try again.');
+      setIsShowErrorModal(true);
+    }
+  };
 
   const getFiles = () => {
     console.log('searchvalue', searchQuery);
@@ -507,7 +550,10 @@ const ImagesToPdfConverter = () => {
       }}>
         <CustomFAB onPress={() => showSelectImagesModal()} />
       </View>
-      <Overlay isVisible={isShowCreatePdfModalWindow} transparent overlayStyle={{borderRadius:scaledSize(16), backgroundColor: 'transparent'}} >
+
+      <Overlay isVisible={isShowCreatePdfModalWindow} transparent 
+      overlayStyle={{borderRadius:scaledSize(26),
+       backgroundColor: theme.bgColor}} >
         <View style={{ height: heightFromPercentage(54), width: widthFromPercentage(90), backgroundColor: theme.bgColor, alignSelf: 'flex-end' }}>
           <View style={{ height: heightFromPercentage(20), width: widthFromPercentage(90),
              alignSelf: 'flex-end' }}>
@@ -575,6 +621,15 @@ const ImagesToPdfConverter = () => {
         isVisible={isShowErrorModal}
         onPressClose={() => setIsShowErrorModal(false)}
         errorMessage={errorMessage}
+      />
+      <CustomRenameModal
+        isVisible={isShowRenameModal}
+        heading="Rename File"
+        subHeading="Enter a new name for your file"
+        value={newFileName}
+        onChangeText={setNewFileName}
+        onCancel={() => setIsShowRenameModal(false)}
+        onSubmit={handleRenameSubmit}
       />
     </SafeAreaView>
   )
