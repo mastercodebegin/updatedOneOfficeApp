@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Image,
   StyleSheet,
   Text,
-  useColorScheme,
   View
 } from 'react-native';
 
 import { Dropdown } from 'react-native-element-dropdown';
 import Icon from 'react-native-vector-icons/Feather';
-
-import { COLORS } from '../utilies/GlobalColors';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
+import { Fonts } from '../assets/fonts/GlobalFonts';
 import { scaledSize } from '../utilies/Utilities';
 
 const ICON_SIZE = 24;
@@ -31,15 +31,13 @@ const CustomDropdown = (props: S) => {
 
   const { placeholder, onSelect, data,value, onFocuse, onBlur, LeftIcon, searchPlaceholder = 'Enter keyword', isShowSearch = true } = props;
 
+  const { theme, mode } = useTheme();
   const [isFocus, setIsFocus] = useState(false);
-
-  const theme = useColorScheme();
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   /* ---------- Dropdown Item ---------- */
 
   const renderDropdownItem = (item: any) => {
-    console.log('dropdown item', item);
-
     return (
       <View style={styles.dropdownItem}>
 
@@ -59,11 +57,6 @@ const CustomDropdown = (props: S) => {
     );
   };
 
-  useEffect(() => {
-    console.log('dropdown data', data);
-    console.log('dropdown LeftIcon', LeftIcon);
-  }, );
-
   return (
 
     <View style={styles.wrapper}>
@@ -78,6 +71,9 @@ const CustomDropdown = (props: S) => {
         selectedTextStyle={styles.selectedTextStyle}
         inputSearchStyle={styles.searchInput}
         iconStyle={styles.iconStyle}
+        containerStyle={styles.dropdownContainer}
+        itemTextStyle={styles.itemTextStyle}
+        activeColor={theme.buttonBGColor}
 
         data={data}
         renderItem={renderDropdownItem}
@@ -88,7 +84,7 @@ const CustomDropdown = (props: S) => {
         labelField="label"
         valueField="id"
 
-        placeholder={placeholder}
+        placeholder={!isFocus ? placeholder : '...'}
         searchPlaceholder={searchPlaceholder}
 
         value={value}
@@ -106,7 +102,6 @@ const CustomDropdown = (props: S) => {
         }}
 
         onChange={item => {
-          // setIcon(item.icon);
           setIsFocus(false);
           onSelect(item);
         }}
@@ -117,12 +112,20 @@ const CustomDropdown = (props: S) => {
           ) : (
             <Icon
               name="user"
-              size={scaledSize(14)}
-              color={COLORS.THEME_COLOR}
-              style={{ marginRight: 8 }}
+              size={scaledSize(20)}
+              color={theme.secondaryTextColor}
+              style={styles.leftIcon}
             />
           )
         }
+        renderRightIcon={() => (
+          <Icon
+            style={styles.iconStyle}
+            color={isFocus ? theme.themeColor : theme.secondaryTextColor}
+            name={isFocus ? 'chevron-up' : 'chevron-down'}
+            size={20}
+          />
+        )}
       />
 
     </View>
@@ -132,73 +135,98 @@ const CustomDropdown = (props: S) => {
 
 export default CustomDropdown;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
   wrapper: {
     width: '100%',
-    marginTop: scaledSize(8),
   },
 
   dropdown: {
-    height: scaledSize(40),
+    height: 58,
+    backgroundColor: theme.bgContainor,
+    borderRadius: 18,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    //  backgroundColor:'#FAFAFA',
+    borderColor: theme.borderColor,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: mode === 'dark' ? 0.1 : 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
 
   focusedDropdown: {
-    borderColor: COLORS.THEME_COLOR,
-    backgroundColor: '#fff'
+    borderColor: theme.themeColor,
+    borderWidth: 1.5,
+    elevation: 4,
   },
 
   placeholderStyle: {
-    fontSize: 14,
-    color: '#999'
+    fontSize: scaledSize(14),
+    color: theme.secondaryTextColor,
+    fontFamily: Fonts.regular,
   },
 
   selectedTextStyle: {
-    fontSize: 15,
-    color: '#222',
-    left: scaledSize(4)
-
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.medium,
+    marginLeft: 12,
   },
 
   searchInput: {
     height: 40,
     fontSize: 14,
-    borderRadius: 8
+    borderRadius: 12,
+    backgroundColor: theme.bgColor,
+    borderColor: theme.borderColor,
+    borderWidth: 1,
+    color: theme.primaryTextColor,
+    paddingHorizontal: 12,
+    fontFamily: Fonts.regular,
   },
 
   iconStyle: {
-    width: 20,
-    height: 20
+    width: 22,
+    height: 22,
+  },
+
+  leftIcon: {
+    marginRight: 8,
+    opacity: 0.8,
+  },
+
+  dropdownContainer: {
+    backgroundColor: theme.bgColor,
+    borderRadius: 12,
+    borderColor: theme.borderColor,
+    borderWidth: 1,
+    marginTop: 4,
+    overflow: 'hidden',
   },
 
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    padding: 16,
   },
 
   bankIcon: {
-    height: ICON_SIZE,
-    width: ICON_SIZE,
-    marginRight: 10
+    height: 28,
+    width: 28,
+    marginRight: 12,
   },
 
   bankLabel: {
-    fontSize: scaledSize(13),
-    color: '#333',
-    //  left:scaledSize(10)
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.regular,
+    flex: 1,
   },
 
-  selectedIcon: {
-    height: ICON_SIZE,
-    width: ICON_SIZE,
-    marginRight: 10
-  }
-
+  itemTextStyle: {
+    color: theme.primaryTextColor,
+    fontSize: scaledSize(14),
+    fontFamily: Fonts.regular,
+  },
 });

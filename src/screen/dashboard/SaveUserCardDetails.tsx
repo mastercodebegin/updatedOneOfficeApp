@@ -35,8 +35,9 @@ import CustomFAB from '../../component/CustomFAB'
 import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
-import { Dropdown } from 'react-native-element-dropdown'
 import { useTheme } from '../theme/useTheme'
+import { Theme } from '../theme/ThemeConfig'
+// import CustomDropdown from '../../component/CustomDropDown'
 
 
 const data = [
@@ -984,7 +985,7 @@ export default function SaveUserCardDetails(props: S) {
                   {/* <Ionicons name='arrow-back' color={'white'} size={scaledSize(24)} onPress={() => setIsShowCardsModal(false)}
                     style={{ marginLeft: scaledSize(10), }}
                   /> */}
-                  <CustomBackIcon onPress={() => setIsShowCardsModal(false)} color='white' />
+                  {/* <CustomBackIcon onPress={() => setIsShowCardsModal(false)} color='white' /> */}
                 </View>
                 <View style={{
                   flex: 1.3, justifyContent: 'center', alignItems: 'flex-start',
@@ -1063,18 +1064,11 @@ const renderAddCardDetails = () => {
               onSelect={(v: any) => onSelectBank(v)}
               value={selectedBank.id}
               placeholder="Select Bank"
-              containerStyle={{
-                borderWidth: .5,
-                borderColor: theme.borderColor,
-                borderRadius: 8,
-                height: 48,
-                paddingHorizontal: 10,
-              }}
               LeftIcon={() =>
                 selectedBank.value ? (
                   <Image
                     source={BANK_LOGOS[selectedBank.value.bankName]}
-                    style={{ height: 20, width: 20 }}
+                    style={{ height: scaledSize(16), width: scaledSize(16) }}
                   />
                 ) : (
                   <CustomVectorIcon
@@ -1108,7 +1102,7 @@ const renderAddCardDetails = () => {
           )}
 
           {/* Button */}
-          <View style={{height:40,marginTop:scaledSize(10)}}>
+          <View style={{height:scaledSize(40),marginTop:scaledSize(10)}}>
 
           <CustomeButton
             name="Add"
@@ -1137,7 +1131,7 @@ const renderAddCardDetails = () => {
             }}>
               {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
               {/* <Ionicons name='arrow-back-circle-outline' color={theme.iconColor} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={onPress} color={theme.iconColor} size={18} />
+              <CustomBackIcon onPress={()=>Utility.navigation.navigateToBack()} color={theme.iconColor} size={18} />
               {/* </TouchableOpacity> */}
             </View>
             <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
@@ -1312,28 +1306,18 @@ const renderAddCardDetails = () => {
                   <Text style={styles.sectionTitle}>Card Information</Text>
                 </View>
 
-                <Dropdown
-                  style={[styles.inputContainer, focusedField === 'bank' && styles.focusedInput]}
-                  placeholderStyle={styles.dropdownPlaceholder}
-                  selectedTextStyle={styles.dropdownSelectedText}
-                  inputSearchStyle={styles.dropdownInputSearch}
-                  iconStyle={styles.dropdownIcon}
-                  containerStyle={{ backgroundColor: theme.bgContainor, borderRadius: 12, borderColor: theme.borderColor }}
-                  itemTextStyle={{ color: theme.primaryTextColor }}
-                  activeColor={theme.bgColor}
+                <CustomDropdown
                   data={bankList}
-                  labelField="label"
-                  valueField="id"
                   placeholder="Select bank"
-                  value={selectedBank.id}
-                  onFocus={() => setFocusedField('bank')}
-                  onBlur={() => setFocusedField(null)}
-                  onChange={item => {
+                  onSelect={(item) => {
                     selectBankOnAddUser(item);
                   }}
-                  renderLeftIcon={() => (
+                  value={selectedBank.id}
+                  onFocuse={() => setFocusedField('bank')}
+                  onBlur={() => setFocusedField(null)}
+                  LeftIcon={() => (
                     selectedBank.value ?
-                      <Image source={BANK_LOGOS[selectedBank.value.bankName]} style={styles.bankIcon} />
+                      <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
                       : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
                   )}
                 />
@@ -1514,23 +1498,23 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   seperator: {
     backgroundColor: 'black',
-    height: 0, marginTop: 10
+    height: 0, marginTop: scaledSize(8)
   },
   userCard: {
     width: "94%",
     backgroundColor: theme.bgColor,
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 10,
+    borderRadius: scaledSize(16),
+    padding: scaledSize(16),
+    marginVertical: scaledSize(10),
     alignSelf: "center",
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5
+    shadowRadius: scaledSize(8),
+    elevation: scaledSize(5)
   },
   focusedInput: {
     borderColor: theme.themeColor,
-    borderWidth: 1.5,
+    borderWidth: .5,
     elevation: 4
   },
   // New Modal Styles
@@ -1578,11 +1562,11 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    right: 20,
-    top: 20,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    right: scaledSize(16),
+    top: scaledSize(10),
+    width: scaledSize(32),
+    height: scaledSize(32),
+    borderRadius: scaledSize(16),
     backgroundColor: theme.buttonBGColor,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1590,18 +1574,18 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     borderColor: theme.borderColor,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: scaledSize(24),
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: scaledSize(12),
+    gap: scaledSize(8),
   },
   sectionDivider: {
     height: 1,
     backgroundColor: theme.borderColor,
-    marginVertical: 12,
+    marginVertical: scaledSize(12),
   },
   sectionTitle: {
     fontSize: scaledSize(14),
@@ -1612,10 +1596,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgContainor,
-    height: 58,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    marginTop: 12,
+    height: scaledSize(50),
+    borderRadius: scaledSize(16),
+    paddingHorizontal: scaledSize(14),
+    marginTop: scaledSize(10),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
@@ -1625,8 +1609,9 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     elevation: 2,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: scaledSize(12),
     opacity: 0.9,
+    // color:theme.themeColor
   },
   textInput: {
     flex: 1,
@@ -1643,27 +1628,27 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: theme.primaryTextColor,
   },
   dropdownInputSearch: {
-    height: 40,
-    fontSize: 16,
+    height: scaledSize(36),
+    fontSize: scaledSize(14),
     backgroundColor: theme.bgContainor,
     color: theme.primaryTextColor
   },
   dropdownIcon: {
-    width: 20,
-    height: 20,
+    width: scaledSize(18),
+    height: scaledSize(18),
   },
   bankIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 10,
+    width: scaledSize(24),
+    height: scaledSize(24),
+    marginRight: scaledSize(10),
   },
   secureInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgContainor,
-    padding: 14,
-    borderRadius: 16,
-    marginTop: 20,
+    padding: scaledSize(12),
+    borderRadius: scaledSize(14),
+    marginTop: scaledSize(18),
     borderWidth: 1,
     borderColor: theme.borderColor,
   },
@@ -1681,21 +1666,21 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 28,
+    paddingHorizontal: scaledSize(20),
+    paddingTop: scaledSize(10),
+    paddingBottom: scaledSize(24),
     backgroundColor: theme.bgColor, // to cover content underneath
   },
   saveButton: {
     backgroundColor: theme.themeColor,
-    height: 56,
-    borderRadius: 18,
+    height: scaledSize(50),
+    borderRadius: scaledSize(16),
     justifyContent: 'center',
     alignItems: 'center',
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: scaledSize(14),
     fontWeight: '600',
   }
 })
