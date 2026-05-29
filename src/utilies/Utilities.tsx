@@ -43,6 +43,7 @@ const baseHeight = 700;
 const scaleWidth = width / baseWidth;
 const scaleHeight = height / baseHeight;
 const scale = Math.min(scaleWidth, scaleHeight);
+export const scaledSize = (size: any) => Math.ceil(size * scale);
 // const storageProvider = require('./StorageProvider');
 export const navigationRef = createNavigationContainerRef();
 
@@ -50,7 +51,6 @@ export const scaleRatio = deviceScale;
 export const deviceWidth = width;
 export const deviceHeight = height;
 export const deviceAspectRatio = width / height;
-export const scaledSize = (size: any) => Math.ceil(size * scale);
 export const widthFromPercentage = wp;
 export const heightFromPercentage = hp;
 

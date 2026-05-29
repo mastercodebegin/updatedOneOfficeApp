@@ -36,6 +36,7 @@ import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
 import { useTheme } from '../theme/useTheme'
+import CustomHeader from '../../component/CustomHeader'
 import ConfirmationDialog from '../../component/ConfirmationDialog'
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
 import { Theme } from '../theme/ThemeConfig'
@@ -602,13 +603,13 @@ export default function SaveUserCardDetails(props: S) {
         alignItems: "center",
         // backgroundColor: theme.bgColor,
         borderWidth:.5,
-        paddingHorizontal:2,
+        paddingHorizontal:scaledSize(12),
         height:scaledSize(74),
         // width:400,
         borderRadius:scaledSize(10),
         paddingVertical: scaledSize(10),
-        borderBottomWidth: 0.5,
-        borderColor: theme.borderColor
+        borderColor: theme.borderColor,
+        marginBottom: scaledSize(10)
       }}>
 
         <View style={styles.bankLogoContainer}>
@@ -1042,33 +1043,9 @@ const renderAddCardDetails = () => {
 };
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
-      <View style={{ height: scaledSize(50), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: theme.bgColor }}>
-        <View style={{ flex: 1 }}>
-
-          <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
-            <View style={{
-              flex: .1, justifyContent: 'center', alignItems: 'center',
-              left: scaledSize(10),
-            }}>
-              {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
-              {/* <Ionicons name='arrow-back-circle-outline' color={theme.iconColor} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={()=>{Utility.navigation.navigateToBack()}} color={theme.iconColor} size={18} />
-              {/* </TouchableOpacity> */}
-            </View>
-            <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{
-                fontFamily: Fonts.regular,
-                fontSize: scaledSize(12),
-                color: theme.primaryTextColor,
-                letterSpacing: 1,
-              }}>
-                Users
-              </Text>
-            </View>
-
-          </View>
-        </View>
-
+      <View style={{ height: scaledSize(50),backgroundColor:theme.bgColor }}>
+        <CustomHeader title="Card holders"
+          onPressBack={() => { Utility.navigation.navigateToBack() }} />
       </View>
 
 

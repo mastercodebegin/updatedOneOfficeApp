@@ -19,7 +19,7 @@ interface myProps {
   onPressBack?: () => any;
   onShare?: () => any;
   isHeaderTransparent?: boolean
-  isShareIconShow: boolean
+  isShareIconShow?: boolean
   onPressCloseIcon?: () => any;
 }
 
@@ -48,7 +48,11 @@ const CustomHeader = (props: myProps) => {
 
           {/* Back Button */}
           {isBackIconHide ? <></> : <TouchableOpacity
-            style={{ ...styles.iconBtn, left: isBackIconHide ? 0 : scaledSize(10) }}
+            style={[
+              styles.iconBtn,
+              { left: isBackIconHide ? 0 : scaledSize(10) },
+              isHeaderTransparent && { backgroundColor: "transparent" },
+            ]}
             onPress={() => {
               onPressBack()
             }}
@@ -71,14 +75,18 @@ const CustomHeader = (props: myProps) => {
             </TouchableOpacity> */}
 
             {isShareIconShow && <TouchableOpacity
-              style={styles.iconBtn}
+              style={[
+                styles.iconBtn,
+                isHeaderTransparent && { backgroundColor: "transparent" },
+              ]}
               onPress={onShare}
             >
               <MaterialIcons name="share" size={22} color={theme.iconColor} />
             </TouchableOpacity>}
 
             {isCloseIconShow && <TouchableOpacity
-              style={styles.iconBtn}
+              style={[styles.iconBtn,
+              isHeaderTransparent && { backgroundColor: "transparent" }]}
             // onPress={() => shareFile(data)}
             >
               <CustomVectorIcon iconLibrary="Ionicons" iconName="close-sharp" style={{ color: theme.iconColor }} />
@@ -114,7 +122,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.bgColor,
+    // backgroundColor: theme.bgColor,
     // marginTop:20,
     paddingHorizontal: 8,
     paddingVertical: scaledSize(10),

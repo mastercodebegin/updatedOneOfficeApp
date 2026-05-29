@@ -39,6 +39,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import SaveUserCardDetails from './src/screen/dashboard/SaveUserCardDetails';
+import SettingsScreen from './src/screen/settings/SettingsScreen';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { initDB } from './src/db/migration';
 
@@ -61,7 +62,7 @@ export default function App(props) {
     { name: 'Scan', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color} 
     size={size + 4} style={{ marginBottom: scaledSize(4) }}  /> },
     { name: 'Converter', component: ImagesToPdfConverter, focus: (color) => <Ionicons name='swap-horizontal' color={color} size={size} />, unFocus: (color) => <Ionicons name='swap-horizontal-outline' color={color} size={size} /> },
-    { name: 'Settings', component: SaveUserCardDetails, focus: (color) => <Ionicons name='settings' color={color} size={size} />, unFocus: (color) => <Ionicons name='settings-outline' color={color} size={size} /> },
+    { name: 'Settings', component: SettingsScreen, focus: (color) => <Ionicons name='settings' color={color} size={size} />, unFocus: (color) => <Ionicons name='settings-outline' color={color} size={size} /> },
   ]
 
   const BottomTabs = createBottomTabNavigator();
@@ -205,7 +206,8 @@ export default function App(props) {
                   <Stack.Screen name="DocumentScan" component={DocumentScan} />
                   <Stack.Screen name="DisplayMultipleDocumentImage" component={DisplayMultipleDocumentImage} />
                   <Stack.Screen name="XslxFilesList" component={XslxFilesList} />
-                  <Stack.Screen name="Settings" component={SaveUserCardDetails} />
+                  <Stack.Screen name="Settings" component={SettingsScreen} />
+                  <Stack.Screen name="SaveUserCardDetails" component={SaveUserCardDetails} />
                   <Stack.Screen name="PPTFilesList" component={PPTFilesList} />
                   <Stack.Screen name="ImagesToPdfConverter" component={ImagesToPdfConverter} />
                   <Stack.Screen name="contactus" component={ContactUs} />

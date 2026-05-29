@@ -478,7 +478,6 @@ const pushFolders = async () => {
   const [randomNumber, setRandomNumber] = useState(1)
   const [count, setCount] = useState('')
   const [isUserBack, setIsUserBack] = useState(false);
-  const [isShowCardModal, setIsShowCardModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isFocused = useIsFocused();
   const [appState, setAppState] = useState(AppState.currentState);
@@ -886,7 +885,7 @@ const pushFolders = async () => {
         </TouchableOpacity>
 
 
-        <TouchableOpacity onPress={addCardDetails} style={{ right: scaledSize(4) }}>
+        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')} style={{ right: scaledSize(4) }}>
           <Feather name="user" size={scaledSize(22)} color={theme.primaryTextColor} />
         </TouchableOpacity>
 
@@ -992,13 +991,13 @@ const pushFolders = async () => {
           <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
             <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
               <View style={{ flex: 1, justifyContent: 'center', paddingLeft: scaledSize(16) }}>
-                <Switch
+                {/* <Switch
                   trackColor={{ false: '#767577', true: 'green' }}
                   thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
                   ios_backgroundColor="#3e3e3e"
                   onValueChange={() => toggleTheme()}
                   value={mode == 'dark' ? true : false}
-                />
+                /> */}
               </View>
             </View>
 
@@ -1057,9 +1056,6 @@ const pushFolders = async () => {
 
       {isShowErrorModal && <CustomErrorMsgModal errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />}
       {count >= 8 ? <VideoAddMob count={randomNumber} /> : null}
-      <Modal visible={isShowCardModal}>
-        <SaveUserCardDetails onPress={() => setIsShowCardModal(false)} />
-      </Modal>
       <CustomSortModal
         data={sortOptions}
         isvisible={isShowSortModal}
