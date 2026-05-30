@@ -6,7 +6,7 @@ import { Button, Overlay } from 'react-native-elements';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import {  ConfirmPopup, deleteFile, fileShareMultiple,  heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
+import { ConfirmPopup, deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'
@@ -856,97 +856,181 @@ export const DocumentScan = () => {
       setSelectedTags(arr => [...arr, tag])
     }
   }
-  const renderTags = () => {
-    return (
-      <View style={styles.tagsWrapper}>
+const getTagIcon = (tagName: string) => {
+  switch (tagName?.toLowerCase()) {
+    case 'photos':
+      return 'image';
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={
-            styles.tagsContainer
-          }>
-          {/* <Text style={{color:theme.primaryTextColor,top:10}}>tags.  </Text> */}
-          <View style={{ height: 32, marginRight: scaledSize(10), marginTop: scaledSize(11) }}>
-            <MaterialIcons name="local-offer" size={scaledSize(22)} color={theme.themeColor} />
-          </View>
+    case 'others':
+      return 'folder';
 
-          {userTags.map((item: any) => {
-            let isSelected = selectedTags.find((t: any) => t.id == item.id)
-            isSelected ? isSelected = true : isSelected = false
+    case 'documents':
+      return 'description';
 
+    case 'videos':
+      return 'videocam';
 
-            return (
-              <View style={{ minWidth: scaledSize(100), height: scaledSize(32), marginRight: scaledSize(10), marginTop: scaledSize(10), paddingHorizontal: scaledSize(4) }} key={item.id} >
+    case 'music':
+      return 'music-note';
 
-                <Chip
-                  onPress={() => { selectTagHandler(item) }}
-                  onClose={() => { alert('close') }}
-                  mode='flat'
-                  selected={isSelected}
-                  showSelectedCheck={false}
+    default:
+      return 'label';
+  }
+};
 
-                  style={{
-                    borderWidth: .5,
-                    backgroundColor: theme.bgColor,
+const renderTags = () => {
+  return (
+    <View style={styles.tagsWrapper}>
 
-                    borderColor: isSelected ? theme.themeColor : theme.buttonBGColor,
+      {/* LEFT ICON */}
 
-
-                  }}
-                  closeIcon={() =>
-                    <CustomMenu
-                      Icon={<VECTOR_ICON_LIBRARIES.MaterialDesignIcons name="dots-horizontal" size={18} color="#555" />}
-                      menuOptionstyle={{
-                        padding: scaledSize(13),
-                        width: scaledSize(150),
-                        height: scaledSize(50),
-                      }}
-                      menuOption={[
-                        {
-                          onSelect: () => {
-                            setIsShowRenderRenameTagModal(true),
-                              selectTagHandler(item), setTagName(item.name)
-                          }, label: 'Rename'
-                        },
-                        {
-                          onSelect: () => {
-                            setIsShowDeleteTagConfirmation(true),
-                              setTagForDeletion(item)
-                          }, label: 'Delete'
-                        },
-                      ]}
-                    />
-                  }
-                  textStyle={{ color: getTagColor(isSelected).textColor, letterSpacing: 1, fontSize: scaledSize(13) }}
-                >
-
-                  {Utility.string.getFirstLetterCapitalize(item.name)}
-                </Chip>
-              </View>
-            );
-          })}
-
-          {/* Add Tag */}
-          {/* <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.addTagButton}>
-
-            <Ionicons
-              name="add"
-              size={20}
-              color={theme.themeColor}
-            />
-
-            <Text style={styles.addTagText}>
-              Add Tag
-            </Text>
-          </TouchableOpacity> */}
-        </ScrollView>
+      <View
+        style={[
+          styles.tagIconContainer,
+          {
+            backgroundColor: theme.bgContainor,
+            borderColor: theme.borderColor,
+          },
+        ]}
+      >
+        <MaterialIcons
+          name="local-offer"
+          size={22}
+          color={theme.themeColor}
+        />
       </View>
-    );
-  };
 
+      {/* TAGS */}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {userTags.map((item: any) => {
+          const isSelected = selectedTags.some(
+            (tag: any) => tag.id === item.id,
+          );
+
+          return (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.85}
+              onPress={() => selectTagHandler(item)}
+              style={[
+                styles.tagChip,
+                {
+                  backgroundColor:
+                    theme.bgContainor,
+
+                  borderColor: isSelected
+                    ? theme.themeColor
+                    : theme.borderColor,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name={getTagIcon(item.name)}
+                size={18}
+                color={
+                  isSelected
+                    ? theme.themeColor
+                    : theme.iconColor
+                }
+              />
+
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={[
+                  styles.tagText,
+                  {
+                    color:
+                      theme.primaryTextColor,
+                  },
+                ]}
+              >
+                {Utility.string.getFirstLetterCapitalize(
+                  item.name,
+                )}
+              </Text>
+
+              <CustomMenu
+                Icon={
+                  <MaterialIcons
+                    name="more-horiz"
+                    size={18}
+                    color={
+                      theme.secondaryTextColor
+                    }
+                    style={styles.menuIcon}
+                  />
+                }
+                menuOption={[
+                  {
+                    label: 'Rename',
+                    onSelect: () => {
+                      setTagName(item.name);
+                      setIsShowRenderRenameTagModal(
+                        true,
+                      );
+                    },
+                  },
+                  {
+                    label: 'Delete',
+                    onSelect: () => {
+                      setTagForDeletion(item);
+                      setIsShowDeleteTagConfirmation(
+                        true,
+                      );
+                    },
+                  },
+                ]}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* ACTION */}
+
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => {
+          if (selectedTags.length > 0) {
+            setSelectedTags([]);
+          } else {
+            setIsTagModalVisible(true);
+          }
+        }}
+        style={[
+          styles.actionButton,
+          {
+            backgroundColor:
+              theme.bgContainor,
+
+            borderColor:
+              selectedTags.length > 0
+                ? theme.themeColor
+                : theme.borderColor,
+          },
+        ]}
+      >
+        <MaterialIcons
+          name={
+            selectedTags.length > 0
+              ? 'delete-outline'
+              : 'add'
+          }
+          size={22}
+          color={theme.themeColor}
+        />
+      </TouchableOpacity>
+
+    </View>
+  );
+};
   const renderGradientButton = (iconName: any, color = 'white', onPress: any) => {
     return (
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
@@ -974,13 +1058,7 @@ export const DocumentScan = () => {
         {/* Top Row */}
         <View style={styles.topRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: scaledSize(10) }}>
-            <Switch
-              trackColor={{ false: '#767577', true: 'green' }}
-              thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
-              ios_backgroundColor="#3e3e3e"
-              onValueChange={() => toggleTheme()}
-              value={mode == 'dark' ? true : false}
-            />
+            
             <View>
               <Text style={styles.heading}>
                 My{' '}
@@ -1112,8 +1190,10 @@ export const DocumentScan = () => {
                     color: theme.iconColor,
                     fontSize: scaledSize(12),
                     left: scaledSize(6), top: scaledSize(1)
-                  }} onPress={() => { setIsShowUpdateTagModal(true), 
-                  setSelectedFolder(item) }} />
+                  }} onPress={() => {
+                    setIsShowUpdateTagModal(true),
+                    setSelectedFolder(item)
+                  }} />
               </View>
             </>
 
@@ -1221,7 +1301,8 @@ export const DocumentScan = () => {
     console.log('existing tags===', tags);
     setTagForDeletion({})
     setUserTags(tags)
-    setSelectedTag({})
+    setSelectedTags([])
+    setIsShowDeleteTagConfirmation(false)
     setIsTagModalVisible(false)
     setIsShowRenderRenameTagModal(false)
     setIsShowDeleteTagConfirmation(false)
@@ -1960,7 +2041,7 @@ export const DocumentScan = () => {
               </Text>
               <View style={{ marginTop: scaledSize(4) }}>
 
-                {renderTagBtn({ fontSize: scaledSize(12) })}
+                {/* {renderTagBtn({ fontSize: scaledSize(12) })} */}
               </View>
             </View>
 
@@ -2005,7 +2086,7 @@ export const DocumentScan = () => {
                   <Text
                     style={{
                       color:
-                        'white',
+                        theme.primaryTextColor,
                     }}
                   >
                     {item.name}
@@ -2078,7 +2159,7 @@ export const DocumentScan = () => {
                 }
                 onPress={() =>
                   copyFilesToDirectory(
-                    
+
                   )
                 }
               >
@@ -2138,15 +2219,13 @@ export const DocumentScan = () => {
       {renderHeader()}
       {renderTags()}
       <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
-        {renderTagBtn()}
+        {/* {renderTagBtn()} */}
       </View>
       <View style={{
         height: scaledSize(40), width: scaledSize(100), position: 'absolute',
         top: scaledSize(150), left: scaledSize(10)
       }}>
-        {selectedTags.length>0&&<Text style={{ color: '#FF3B5C', letterSpacing: 1 }} onPress={() => setSelectedTags([])}>
-          Clear tags
-        </Text>}
+        
       </View>
 
 
@@ -2308,10 +2387,10 @@ export const DocumentScan = () => {
       <CustomErrorMsgModal isVisible={isShowErrorModal}
         onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
       <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
-        onCancel={() => setIsShowDeleteTagConfirmation(false)} 
+        onCancel={() => setIsShowDeleteTagConfirmation(false)}
         onSubmit={() => deleteTagHandler()} />
       <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
-        onCancel={() => setIsFolderDeleteConfirmation(false)} 
+        onCancel={() => setIsFolderDeleteConfirmation(false)}
         onSubmit={() => deleteTagHandler()} />
     </SafeAreaView>
   )
@@ -2448,17 +2527,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginRight: scaledSize(10),
   },
 
-  tagText: {
-    color: theme.themeColor,
 
-
-    fontSize: scaledSize(12),
-    // fontFamily: FONTS.PTSerifBold,
-
-    fontWeight: '500',
-
-    letterSpacing: 0.5,
-  },
 
   actionRow: {
     flexDirection: 'row',
@@ -2468,22 +2537,6 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     // marginLeft: scaledSize(12),
   },
 
-  actionButton: {
-    width: scaledSize(37),
-    height: scaledSize(37),
-    fontSize: scaledSize(18),
-
-    borderRadius: scaledSize(10),
-
-    justifyContent: 'center',
-    alignItems: 'center',
-    // borderWidth:.5,
-    // borderColor: mode === 'dark' ? '#46F28D' : 'green',
-
-    marginLeft: scaledSize(6),
-    backgroundColor: theme.buttonBGColor,
-
-  },
   headerContainer: {
     paddingHorizontal: scaledSize(18),
     paddingTop: scaledSize(18),
@@ -2622,92 +2675,89 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     elevation: 2,
   },
   // ****************render tab******************
-  tagsWrapper: {
-    marginTop: scaledSize(20),
-  },
-
-  tagsContainer: {
-    paddingHorizontal: scaledSize(18),
-    paddingBottom: scaledSize(10),
-  },
+  // tagsWrapper: {
+  //   marginTop: scaledSize(20),
+  // },
 
 
-  tagName: {
-    marginHorizontal: scaledSize(12),
-
-    fontSize: scaledSize(16),
-
-    fontWeight: '700',
-  },
-
-  tagIconContainer: {
-    width: scaledSize(32),
-    height: scaledSize(32),
-
-    borderRadius: scaledSize(12),
-
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
 
-  editBtn: {
-    marginLeft: scaledSize(16),
+  // tagName: {
+  //   marginHorizontal: scaledSize(12),
 
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  //   fontSize: scaledSize(16),
 
-  activeArrow: {
-    position: 'absolute',
+  //   fontWeight: '700',
+  // },
 
-    bottom: scaledSize(-8),
+  // tagIconContainer: {
+  //   width: scaledSize(32),
+  //   height: scaledSize(32),
 
-    alignSelf: 'center',
+  //   borderRadius: scaledSize(12),
 
-    left: '50%',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
 
-    marginLeft: scaledSize(-8),
 
-    width: scaledSize(16),
-    height: scaledSize(16),
+  // editBtn: {
+  //   marginLeft: scaledSize(16),
 
-    backgroundColor: theme.themeColor,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
 
-    transform: [{ rotate: '45deg' }],
-  },
+  // activeArrow: {
+  //   position: 'absolute',
 
-  addTagButton: {
-    height: scaledSize(60),
+  //   bottom: scaledSize(-8),
 
-    paddingHorizontal: scaledSize(22),
+  //   alignSelf: 'center',
 
-    borderRadius: scaledSize(22),
+  //   left: '50%',
 
-    borderWidth: 1.5,
+  //   marginLeft: scaledSize(-8),
 
-    borderStyle: 'dashed',
+  //   width: scaledSize(16),
+  //   height: scaledSize(16),
 
-    borderColor: '#D9E1EC',
+  //   backgroundColor: theme.themeColor,
 
-    flexDirection: 'row',
+  //   transform: [{ rotate: '45deg' }],
+  // },
 
-    alignItems: 'center',
+  // addTagButton: {
+  //   height: scaledSize(60),
 
-    justifyContent: 'center',
+  //   paddingHorizontal: scaledSize(22),
 
-    backgroundColor: '#FFFFFF',
-  },
+  //   borderRadius: scaledSize(22),
 
-  addTagText: {
-    marginLeft: 8,
+  //   borderWidth: 1.5,
 
-    fontSize: 16,
+  //   borderStyle: 'dashed',
 
-    fontWeight: '700',
+  //   borderColor: '#D9E1EC',
 
-    color: theme.themeColor,
-  },
+  //   flexDirection: 'row',
+
+  //   alignItems: 'center',
+
+  //   justifyContent: 'center',
+
+  //   backgroundColor: '#FFFFFF',
+  // },
+
+  // addTagText: {
+  //   marginLeft: 8,
+
+  //   fontSize: 16,
+
+  //   fontWeight: '700',
+
+  //   color: theme.themeColor,
+  // },
 
   // ********************* Rename Modal ***********************
   modalOverlay: {
@@ -2831,26 +2881,23 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   // ************* tag btn ****************
-  addTagButton: {
-    height: scaledSize(40),
-    paddingHorizontal: scaledSize(14),
+  // addTagButton: {
+  //   height: scaledSize(40),
+  //   paddingHorizontal: scaledSize(14),
 
-    borderRadius: scaledSize(12),
-
-    // borderWidth: 1.5,
-
-    // borderStyle: 'dashed',
-
-    borderColor: theme.themeColor,
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    justifyContent: 'center',
+  //   borderRadius: scaledSize(12),
 
 
-  },
+  //   borderColor: theme.themeColor,
+
+  //   flexDirection: 'row',
+
+  //   alignItems: 'center',
+
+  //   justifyContent: 'center',
+
+
+  // },
   // ******************* Sort Modal ******************
 
 
@@ -2966,22 +3013,22 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     borderTopColor: theme.borderColor,
   },
 
-  clearButton: {
-    height: 44,
+  // clearButton: {
+  //   height: 44,
 
-    paddingHorizontal: 18,
+  //   paddingHorizontal: 18,
 
-    borderRadius: 12,
+  //   borderRadius: 12,
 
-    justifyContent: 'center',
+  //   justifyContent: 'center',
 
-    alignItems: 'center',
+  //   alignItems: 'center',
 
-    backgroundColor:
-      theme.buttonBGColor,
+  //   backgroundColor:
+  //     theme.buttonBGColor,
 
-    marginRight: 10,
-  },
+  //   marginRight: 10,
+  // },
 
   clearText: {
     fontSize: 15,
@@ -3014,6 +3061,79 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     color: theme.secondaryTextColor,
   },
 
+  // *************** render tags**************
 
+
+  tagsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: scaledSize(12),
+    paddingHorizontal: scaledSize(12),
+  },
+
+  tagIconContainer: {
+    width: scaledSize(46),
+    height: scaledSize(46),
+
+    borderRadius: scaledSize(16),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    marginRight: scaledSize(12),
+
+    borderWidth: 1,
+  },
+
+  scrollContainer: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    alignItems: 'center',
+    paddingRight: scaledSize(10),
+  },
+
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    height: scaledSize(44),
+
+    paddingLeft: scaledSize(14),
+    paddingRight: scaledSize(10),
+
+    borderRadius: scaledSize(20),
+
+    marginRight: scaledSize(10),
+
+    borderWidth: 1,
+  },
+
+  tagText: {
+    marginLeft: scaledSize(8),
+
+    maxWidth: scaledSize(80),
+
+    fontSize: scaledSize(13),
+  },
+
+  menuIcon: {
+    marginLeft: scaledSize(6),
+  },
+
+  actionButton: {
+    width: scaledSize(46),
+    height: scaledSize(46),
+
+    borderRadius: scaledSize(16),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    marginLeft: scaledSize(10),
+
+    borderWidth: 1,
+  },
 
 });
