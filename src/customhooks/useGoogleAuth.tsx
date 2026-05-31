@@ -45,7 +45,7 @@ export const useGoogleAuth = () => {
       setUser(firebaseUser.user);
       setAccessToken(accessToken);
       setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, accessToken); // Store token in storage
-
+      setLocalData(asyncStorageKeyName.USER_DETAILS, firebaseUser.user); // Store token in storage
       return { user: firebaseUser.user, accessToken };
     } catch (e) {
       console.log('SignIn error:', e);

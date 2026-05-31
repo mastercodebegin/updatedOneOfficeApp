@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, use, useMemo } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
@@ -63,6 +63,7 @@ import ConfirmationDialog from '../../../src/component/ConfirmationDialog';
 import CustomSortModal from '../../../src/component/CustomSortModal';
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomUpdateFolderTagModal from '../../component/CustomUpdateFolderTagModal';
+import CustomGoogleBtn from '../../component/CustomGoogleBtn';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -145,6 +146,9 @@ export const DocumentScan = () => {
   useEffect(() => {
     // console.log('ThemeSlice', theme);
     // console.log('mode', mode);
+   const user = getLocalData(asyncStorageKeyName.USER_DETAILS)
+   console.log('user',user);
+   
   })
 
 
@@ -2214,6 +2218,7 @@ const renderTags = () => {
 
     setIsShowUpdateTagModal(false);
   }
+
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
@@ -2251,13 +2256,21 @@ const renderTags = () => {
                 </Modal>
               </View>
               :
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => openFile()}>
-                  <Image source={cloud} style={{ height: scaledSize(150), width: scaledSize(200) }} />
-
-                </TouchableOpacity>
-                <Text style={{ fontSize: scaledSize(16), letterSpacing: 1 }} >{'Import backup'}</Text>
-              </View>
+              !user ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+               
+                {<CustomGoogleBtn onPress={handleLogin} isLoading={isLoading}/>}
+                </View>
+              ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaledSize(20) }}>
+                  <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), textAlign: 'center' }}>
+                    No documents found.
+                  </Text>
+                  <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), marginTop: 4, textAlign: 'center' }}>
+                    Use the camera button to scan new documents.
+                  </Text>
+                </View>
+              )
             }
           </>
 
@@ -3136,4 +3149,35 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     borderWidth: 1,
   },
 
+  googleSignInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: scaledSize(52),
+    width: '90%',
+    alignSelf: 'center',
+    backgroundColor: theme.themeColor,
+    borderRadius: scaledSize(16),
+    paddingHorizontal: scaledSize(24),
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  googleSignInButtonPressed: {
+    opacity: Platform.OS === 'ios' ? 0.7 : 1,
+  },
+  googleSignInIcon: {
+    width: scaledSize(22),
+    height: scaledSize(22),
+    marginRight: scaledSize(16),
+  },
+  googleSignInButtonText: {
+    color: '#FFFFFF',
+    fontSize: scaledSize(15),
+    fontWeight: '500',
+    fontFamily: Fonts.regular,
+    letterSpacing: 0.5,
+  },
 });

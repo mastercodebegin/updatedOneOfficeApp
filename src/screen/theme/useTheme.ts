@@ -1,7 +1,7 @@
 // useTheme.ts
 
 import { useSelector, useDispatch } from 'react-redux';
-import { darkTheme, lightTheme } from './ThemeConfig';
+import { darkTheme, lightTheme, Theme } from './ThemeConfig';
 import { toggleTheme } from './ThemeSlice';
 
 export const useTheme = () => {
@@ -12,7 +12,7 @@ export const useTheme = () => {
   const dispatch = useDispatch();
 
 
-  const theme =
+  const theme:Theme =
     mode === 'dark'
       ? darkTheme
       : lightTheme;

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, SafeAreaView } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import { scaledSize, Utility } from '../../utilies/Utilities';
@@ -6,11 +6,23 @@ import { Fonts } from '../../assets/fonts/GlobalFonts';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
 import { Theme } from '../theme/ThemeConfig';
+import { getLocalData } from '../../utilies/storageUtility';
+import { asyncStorageKeyName } from '../../utilies/Constants';
+import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
+import CustomSpinner from '../../component/CustomSpinner';
 
-const SettingsScreen = ({ navigation }) => {
+const SettingsScreen = () => {
   const { theme, mode, toggleTheme } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState();
+  const {signIn,signOut,loading} = useGoogleAuth()
+
   const styles = useMemo(() => createStyles(theme), [theme]);
+
+  useEffect(() => {
+    const data = getLocalData(asyncStorageKeyName.USER_DETAILS)
+    setUser(data)
+  }, [])
 
   const handleSupportEmail = () => {
     Linking.openURL('mailto:support@yourapp.com?subject=Support Request');
@@ -21,11 +33,11 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    signIn();
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    signOut();
   };
 
   return (
@@ -39,8 +51,8 @@ const SettingsScreen = ({ navigation }) => {
           <Feather name="user" size={scaledSize(40)} color={theme.themeColor} />
         </View>
         <View>
-          <Text style={styles.profileName}>{isLoggedIn ? 'John Doe' : 'Guest User'}</Text>
-          <Text style={styles.profileEmail}>{isLoggedIn ? 'john.doe@example.com' : 'guest@example.com'}</Text>
+          <Text style={styles.profileName}>{user ? 'John Doe' : 'Guest User'}</Text>
+          <Text style={styles.profileEmail}>{user ? 'john.doe@example.com' : 'guest@example.com'}</Text>
         </View>
       </View>
 
@@ -77,7 +89,7 @@ const SettingsScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.footer}>
-        {isLoggedIn ? (
+        {user ? (
           <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
             <MaterialCommunityIcons name="logout" size={scaledSize(20)} color={'#FF3B5C'} style={styles.buttonIcon} />
             <Text style={[styles.buttonText, styles.logoutButtonText]}>Logout</Text>
@@ -89,6 +101,7 @@ const SettingsScreen = ({ navigation }) => {
           </TouchableOpacity>
         )}
       </View>
+      <CustomSpinner isLoading={loading}/>
     </SafeAreaView>
   );
 };
