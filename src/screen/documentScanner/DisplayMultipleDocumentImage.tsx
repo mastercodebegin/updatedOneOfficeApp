@@ -881,7 +881,7 @@ const renderHeaderNoSelection = () => {
         onPress={() => generatePdf(data)}>
         <Text
           style={{
-            color: theme.iconColor,
+            color: theme.buttonTextColor,
             fontWeight: '600',
           }}>
           PDF
@@ -1310,7 +1310,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     width: scaledSize(44),
     height: scaledSize(104),
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: scaledSize(8),
     alignSelf: 'center',
   },
 
@@ -1384,7 +1385,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginTop: scaledSize(12),
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
+    gap: scaledSize(8),
     alignSelf: 'auto',
   },
   // ************************

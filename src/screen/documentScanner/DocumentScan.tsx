@@ -2512,12 +2512,13 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   storageText: {
     fontSize: scaledSize(10),
     color: theme.secondaryTextColor,
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
   },
   docActions: {
     flexDirection: 'column',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: scaledSize(8),
     height: '100%',
     marginLeft: scaledSize(10),
   },
