@@ -9,6 +9,7 @@ import { Theme } from '../theme/ThemeConfig';
 import { getLocalData } from '../../utilies/storageUtility';
 import { asyncStorageKeyName } from '../../utilies/Constants';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
+import CustomHeader from '../../component/CustomHeader';
 import CustomSpinner from '../../component/CustomSpinner';
 
 const SettingsScreen = () => {
@@ -35,8 +36,11 @@ const SettingsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+      <View style={{ height: scaledSize(52) }}>
+        <CustomHeader
+          title="Settings"
+          leftSide={<View />} // Pass an empty view to hide the default back arrow
+        />
       </View>
 
       <View style={styles.profileSection}>
@@ -107,17 +111,6 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: mode === 'light' ? '#F7F8FA' : theme.bgContainor,
-  },
-  header: {
-    padding: scaledSize(16),
-    borderBottomWidth: 1,
-    borderBottomColor: theme.borderColor,
-    backgroundColor: theme.bgColor,
-  },
-  headerTitle: {
-    fontSize: scaledSize(22),
-    fontWeight: 'bold',
-    color: theme.primaryTextColor,
   },
   profileSection: {
     flexDirection: 'row',

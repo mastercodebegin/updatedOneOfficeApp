@@ -1043,9 +1043,14 @@ const renderAddCardDetails = () => {
 };
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
-      <View style={{ height: scaledSize(50),backgroundColor:theme.bgColor }}>
-        <CustomHeader title="Card holders"
-          onPressBack={() => { Utility.navigation.navigateToBack() }} />
+      <View style={{ height: scaledSize(50), backgroundColor: theme.bgColor }}>
+        <CustomHeader
+          title="Card holders"
+          leftSide={
+            <TouchableOpacity onPress={() => Utility.navigation.navigateToBack()} style={{ paddingHorizontal: scaledSize(16), height: '100%', justifyContent: 'center' }}>
+              <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.primaryTextColor} />
+            </TouchableOpacity>
+          } />
       </View>
 
 

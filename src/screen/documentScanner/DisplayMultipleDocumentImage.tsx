@@ -732,49 +732,177 @@ export default function DisplayMultipleDocumentImage(props: any) {
 
   }
 
-  const renderHeaderNoSelection = () => {
+const renderHeaderNoSelection = () => {
+
+  if (isSearchVisible) {
     return (
-      <SafeAreaView style={styles.header}>
+      <SafeAreaView
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: scaledSize(12),
+          paddingVertical: scaledSize(8),
+        }}>
 
-        {/* Back Button */}
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => {
-            setMultidelete(false)
-            setSelectedFileIds([])
-            Utility.navigation.navigateToBack()
-          }}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
-        </TouchableOpacity>
+        <Animated.View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: scaledSize(52),
+            borderRadius: scaledSize(16),
+            paddingHorizontal: scaledSize(14),
+            backgroundColor: theme.buttonBGColor,
+            opacity: searchOpacity,
+          }}>
 
-        {/* Title */}
-        <Text style={styles.title} numberOfLines={1}>
-          {Utility.string.getFirstLetterCapitalize(props.route.params?.folderName)}
-        </Text>
+          <MaterialIcons
+            name="search"
+            size={scaledSize(20)}
+            color="#9CA3AF"
+          />
 
-        {/* Right Actions */}
-        <View style={styles.rightActions}>
+          <TextInput
+            autoFocus
+            placeholder="Search"
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={{
+              flex: 1,
+              marginLeft: scaledSize(10),
+              color: theme.primaryTextColor,
+              fontSize: scaledSize(16),
+            }}
+          />
 
           <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => generatePdf(data)}
-          >
-            <Text style={styles.iconLabel}>PDF</Text>
+            onPress={closeSearch}
+            style={{
+              paddingLeft: scaledSize(10),
+            }}>
+            <MaterialIcons
+              name="close"
+              size={scaledSize(20)}
+              color={theme.iconColor}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => shareFile(data)}
-          >
-            <MaterialIcons name="share" size={22} color={theme.iconColor} />
-          </TouchableOpacity>
-
-        </View>
+        </Animated.View>
 
       </SafeAreaView>
-    )
+    );
   }
+
+  return (
+    <SafeAreaView
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: scaledSize(12),
+        paddingVertical: scaledSize(8),
+      }}>
+
+      {/* Back */}
+
+      <TouchableOpacity
+        style={styles.iconBtn}
+        onPress={() => {
+          setMultidelete(false);
+          setSelectedFileIds([]);
+          Utility.navigation.navigateToBack();
+        }}>
+        <MaterialIcons
+          name="arrow-back"
+          size={24}
+          color={theme.iconColor}
+        />
+      </TouchableOpacity>
+
+      {/* Title */}
+
+      <Text
+        numberOfLines={1}
+        style={{
+          flex: 1,
+          marginHorizontal: scaledSize(14),
+          color: theme.primaryTextColor,
+          fontSize: scaledSize(22),
+        }}>
+        {/* {Utility.string.getFirstLetterCapitalize(
+          props.route.params?.folderName,
+        )} */}
+      </Text>
+
+      {/* Search */}
+
+      <TouchableOpacity
+        style={[styles.iconBtn, { marginLeft: 8 }]}
+        onPress={openSearch}>
+        <MaterialIcons
+          name="search"
+          size={scaledSize(20)}
+          color={theme.iconColor}
+        />
+      </TouchableOpacity>
+
+      {/* Sort */}
+
+      <TouchableOpacity
+        style={[styles.iconBtn, { marginLeft: 8 }]}
+        onPress={() => setIsShowSortModal(true)}>
+        <MaterialIcons
+          name="sort"
+          size={scaledSize(20)}
+          color={theme.iconColor}
+        />
+      </TouchableOpacity>
+
+      {/* Layout */}
+
+      <TouchableOpacity
+        style={[styles.iconBtn, { marginLeft: 8 }]}
+        onPress={toggleLayoutMode}>
+        <MaterialIcons
+          name={
+            layoutMode === 'list'
+              ? 'view-module'
+              : 'view-list'
+          }
+          size={scaledSize(20)}
+          color={theme.iconColor}
+        />
+      </TouchableOpacity>
+
+      {/* PDF */}
+
+      <TouchableOpacity
+        style={[styles.iconBtn, { marginLeft: 8 }]}
+        onPress={() => generatePdf(data)}>
+        <Text
+          style={{
+            color: theme.iconColor,
+            fontWeight: '600',
+          }}>
+          PDF
+        </Text>
+      </TouchableOpacity>
+
+      {/* Share */}
+
+      <TouchableOpacity
+        style={[styles.iconBtn, { marginLeft: 8 }]}
+        onPress={() => shareFile(data)}>
+        <MaterialIcons
+          name="share"
+          size={scaledSize(22)}
+          color={theme.iconColor}
+        />
+      </TouchableOpacity>
+
+    </SafeAreaView>
+  );
+};
   const renderHeaderMultiSelection = () => {
     return (
       <View style={styles.multiHeader}>
@@ -841,21 +969,21 @@ export default function DisplayMultipleDocumentImage(props: any) {
     return (
       <View style={styles.listControls}>
         <TouchableOpacity
-          style={styles.controlBtn}
+          style={styles.iconBtn}
           onPress={openSearch}
         >
           <MaterialIcons name="search" size={scaledSize(18)} color={theme.iconColor} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.controlBtn}
+          style={styles.iconBtn}
           onPress={() => setIsShowSortModal(true)}
         >
           <MaterialIcons name="sort" size={scaledSize(18)} color={theme.iconColor} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.controlBtn}
+          style={styles.iconBtn}
           onPress={toggleLayoutMode}
         >
           <MaterialIcons
@@ -894,7 +1022,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
         :
         renderHeaderNoSelection()
       }
-      {!isMultiDelete && renderListControls()}
+      {/* {!isMultiDelete && renderListControls()} */}
       <View style={{ flex: 1, }}>
 
 

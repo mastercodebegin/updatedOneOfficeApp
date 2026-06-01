@@ -1,154 +1,85 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image, SafeAreaView } from "react-native";
-
-// import Icon from "react-native-vector-icons/EvilIcons";
-import Icon from "react-native-vector-icons/FontAwesome5";
-import CustomVectorIcon from "./CustomVectorIcon";
-import CustomCloseIcon from "./CustomCloseIcon";
-import { scaledSize, Utility } from "../utilies/Utilities";
-import { COLORS } from "../utilies/GlobalColors";
-import { Fonts } from "../assets/fonts/GlobalFonts";
-import { Theme } from "../screen/theme/ThemeConfig";
-import { useTheme } from "../screen/theme/useTheme";
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../screen/theme/useTheme';
+import { scaledSize, Utility } from '../utilies/Utilities';
+import { Fonts } from '../assets/fonts/GlobalFonts';
+import { Theme } from '../screen/theme/ThemeConfig';
 
-interface myProps {
-  title: any;
-  isBackIconHide?: boolean;
-  isCloseIconShow?: boolean;
-  onPressBack?: () => any;
-  onShare?: () => any;
-  isHeaderTransparent?: boolean
-  isShareIconShow?: boolean
-  onPressCloseIcon?: () => any;
+interface CustomHeaderProps {
+  title: string;
+  leftSide?: React.ReactNode;
+  rightSide?: React.ReactNode;
+  isShowShareBtn?: boolean;
+  onSharePress?: () => void;
 }
 
-const window = Dimensions.get("window");
+const CustomHeader: React.FC<CustomHeaderProps> = ({
+  title,
+  leftSide,
+  rightSide,
+  isShowShareBtn = false, // Default to false to not show share button unless specified
+  onSharePress,
+}) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
+  const DefaultLeft = () => (
+    <TouchableOpacity
+      style={styles.defaultIconContainer}
+      onPress={() => Utility.navigation.navigateToBack()}
+    >
+      <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.primaryTextColor} />
+    </TouchableOpacity>
+  );
 
-
-const CustomHeader = (props: myProps) => {
-  const { title, isBackIconHide = false, onPressBack = () => { }, onShare = () => { },
-    isHeaderTransparent = false,
-    onPressCloseIcon, isCloseIconShow = false, isShareIconShow = false } = props
-
-  const { theme, mode } = useTheme()
-
-  const styles = useMemo(() => {
-    return createStyles(theme, mode)
-  }, [theme, mode])
-
+  const DefaultRight = () =>
+    isShowShareBtn ? (
+      <TouchableOpacity
+        style={styles.defaultIconContainer}
+        onPress={onSharePress}
+      >
+        <MaterialIcons name="share" size={scaledSize(22)} color={theme.primaryTextColor} />
+      </TouchableOpacity>
+    ) : <></>;
 
   return (
-    <>
-      <View style={{
-        flex: 1, flexDirection: 'row',
-      }}>
-        <SafeAreaView style={{ ...styles.header, backgroundColor: isHeaderTransparent ? 'transparent' : theme.bgColor }}>
-
-          {/* Back Button */}
-          {isBackIconHide ? <></> : <TouchableOpacity
-            style={[
-              styles.iconBtn,
-              { left: isBackIconHide ? 0 : scaledSize(10) },
-              isHeaderTransparent && { backgroundColor: "transparent" },
-            ]}
-            onPress={() => {
-              onPressBack()
-            }}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
-          </TouchableOpacity>}
-
-          {/* Title */}
-          <Text style={styles.title} numberOfLines={1}>
-            {Utility.string.getFirstLetterCapitalize(title)}
-          </Text>
-
-          {/* Right Actions */}
-          <View style={styles.rightActions}>
-
-            {/* <TouchableOpacity
-              style={styles.iconBtn}
-            >
-              <Text style={styles.iconLabel}>PDF</Text>
-            </TouchableOpacity> */}
-
-            {isShareIconShow && <TouchableOpacity
-              style={[
-                styles.iconBtn,
-                isHeaderTransparent && { backgroundColor: "transparent" },
-              ]}
-              onPress={onShare}
-            >
-              <MaterialIcons name="share" size={22} color={theme.iconColor} />
-            </TouchableOpacity>}
-
-            {isCloseIconShow && <TouchableOpacity
-              style={[styles.iconBtn,
-              isHeaderTransparent && { backgroundColor: "transparent" }]}
-            // onPress={() => shareFile(data)}
-            >
-              <CustomVectorIcon iconLibrary="Ionicons" iconName="close-sharp" style={{ color: theme.iconColor }} />
-            </TouchableOpacity>}
-
-
-          </View>
-
-        </SafeAreaView>
+    <View style={styles.headerContainer}>
+      <View style={styles.sideContainer}>
+        {leftSide !== undefined ? leftSide : <DefaultLeft />}
       </View>
-    </>
+      <Text style={styles.titleText} numberOfLines={1}>
+        {title}
+      </Text>
+      <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}>
+        {rightSide !== undefined ? rightSide : <DefaultRight />}
+      </View>
+    </View>
   );
 };
 
-const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
-
-  titleInput: {
-    color: COLORS.black,
-    letterSpacing: 1,
-    fontSize: scaledSize(18),
-    fontFamily: Fonts.regular
-  },
-  title: {
-    flex: 1,
-    fontSize: scaledSize(16),
-    left: scaledSize(10),
-    fontWeight: '500',
-    color: theme.primaryTextColor,
-    marginHorizontal: scaledSize(8),
-    fontFamily: Fonts.regular,
-    letterSpacing: 1
-  },
-  header: {
+const createStyles = (theme: Theme) => StyleSheet.create({
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    // backgroundColor: theme.bgColor,
-    // marginTop:20,
-    paddingHorizontal: 8,
-    paddingVertical: scaledSize(10),
-    // borderBottomWidth: 0.5,
-    // borderBottomColor: '#ddd',
-  },
-
-  iconBtn: {
-    height: scaledSize(32),
+    height: '100%',
+    backgroundColor: theme.bgColor,
     paddingHorizontal: scaledSize(8),
-    borderRadius: scaledSize(6),
-    backgroundColor: theme.buttonBGColor,   // dark filled background
-    alignItems: 'center',
+  },
+  sideContainer: {
+    minWidth: scaledSize(50),
     justifyContent: 'center',
-    marginRight: scaledSize(4),
   },
-  iconLabel: {
-    fontSize: scaledSize(11),
-    fontWeight: '700',
-    color: theme.primaryTextColor,             // white text on dark bg
-    letterSpacing: 0.5,
+  titleText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: scaledSize(18),
+    fontWeight: '500',
+    fontFamily: Fonts.medium,
+    color: theme.primaryTextColor,
   },
-  rightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaledSize(4),
+  defaultIconContainer: {
+    padding: scaledSize(8),
   },
 });
 

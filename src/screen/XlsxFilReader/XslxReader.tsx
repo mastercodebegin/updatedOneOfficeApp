@@ -26,6 +26,7 @@ import { Buffer } from 'buffer'; // Ensure this is imported for base64 decoding
 import {
     Image,
     SafeAreaView,
+    TouchableOpacity,
     ScrollView,
     StyleSheet,
     Text,
@@ -42,6 +43,7 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 import DocxGenerator from './Xlsxgenerator';
 import {  scaledSize, Utility } from '../../utilies/Utilities';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import HeaderComponent from '../../component/CustomHeader';
 import { Button } from 'react-native-elements';
 import { ErrorToast } from '../../component/CustomToast';
@@ -228,9 +230,15 @@ const XslxReader = (props: S) => {
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <View style={{ height: scaledSize(40), flexDirection: 'row',
-            backgroundColor:'white'
-                ,elevation:4 }}>
-               <HeaderComponent title='' onPress={async () => Utility.navigation.navigateToBack()}/>
+            backgroundColor: 'white',
+            elevation: 4,
+            alignItems: 'center'
+             }}>
+               <HeaderComponent
+                title=''
+                leftSide={<TouchableOpacity onPress={() => Utility.navigation.navigateToBack()} style={{ paddingHorizontal: scaledSize(16), height: '100%', justifyContent: 'center' }}>
+                  <MaterialIcons name="arrow-back" size={scaledSize(24)} color={'black'} />
+                </TouchableOpacity>} />
             </View>
             <View style={{ height: scaledSize(50), width: '100%',marginTop:scaledSize(10) }}>
 
