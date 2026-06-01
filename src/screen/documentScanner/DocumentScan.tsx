@@ -107,6 +107,8 @@ export const DocumentScan = () => {
   const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('')
   const [selectedTags, setSelectedTags] = useState([]);
+  const [folderStats, setFolderStats] = useState<{ [key: number]: { count: number, size: number } }>({});
+  const [maxFolderSize, setMaxFolderSize] = useState(0);
 
   const [selectedFolderTag, setSelectedFolderTag] = useState({});
   const [tagForDeletion, setTagForDeletion] = useState({});
@@ -142,6 +144,37 @@ export const DocumentScan = () => {
   const styles = useMemo(() => {
     return createStyles(theme, mode)
   }, [theme])
+
+  const formatBytes = (bytes, decimals = 2) => {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  };
+
+  useEffect(() => {
+    if (data.length > 0 && localFiles.length > 0) {
+      const stats = {};
+      let max = 0;
+      data.forEach(folder => {
+        const filesInFolder = localFiles.filter(file => file.folderId === folder.id);
+        const count = filesInFolder.length;
+        const size = filesInFolder.reduce((acc, file) => acc + (file.size || 0), 0);
+        stats[folder.id] = { count, size };
+        if (size > max) {
+          max = size;
+        }
+      });
+      setFolderStats(stats);
+      setMaxFolderSize(max);
+    } else {
+      // Reset stats if there's no data
+      setFolderStats({});
+      setMaxFolderSize(0);
+    }
+  }, [data, localFiles]);
 
   useEffect(() => {
     // console.log('ThemeSlice', theme);
@@ -1131,8 +1164,8 @@ const renderTags = () => {
   }
   const renderParentItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
-    const isEditable = checkIsEditable(item.id);
-    // console.log('renderParentItem', item);
+    const stats = folderStats[item.id] || { count: 0, size: 0 };
+    const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
 
     return (
       <TouchableOpacity
@@ -1142,82 +1175,61 @@ const renderTags = () => {
           setMultidelete(!isMultiDelete);
           onSelectFolders(item);
         }}
-        style={[
-          styles.card,
-          isSelected && {
-            borderColor: '#3CF28A',
-          },
-        ]}>
+        style={[styles.docCard, isSelected && styles.docCardSelected]}
+      >
+        <View style={styles.docThumbnailContainer}>
+          <Image
+            source={{
+              uri: Utility.images.getImageUriByOS(
+                destinationPath + item?.coverUri,
+              ),
+            }}
+            style={styles.docThumbnail}
+            resizeMode="cover"
+          />
+        </View>
 
-        {/* Left Section */}
-        <View style={styles.leftContainer}>
-          <View style={styles.thumbnailWrapper}>
-            <Image
-              source={{
-                uri: Utility.images.getImageUriByOS(
-                  destinationPath + item?.coverUri,
-                ),
-              }}
-              style={styles.thumbnail}
-              resizeMode="cover"
-            />
+        <View style={styles.docContent}>
+          <Text style={styles.docTitle} numberOfLines={1}>
+            {Utility.string.getFirstLetterCapitalize(item?.name || '')}
+          </Text>
+
+          <View style={styles.docMetadata}>
+            <Text style={styles.docMetaText}>{Utility.date.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}</Text>
+            <Text style={styles.docMetaSeparator}>•</Text>
+            <Text style={styles.docMetaText}>{stats.count} files</Text>
+            <Text style={styles.docMetaSeparator}>•</Text>
+            <Text style={styles.docMetaText}>{getTagByIdHandler(item.tagId)}</Text>
           </View>
 
-          <View style={styles.content}>
-
-            <>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.title,
-                  { color: theme.primaryTextColor },
-                ]}>
-                {Utility.string.getFirstLetterCapitalize(item?.name || '')}
-              </Text>
-
-              <Text style={[styles.date, { fontFamily: 'calibri' }]}>
-                {Utility.date.getDateByMomentFormat(item?.createdAt,
-                  DateFormat.DATE_WITH_MONTH_NAME)}
-              </Text>
-
-              <View style={styles.tagContainer}>
-                <View style={styles.greenLine} />
-
-
-                <Text style={[styles.tagText,
-                { color: theme.secondaryTextColor, letterSpacing: 1 }]}
-                  onPress={() => { setIsShowUpdateTagModal(true), setSelectedFolder(item) }}>
-                  {getTagByIdHandler(item.tagId)}
-                </Text>
-                <CustomVectorIcon iconLibrary='MaterialDesignIcons'
-                  iconName='pencil' style={{
-                    color: theme.iconColor,
-                    fontSize: scaledSize(12),
-                    left: scaledSize(6), top: scaledSize(1)
-                  }} onPress={() => {
-                    setIsShowUpdateTagModal(true),
-                    setSelectedFolder(item)
-                  }} />
-              </View>
-            </>
-
+          <View style={styles.storageInfo}>
+            <View style={styles.storageBar}>
+              <LinearGradient
+                colors={['#47b16a', '#3CF28A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.storageBarFill, { width: `${sizePercentage}%` }]}
+              />
+            </View>
+            <Text style={styles.storageText}>{formatBytes(stats.size)}</Text>
           </View>
         </View>
 
-        {/* Right Actions */}
         {!isMultiDelete && (
-          <View style={{ ...styles.actionRow, flex: .7, }}>
-
-            {renderGradientButton('share-social-sharp', theme.iconColor, () => shareFile(item))}
-            {renderGradientButton('pencil', theme.iconColor, () => {
+          <View style={styles.docActions}>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => shareFile(item)}>
+              <Ionicons name="share-social-outline" size={scaledSize(18)} color={theme.iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => {
               setIsFolderNameChange(true);
               setFolderId(item.id);
-            })}
-            {renderGradientButton('trash-outline', 'red', () => deleteFoldersConfirmationForSingleItem(item))}
-
-
-
-
+              setFolderName(item.name);
+            }}>
+              <Ionicons name="pencil-outline" size={scaledSize(18)} color={theme.iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => deleteFoldersConfirmationForSingleItem(item)}>
+              <Ionicons name="trash-outline" size={scaledSize(18)} color={theme.deleteIconColor} />
+            </TouchableOpacity>
           </View>
         )}
       </TouchableOpacity>
@@ -2417,137 +2429,107 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor:
-      theme.bgContainor
+      mode === 'dark' ? '#0E1015' : '#F7F8FA'
   },
-  card: {
-    height: scaledSize(130),
+  docCard: {
+    height: scaledSize(120),
     flexDirection: 'row',
-
     alignItems: 'center',
-
-    justifyContent: 'space-between',
-
-    marginHorizontal: scaledSize(12),
-    marginTop: scaledSize(18),
-
-    paddingHorizontal: scaledSize(18),
-    paddingVertical: scaledSize(12),
-
-    borderRadius: scaledSize(20),
-
     backgroundColor: theme.bgColor,
-
+    borderRadius: 24,
+    marginHorizontal: scaledSize(16),
+    marginBottom: scaledSize(12),
+    padding: scaledSize(12),
     borderWidth: 1,
     borderColor: theme.borderColor,
-    shadowColor: mode === 'dark' ? '#000' : '#9CA3AF',
-    shadowOpacity: mode === 'dark' ? 0.25 : 0.2,
-
-    shadowRadius: scaledSize(12),
-
-    shadowOffset: {
-      width: 0,
-      height: scaledSize(8),
-    },
-
-    elevation: 8,
-
+    shadowColor: mode === 'dark' ? '#000' : '#5A6476',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: mode === 'dark' ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 6,
   },
-
-  leftContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // backgroundColor:'yellow',
-    flex: 1,
+  docCardSelected: {
+    borderColor: '#47b16a',
+    shadowColor: '#47b16a',
+    shadowOpacity: mode === 'dark' ? 0.5 : 0.3,
+    shadowRadius: 10,
+    elevation: 10,
   },
-
-  thumbnailWrapper: {
-    width: scaledSize(62),
-    height: scaledSize(62),
-
-    // borderRadius: scaledSize(30),
-
-
-  },
-
-  thumbnail: {
-    width: '100%',
-    height: '100%',
-    borderRadius: scaledSize(4),
-  },
-
-  content: {
-    flex: 1,
-
-    marginLeft: scaledSize(16),
-
-    justifyContent: 'center',
-  },
-
-  title: {
-    fontSize: scaledSize(15),
-    fontFamily: FONTS.regular,
-    letterSpacing: 0.5,
-    color: theme.primaryTextColor,
-  },
-
-  date: {
-    marginTop: scaledSize(6),
-
-    fontSize: scaledSize(12),
-    fontFamily: FONTS.regular,
-    letterSpacing: 0.5,
-
-    color: mode === 'dark' ? '#808080' : 'gray',
-
-    fontWeight: '500',
-  },
-
-  tagContainer: {
-    marginTop: scaledSize(10),
-
-    alignSelf: 'flex-start',
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    paddingLeft: scaledSize(0),
-    paddingRight: scaledSize(14),
-
-    height: scaledSize(20),
-
-    borderRadius: scaledSize(6),
-
-    backgroundColor: theme.buttonBGColor,
-    borderWidth: mode === 'light' ? .4 : 0,
-    borderColor: '#d3d3d3',
-
+  docThumbnailContainer: {
+    width: scaledSize(70),
+    height: scaledSize(70),
+    borderRadius: 18,
     overflow: 'hidden',
   },
-
-  greenLine: {
-    width: scaledSize(2),
-
+  docThumbnail: {
+    width: '100%',
     height: '100%',
-
-    backgroundColor: theme.themeColor,
-    // backgroundColor: '#00E676',
-
-
-    borderTopLeftRadius: scaledSize(6),
-    borderBottomLeftRadius: scaledSize(6),
-
-    marginRight: scaledSize(10),
   },
-
-
-
-  actionRow: {
+  docContent: {
+    flex: 1,
+    marginLeft: scaledSize(14),
+    justifyContent: 'space-between',
+    height: '100%',
+    paddingVertical: scaledSize(2),
+  },
+  docTitle: {
+    fontSize: scaledSize(15),
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.bold,
+  },
+  docMetadata: {
     flexDirection: 'row',
-
     alignItems: 'center',
-
-    // marginLeft: scaledSize(12),
+    marginTop: scaledSize(4),
+  },
+  docMetaText: {
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+    fontFamily: Fonts.regular,
+  },
+  docMetaSeparator: {
+    marginHorizontal: scaledSize(5),
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+  },
+  storageInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 'auto',
+  },
+  storageBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: theme.buttonBGColor,
+    borderRadius: 3,
+    marginRight: scaledSize(8),
+  },
+  storageBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  storageText: {
+    fontSize: scaledSize(10),
+    color: theme.secondaryTextColor,
+    fontFamily: Fonts.medium,
+  },
+  docActions: {
+    flexDirection: 'column',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    height: '100%',
+    marginLeft: scaledSize(10),
+  },
+  actionBtnSquare: {
+    width: scaledSize(30),
+    height: scaledSize(30),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    borderRadius: 8,
   },
 
   headerContainer: {
