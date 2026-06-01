@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, SafeAreaView, Image } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import { scaledSize, Utility } from '../../utilies/Utilities';
 import { Fonts } from '../../assets/fonts/GlobalFonts';
@@ -13,16 +13,9 @@ import CustomSpinner from '../../component/CustomSpinner';
 
 const SettingsScreen = () => {
   const { theme, mode, toggleTheme } = useTheme();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState();
-  const {signIn,signOut,loading} = useGoogleAuth()
+  const { user, signIn, signOut, loading } = useGoogleAuth();
 
-  const styles = useMemo(() => createStyles(theme), [theme]);
-
-  useEffect(() => {
-    const data = getLocalData(asyncStorageKeyName.USER_DETAILS)
-    setUser(data)
-  }, [])
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
 
   const handleSupportEmail = () => {
     Linking.openURL('mailto:support@yourapp.com?subject=Support Request');
@@ -48,11 +41,15 @@ const SettingsScreen = () => {
 
       <View style={styles.profileSection}>
         <View style={styles.avatar}>
-          <Feather name="user" size={scaledSize(40)} color={theme.themeColor} />
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+          ) : (
+            <Feather name="user" size={scaledSize(40)} color={theme.themeColor} />
+          )}
         </View>
         <View>
-          <Text style={styles.profileName}>{user ? 'John Doe' : 'Guest User'}</Text>
-          <Text style={styles.profileEmail}>{user ? 'john.doe@example.com' : 'guest@example.com'}</Text>
+          <Text style={styles.profileName}>{user ? user.displayName : 'Guest User'}</Text>
+          <Text style={styles.profileEmail}>{user ? user.email : 'guest@example.com'}</Text>
         </View>
       </View>
 
@@ -106,15 +103,16 @@ const SettingsScreen = () => {
   );
 };
 
-const createStyles = (theme: Theme) => StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bgContainor,
+    backgroundColor: mode === 'light' ? '#F7F8FA' : theme.bgContainor,
   },
   header: {
     padding: scaledSize(16),
     borderBottomWidth: 1,
     borderBottomColor: theme.borderColor,
+    backgroundColor: theme.bgColor,
   },
   headerTitle: {
     fontSize: scaledSize(22),
@@ -137,6 +135,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: scaledSize(16),
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaledSize(35),
   },
   profileName: {
     fontSize: scaledSize(18),

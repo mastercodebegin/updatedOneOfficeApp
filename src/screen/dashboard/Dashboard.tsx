@@ -790,8 +790,8 @@ const pushFolders = async () => {
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
           ref={readPdfFileRef} 
-          pdfFiles={pdfs} 
-          // pdfFiles={documents.pdfFiles} 
+          // pdfFiles={pdfs} 
+          pdfFiles={documents.pdfFiles} 
           selectedSort={selectedSort}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
