@@ -2,7 +2,7 @@ import { StackActions } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler, Animated, Linking, ScrollView } from 'react-native'
 import Pdf from 'react-native-pdf';
-import { fileShare, generateUniqueNumber, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
+import {  heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
 
 import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
@@ -79,7 +79,7 @@ const MultiplePdfView = (props: S) => {
     setNumber(0), setVisible(false)
     //props.navigation.goBack()
     Linking.getInitialURL = async () => null;
-    navigateToBack()
+    Utility.navigation.navigateToBack()
   }
   const headerComp = () => {
     return (
@@ -87,36 +87,39 @@ const MultiplePdfView = (props: S) => {
         height: scaledSize(40),
         marginRight: scaledSize(0),
         justifyContent: 'space-between',
-         zIndex: 99,marginTop:heightFromPercentage(2),
+        zIndex: 99, marginTop: heightFromPercentage(2),
         flexDirection: 'row',
       }}>
-        
 
 
-          <View style={{ flexDirection: 'row',
-             flex: 1,
-             justifyContent:'center',alignItems:'center' }}>
-            <View style={{ flexDirection: 'row', flex: 1, }}>
-              <TouchableOpacity style={{
-                height: scaledSize(20),
-                width: scaledSize(30),
-                 borderRadius: scaledSize(30),
-                 marginLeft: scaledSize(10)
-              }} onPress={() => onPressCloseHandler()} >
-                <CustomBackIcon onPress={onPressCloseHandler} size={22} color='black' />
-              </TouchableOpacity>
-            </View>
 
-
-                  <CustomVectorIcon 
-                  iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'} 
-                  iconLibrary='MaterialCommunityIcons'
-                    style={{ color: COLORS.THEME_COLOR, fontSize: scaledSize(20),
-                      right:30
-                      }}
-                    onPress={() => { setIsMultiView(!isMultiView) }} />
-
+        <View style={{
+          flexDirection: 'row',
+          flex: 1,
+          justifyContent: 'center', alignItems: 'center'
+        }}>
+          <View style={{ flexDirection: 'row', flex: 1, }}>
+            <TouchableOpacity style={{
+              height: scaledSize(20),
+              width: scaledSize(30),
+              borderRadius: scaledSize(30),
+              marginLeft: scaledSize(10)
+            }} onPress={() => onPressCloseHandler()} >
+              <CustomBackIcon onPress={onPressCloseHandler} size={22} color='black' />
+            </TouchableOpacity>
           </View>
+
+
+          <CustomVectorIcon
+            iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
+            iconLibrary='MaterialCommunityIcons'
+            style={{
+              color: COLORS.THEME_COLOR, fontSize: scaledSize(20),
+              right: 30
+            }}
+            onPress={() => { setIsMultiView(!isMultiView) }} />
+
+        </View>
 
 
       </View>
@@ -131,13 +134,13 @@ const MultiplePdfView = (props: S) => {
       buttonStyle={{
         // backgroundColor: 'white',
         backgroundColor: 'transparent',
-        paddingLeft:scaledSize(10),height:40,
+        paddingLeft: scaledSize(10), height: 40,
         marginLeft: index == 0 ? 0 : scaledSize(10),
         borderBottomWidth: selectedSheet.name === item.name ? 2 : .5,
         borderColor: selectedSheet.name === item.name ? 'green' : 'gray',
       }}
       titleStyle={{ color: 'black', textAlign: 'center' }}
-      key={generateUniqueNumber()}
+      key={Utility.generateUniqueNumber()}
       title={item.name.slice(0, 15)}
       onPress={() => {
         console.log('sheetName')
@@ -183,7 +186,7 @@ const MultiplePdfView = (props: S) => {
               style={styles.pdf} />
           </View>
           :
-          <View style={{   }}>
+          <View style={{}}>
 
             <View style={{
               backgroundColor: 'yellow',
@@ -205,10 +208,10 @@ const MultiplePdfView = (props: S) => {
 
                 style={styles.pdf} />
             </View>
-            <View style={{height:scaledSize(5),backgroundColor:'#d3d3d3'}}></View>
+            <View style={{ height: scaledSize(5), backgroundColor: '#d3d3d3' }}></View>
 
             <View style={{
-              backgroundColor: 'yellow', 
+              backgroundColor: 'yellow',
               height: heightFromPercentage(45),
               borderColor: 'black'
             }}>

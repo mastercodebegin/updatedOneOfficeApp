@@ -36,7 +36,7 @@ const commonThemeProperties = {
 export const lightTheme: Theme = {
   ...commonThemeProperties,
   bgColor: 'white',
-  bgContainor: 'white',
+  bgContainor: '#f5f5f7',
   primaryTextColor: '#000000',
   secondaryTextColor: '#000000',
   iconColor: '#000000',

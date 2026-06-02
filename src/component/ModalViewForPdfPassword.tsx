@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View, StyleSheet, TouchableOpacity, Modal,
   TextInput, Text, Image, FlatList, ScrollView,
@@ -29,6 +29,8 @@ import { useToast } from "react-native-toast-notifications";
 import CustomLinearGradientView from "./CustomLinearGradientView";
 import CustomErrorMsgModal from "./CustomErrorMsgModal";
 import CustomVectorIcon from "./CustomVectorIcon";
+import { useTheme } from "../screen/theme/useTheme";
+import { Theme } from "../screen/theme/ThemeConfig";
 
 
 //local imports
@@ -49,6 +51,8 @@ interface myProps {
 
 
 const ModalView = (props: myProps) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [visible, setIsvisible] = useState(false)
   const [open, setOpen] = useState(false)
   const [calendar, setCalendar] = useState(false)
@@ -302,7 +306,7 @@ const ModalView = (props: myProps) => {
     }
   }
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgColor }}>
       <View style={{ flex: .9 }}>
 
 
@@ -357,7 +361,7 @@ const ModalView = (props: myProps) => {
                   placeholder="Select user"
                   // value={selectedUser ? selectedUser.firstName : ''}
                   LeftIcon={() => <CustomVectorIcon iconLibrary="Feather" iconName="user"
-                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8) }} />}
+                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8), color: theme.secondaryTextColor }} />}
                   data={savedUser}
                   // onFocuse={() => onFocusSelectBank()}
                   onSelect={(item) => selectUser(item)}
@@ -379,7 +383,7 @@ const ModalView = (props: myProps) => {
                     :
                      <View style={{width:scaledSize(24)}}>
                     <CustomVectorIcon iconLibrary="MaterialDesignIcons" iconName="bank"
-                      style={{ fontSize: scaledSize(14),  }} />
+                      style={{ fontSize: scaledSize(14), color: theme.secondaryTextColor }} />
                       </View>
                   }
 
@@ -398,7 +402,7 @@ const ModalView = (props: myProps) => {
                     secureTextEntry={!visible}
                     defaultValue={props.errorRecognize}
                     placeholder="Password"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.secondaryTextColor}
                     autoCapitalize="none"
                     keyboardType="ascii-capable"
                     onChangeText={(value) => props.onText(value)}
@@ -409,7 +413,7 @@ const ModalView = (props: myProps) => {
                     <Icon
                       name={visible ? "eye-outline" : "eye-off-outline"}
                       size={20}
-                      color="#666"
+                      color={theme.secondaryTextColor}
                     />
                   </TouchableOpacity>
                 </View>
@@ -463,7 +467,7 @@ const ModalView = (props: myProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
 
   overlay: {
     flex: 1,
@@ -474,7 +478,7 @@ const styles = StyleSheet.create({
 
   modalCard: {
     width: "92%",
-    backgroundColor: "#fff",
+    backgroundColor: theme.bgColor,
     borderRadius: 14,
     padding: 20
   },
@@ -487,7 +491,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#222"
+    color: theme.primaryTextColor
   },
 
   descriptionContainer: {
@@ -498,7 +502,7 @@ const styles = StyleSheet.create({
   descriptionText: {
     marginLeft: 8,
     fontSize: scaledSize(12),
-    // color: "#555",
+    color: theme.secondaryTextColor,
     flex: 1,
     letterSpacing: 1,
     left: scaledSize(4),
@@ -514,15 +518,15 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 15,
-    letterSpacing: .5
-    // fontWeight: "600"
+    letterSpacing: .5,
+    color: theme.primaryTextColor,
   },
 
   label: {
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#333"
+    color: theme.primaryTextColor,
   },
 
   inputContainer: {
@@ -537,13 +541,13 @@ const styles = StyleSheet.create({
     borderRadius: scaledSize(8),
     paddingHorizontal: scaledSize(10),
     height: scaledSize(40),
-    backgroundColor: "#FAFAFA"
+    backgroundColor: theme.bgContainor
   },
 
   passwordInput: {
     flex: 1,
     fontSize: 15,
-    color: "#000"
+    color: theme.primaryTextColor
   },
 
   buttonRow: {
@@ -560,7 +564,7 @@ const styles = StyleSheet.create({
   },
 
   primaryText: {
-    color: COLORS.THEME_COLOR,
+    color: theme.themeColor,
     letterSpacing: .5
     // fontWeight: "600"
   },
@@ -571,12 +575,12 @@ const styles = StyleSheet.create({
   },
 
   cancelText: {
-    color: "#555",
+    color: theme.secondaryTextColor,
     fontWeight: "500"
   },
 
   errorMessageStyle: {
-    color: "red",
+    color: theme.deleteIconColor,
     marginTop: 5
   },
 
@@ -640,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: scaledSize(8),
     // opacity: 0.9,
     height: scaledSize(460),
-    // backgroundColor: 'yellow',
+    backgroundColor: theme.bgColor,
     top: 20
   },
   enterPasswordText: {
@@ -651,7 +655,7 @@ const styles = StyleSheet.create({
     letterSpacing: .5
   },
   enterPasswordView: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.bgColor,
     width: '83%',
     alignSelf: 'center',
     margin: scaledSize(10),
@@ -665,7 +669,7 @@ const styles = StyleSheet.create({
     paddingLeft: scaledSize(10),
     borderBottomColor: 'gray',
     borderBottomWidth: 1,
-    color: 'black',
+    color: theme.primaryTextColor,
   },
   okAndCancelButtonView: {
     flexDirection: 'row',
@@ -687,7 +691,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: Fonts.PTSerifBold,
     letterSpacing: .5,
-    color: "black"
+    color: theme.primaryTextColor
   },
   okButton: {
     // backgroundColor: "#e31d93",
@@ -705,7 +709,7 @@ const styles = StyleSheet.create({
   },
   errorMessageStyle: {
     textAlign: 'center',
-    color: 'red',
+    color: theme.deleteIconColor,
     fontFamily: Fonts.regular
   },
   stepText: {

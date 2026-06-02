@@ -70,67 +70,6 @@ import { AuthService } from '../../service/AuthService';
 
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
-const pdfs = [
-  {
-    "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
-    "name": "4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 7227299
-  },
-  {
-    "ctime": null, "id": 826185, "mtime": "2024-10-17T09:51:47.024Z",
-    "name": "HDFC.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
-  },
-  {
-    "ctime": null, "id": 8262185, "mtime": "2024-10-18T09:51:47.024Z",
-    "name": "Axis.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 8222999
-  },
-]
-
-const renderfiles = {
-  pdfFiles: [
-    {
-      "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
-      "name": "Monthly_Report.pdf",
-      "path": "/storage/emulated/0/Download/Monthly_Report.pdf",
-      "size": 722729
-    },
-    {
-      "ctime": null, "id": 826185, "mtime": "2024-09-11T19:21:27.024Z",
-      "name": "Project_Proposal.pdf",
-      "path": "/storage/emulated/0/Download/Project_Proposal.pdf",
-      "size": 120384
-    },
-  ],
-  wordFiles: [
-    {
-      "ctime": null, "id": 91234, "mtime": "2024-10-16T11:30:00.000Z",
-      "name": "Meeting_Notes.docx",
-      "path": "/storage/emulated/0/Documents/Meeting_Notes.docx",
-      "size": 25600
-    },
-  ],
-  xlsxFiles: [
-    {
-      "ctime": null, "id": 75312, "mtime": "2024-10-15T14:00:15.000Z",
-      "name": "Budget_2024.xlsx",
-      "path": "/storage/emulated/0/Documents/Budget_2024.xlsx",
-      "size": 512000
-    },
-  ],
-  pptFiles: [
-    {
-      "ctime": null, "id": 48291, "mtime": "2024-10-14T09:05:45.000Z",
-      "name": "Presentation_Q3.pptx",
-      "path": "/storage/emulated/0/Download/Presentation_Q3.pptx",
-      "size": 2048000
-    },
-  ]
-};
 
 function Dashboard({ navigation, route }) {
 
@@ -148,12 +87,7 @@ function Dashboard({ navigation, route }) {
   const [pdfData, setPdfData] = useState([]);
 
   // generate sample file data for renderfiles
-  const createDoc = () => {
-    const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
-    // user logged in flow new user
-    accessToken
-    const folders = []
-  }
+
   const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
     try {
 
@@ -238,7 +172,7 @@ function Dashboard({ navigation, route }) {
     // return
     const getAllFolders = await FolderLocalService.getAllFolders();
     console.log('getAllFolders>>>', getAllFolders);
-    getAllFolders.map((v)=>console.log('name>>>',v))
+    getAllFolders.map((v) => console.log('name>>>', v))
     // return
     const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
     console.log('gooleDrivefolderName', gooleDrivefolderName);
@@ -270,10 +204,10 @@ function Dashboard({ navigation, route }) {
 
       const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
       console.log('local', local);
-console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
-console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
-console.log('comparison:', remote.updatedAt > local.updatedAt);
-    const updatedAt = Date.now();
+      console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
+      console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
+      console.log('comparison:', remote.updatedAt > local.updatedAt);
+      const updatedAt = Date.now();
 
       if (!local) { // if folder does NOT exist in local DB
         await FolderLocalService.createFolder(
@@ -282,7 +216,7 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
           remote.firebaseId, // Firebase id → stored as firebaseId locally
           remote.coverUri || '', // cover image (fallback to empty string)
           remote.driveFolderId || '', // Drive folder id (fallback if missing)
-          1 ,// mark as synced (since coming from Firebase)
+          1,// mark as synced (since coming from Firebase)
           updatedAt
         );
 
@@ -291,9 +225,9 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
         console.log('Else if>>>>>:',);
 
         await FolderLocalService.updateFolderById({
-          id:local.id,
+          id: local.id,
           name: remote.name,
-          isDeleted:remote.isDeleted
+          isDeleted: remote.isDeleted
         });
       }
     }
@@ -336,53 +270,53 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
   }
 
 
-const pushFolders = async () => {
-  console.log('pushFolders started');
+  const pushFolders = async () => {
+    console.log('pushFolders started');
 
-  const userId = await AuthService.getUserId();
-  const unSynced = await FolderLocalService.getUnsynced();
+    const userId = await AuthService.getUserId();
+    const unSynced = await FolderLocalService.getUnsynced();
 
-  console.log('unsyn', unSynced);
+    console.log('unsyn', unSynced);
 
-  for (const folder of unSynced as any) {
+    for (const folder of unSynced as any) {
 
-    try {
-      folder.userId = userId;
+      try {
+        folder.userId = userId;
 
-      if (!folder.firebaseId) {
-        // 🔹 CREATE (new folder)
-        const doc = await FirebaseService.createFolderInFirebase(folder);
+        if (!folder.firebaseId) {
+          // 🔹 CREATE (new folder)
+          const doc = await FirebaseService.createFolderInFirebase(folder);
 
-        await FolderLocalService.updateFirebaseId(
-          folder.id,
-          doc.firebaseId,
-          userId
-        );
+          await FolderLocalService.updateFirebaseId(
+            folder.id,
+            doc.firebaseId,
+            userId
+          );
 
-      } else if (folder.isDeleted === 1) {
-        // 🔹 DELETE (soft delete in Firebase)
-        console.log('else DELETE here',folder);
-        await FirebaseService.updateFolderInFirebase({
-          firebaseId: folder.firebaseId,
-          isDeleted: 1,
-        });
+        } else if (folder.isDeleted === 1) {
+          // 🔹 DELETE (soft delete in Firebase)
+          console.log('else DELETE here', folder);
+          await FirebaseService.updateFolderInFirebase({
+            firebaseId: folder.firebaseId,
+            isDeleted: 1,
+          });
 
-        await FolderLocalService.markAsSynced(folder.id);
+          await FolderLocalService.markAsSynced(folder.id);
 
-      } else {
-        // 🔹 UPDATE (rename or changes)
-        console.log('else update here',folder);
-        
-        await FirebaseService.updateFolderInFirebase(folder);
+        } else {
+          // 🔹 UPDATE (rename or changes)
+          console.log('else update here', folder);
 
-        await FolderLocalService.markAsSynced(folder.id);
+          await FirebaseService.updateFolderInFirebase(folder);
+
+          await FolderLocalService.markAsSynced(folder.id);
+        }
+
+      } catch (e) {
+        console.log('Push failed:', e);
       }
-
-    } catch (e) {
-      console.log('Push failed:', e);
     }
-  }
-};
+  };
 
   const syncAll = async () => {
     console.log('unSyncdata stated',);
@@ -518,30 +452,9 @@ const pushFolders = async () => {
     }
   };
 
-// generate sample file data for renderfiles
 
 
-  const getPermission = async () => {
-    try {
-      const granted = PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      )
-      if (await granted) { console.log("Granted"); }
-      else { console.log("Not Granted"); }
-    }
-    catch (error) { console.log('error---------', error); }
 
-  }
-  useEffect(() => {
-    // const res = fetch('https://api.jsonsilo.com/public/fb20cc0e-8ad8-4e0d-971b-a4e7cbba310c').then(res => res.json()).then(res => console.log()).catch(err => console.log('err', err))
-    // console.log('api.jsonsilo=====', res);
-    // (async () => {
-    //   await getAllTables()
-
-    // })()
-    // dispatch(getBankList())
-    getPermission()
-  }, [])
 
   const DesendingreadPdfFiles = async () => {
     console.log('Decending order by date-------');
@@ -561,6 +474,11 @@ const pushFolders = async () => {
     setUniqueNumber(Utility.generateUniqueNumber())
   }
 
+  useEffect(() => {
+    if (documents.pdfFiles.length == 0) {
+      readPdfFiles()
+    }
+  }, [])
   const readPdfFiles = async () => {
     console.log('Accending order by date-------');
 
@@ -789,14 +707,14 @@ const pushFolders = async () => {
     switch (route.key) {
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
-          ref={readPdfFileRef} 
+          ref={readPdfFileRef}
           // pdfFiles={pdfs} 
-          pdfFiles={documents.pdfFiles} 
+          pdfFiles={documents.pdfFiles}
           selectedSort={selectedSort}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading} 
-        selectedSort={selectedSort}/>;
+        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
+          selectedSort={selectedSort} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -845,7 +763,7 @@ const pushFolders = async () => {
     }
     else {
 
-      Utility.navigation.navigateTo('MultiplePdfView', pdfs)
+      Utility.navigation.navigateTo('MultiplePdfView', response.files)
       dispatch(checkIsUserViewedPdf(true))
     }
   }
