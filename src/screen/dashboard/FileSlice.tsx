@@ -18,6 +18,7 @@ const FileSlice = createSlice({
     initialState: {
         files: [],
         selectedFiles: [],
+        filePasswords: [],
         isLoading: false,
         isUserViewedPdf: false,
 
@@ -52,6 +53,9 @@ const FileSlice = createSlice({
         updateSelectedPdf: (state, action) => {
             state.files = action.payload
         },
+        updateFilesPassword: (state, action) => {
+            state.filePasswords = action.payload
+        },
         updateSelectedFiles: (state, action) => {
             console.log('updateSelectedFiles', action.payload);
             
@@ -81,5 +85,5 @@ const FileSlice = createSlice({
 })
 
 export default FileSlice.reducer
-export const { updateIsLoadingState, updateSelectedPdf,
+export const { updateIsLoadingState, updateSelectedPdf, updateFilesPassword,
     checkIsUserViewedPdf, updateSelectedFiles, clearSelectedFiles } = FileSlice.actions

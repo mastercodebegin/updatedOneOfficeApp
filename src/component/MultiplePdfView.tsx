@@ -2,7 +2,7 @@ import { StackActions } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler, Animated, Linking, ScrollView } from 'react-native'
 import Pdf from 'react-native-pdf';
-import {  heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
+import { heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
 
 import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
@@ -22,7 +22,9 @@ import CustomLinearGradientView from './CustomLinearGradientView';
 import { useDispatch, useSelector } from 'react-redux';
 import { CustomErrorToast, CustomSuccessToast } from './CustomToast';
 import MaterialCommunityIcons from 'react-native-vector-icons'
-import { clearSelectedFiles } from '../screen/dashboard/FileSlice';
+import { clearSelectedFiles, updateFilesPassword } from '../screen/dashboard/FileSlice';
+import CustomMultiplePdfPasswordModal from './CustomMultiplePdfPasswordModal';
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 interface S {
   pdfArr: Array<any>
@@ -39,10 +41,12 @@ const MultiplePdfView = (props: S) => {
   const [selectedSheet, setSelectedSheet] = useState({})
   const [isMultiView, setIsMultiView] = useState(false)
   const [isAddClosed, setIsAddClosed] = useState(false)
-  const {selectedFiles} = useSelector((state) => state.FileSlice);
-
+  const [isShowPasswordModal, setIsShowPasswordModal] = useState(false)
+  const [protectedFiles, setProtectedFiles] = useState([])
+  // const [filePasswords, setFilePasswords] = useState([])
   const pdfArr = props?.route?.params
   const dispatch = useDispatch()
+  const { selectedFiles,filePasswords } = useSelector((state) => state.FileSlice);
   // useEffect(() => {
   //   console.log('pdfArr======', response)
   //   setSelectedSheet(pdfArr[0])
@@ -150,13 +154,29 @@ const MultiplePdfView = (props: S) => {
 
       }} />)
   }
-  const onErrorHandler = (val) => {
-    console.log('error=================', val);
+  // const onErrorHandlerm = (val) => {
 
-    CustomErrorToast('We dont support password protected file')
-    Utility.navigation.navigateToBack()
+  //   setIsShowPasswordModal(true)
+  // }
+  const onErrorHandler = (item) => {
+
+    const file = protectedFiles.find((file) => file.path == item.path)
+    if (!file) {
+      setProtectedFiles((prev) => [...prev, item])
+    }
+    setIsShowPasswordModal(true);
+  };
+  const getPasswordForSelectedSheet = (currentFile) => {
+    console.log('selectedfile===',selectedFiles);
+    console.log('selectedSheet===',selectedSheet);
+    console.log('filePasswords===',filePasswords);
+    
+    const file = filePasswords.find((file) => file.id == currentFile?.id)
+    const file2 = filePasswords.find((file) => file.id == selectedSheet?.id)
+    console.log('file===', file);
+
+    return file?.pass || file2?.pass||''
   }
-
   const renderMultiPdf = () => {
     return (
       <View style={{ flex: 1 }}>
@@ -179,11 +199,11 @@ const MultiplePdfView = (props: S) => {
               trustAllCerts={false}
               maxScale={100}
               onError={(v) => {
-                onErrorHandler('')
+                onErrorHandler(selectedFiles[1])
               }}
               onPressLink={(uri) => {
                 console.log(`Link pressed: ${uri}`);
-              }}
+              }} password={getPasswordForSelectedSheet(selectedFiles)}
               source={{ uri: selectedSheet?.path }}
               style={styles.pdf} />
           </View>
@@ -200,12 +220,13 @@ const MultiplePdfView = (props: S) => {
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
-                onError={() => onErrorHandler('second')}
+                onError={() => onErrorHandler(selectedFiles[0])}
                 maxScale={100}
 
                 onPressLink={(uri) => {
                   console.log(`Link pressed: ${uri}`);
                 }}
+                password={getPasswordForSelectedSheet(selectedFiles[0])}
                 source={{ uri: selectedFiles[0].path }}
 
                 style={styles.pdf} />
@@ -222,7 +243,9 @@ const MultiplePdfView = (props: S) => {
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
-                onError={() => onErrorHandler('third')}
+                password={getPasswordForSelectedSheet(selectedFiles[1])}
+
+                onError={() => onErrorHandler(selectedFiles[1])}
                 maxScale={100}
 
                 onPressLink={(uri) => {
@@ -244,6 +267,20 @@ const MultiplePdfView = (props: S) => {
       {headerComp()}
 
       {selectedSheet?.path ? renderMultiPdf() : null}
+      {isShowPasswordModal && (
+        <CustomMultiplePdfPasswordModal
+          visible={isShowPasswordModal}
+          files={selectedFiles}
+          onClose={() => setIsShowPasswordModal(false)}
+          onSubmit={(v) => {
+            console.log('v==',v);
+            
+            dispatch(updateFilesPassword(v)),
+            setIsShowPasswordModal(false)}}
+          protectedFiles={protectedFiles}
+        />
+      )}
+
       {/* {!isAddClosed?<View style={{ height: scaledSize(40) }}>
         <CustomBannerAdd onPressAddClose={()=>console.log('closed')
         } />
