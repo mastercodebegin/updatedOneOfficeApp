@@ -11,6 +11,7 @@ import { asyncStorageKeyName } from '../../utilies/Constants'
 import { useIsFocused } from '@react-navigation/native'
 import CustomeButton from '../../component/CustomButton'
 import CustomEmptyState from '../../component/CustomEmptyState'
+import { getLocalData, setLocalData } from '../../utilies/storageUtility'
 
 // import { FileType, getAllFilesFromPhoneStorage } from '../../utilies/Utilities'
 
@@ -48,7 +49,7 @@ export default function WordFilesList(props: S) {
 
   // needs to keep this in seperate to refresh files
   const deleteFileHandler = async (item: any) => {
-    let allfilesStr = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
+    let allfilesStr =  getLocalData(asyncStorageKeyName.ALL_FILES)
     console.log('AllFiles:', allfilesStr);
     const allfilesobj = JSON.parse(allfilesStr)
     const wordsFile = allfilesobj.wordFiles
@@ -58,7 +59,7 @@ export default function WordFilesList(props: S) {
     const v = { ...allfilesobj, wordFiles }
     deleteFile(item.path)
 
-    await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
+   setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
 
     setFiles(data)
   }

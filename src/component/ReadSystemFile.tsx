@@ -2,8 +2,8 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
   Text, StyleSheet,
-  FlatList, View, TouchableOpacity, Image, 
-  SafeAreaView, 
+  FlatList, View, TouchableOpacity, Image,
+  SafeAreaView,
 } from 'react-native';
 import { ConfirmPopup, deleteFile, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon } from '../assets/GlobalImages';
@@ -17,7 +17,7 @@ import CustomBannerAdd from './admob/CustomBannerAdd';
 import { Fonts } from '../assets/fonts/GlobalFonts';
 import CustomSpinner from './CustomSpinner';
 import { useDispatch, useSelector } from 'react-redux'
-import {  checkIsUserViewedPdf, updateSelectedPdf } from '../screen/dashboard/FileSlice';
+import { checkIsUserViewedPdf, updateSelectedPdf } from '../screen/dashboard/FileSlice';
 import { forwardRef, useImperativeHandle } from 'react';
 import { asyncStorageKeyName } from '../utilies/Constants';
 import { FileCommonRenderItem } from './FileCommonRenderItem';
@@ -25,6 +25,7 @@ import CustomeButton from './CustomButton';
 import { useTheme } from '../screen/theme/useTheme';
 import VideoAdScreen from './admob/VideoAdd';
 import CustomEmptyState from './CustomEmptyState';
+import { getLocalData, setLocalData } from '../utilies/storageUtility';
 
 interface S {
   searchValue: string
@@ -53,22 +54,21 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
 
 
   useEffect(() => {
-console.log('pdfdata===',pdfFiles);
+    console.log('pdfdata===', pdfFiles);
 
     if (isFocused) {
       // console.log('viewpdf----------',response.isUserViewedPdf)
-if(response.isUserViewedPdf)
-{
-  dispatch(checkIsUserViewedPdf(false))
-  dispatch(updateSelectedPdf([]))
-  setSelectedItem([])
-}
+      if (response.isUserViewedPdf) {
+        dispatch(checkIsUserViewedPdf(false))
+        dispatch(updateSelectedPdf([]))
+        setSelectedItem([])
+      }
       if (pdfData.length == 0) {
         setPdfData(pdfFiles)
       }
     }
 
-  },[])
+  }, [])
 
 
   const getFiles = () => {
@@ -95,7 +95,7 @@ if(response.isUserViewedPdf)
 
     try {
       // setIsLoading(true)
-      let allfilesStr = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
+      let allfilesStr = getLocalData(asyncStorageKeyName.ALL_FILES)
       console.log('AllFiles:', allfilesStr);
       const allfilesobj = JSON.parse(allfilesStr)
       const pdfs = allfilesobj.pdfFiles
@@ -105,7 +105,7 @@ if(response.isUserViewedPdf)
       const v = { ...allfilesobj, pdfFiles }
       deleteFile(item.path)
 
-      await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
+      setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
       // deleteFile(item.path)
       console.log('data=====', data);
 
@@ -150,7 +150,6 @@ if(response.isUserViewedPdf)
   }
 
   const checkisFolderSelected = (id: number) => {
-    // console.log('selectedfolder', selectedFoldersId);
     const isSelected = selectedItem.find(item => item?.id === id)
     // console.log('isSelected', isSelected);
     return !!isSelected
@@ -158,13 +157,13 @@ if(response.isUserViewedPdf)
   }
   const onPressItem = (item) => {
     // console.log('onpress selecItem',item);
-    
+
     setSelectedItem(prev => {
       const exists = prev.some(selected => selected.id === item.id);
-      const updatedList = exists 
+      const updatedList = exists
         ? prev.filter(selected => selected.id !== item.id) // Remove if exists
         : [...prev, item]; // Add if doesn't exist
-  
+
       dispatch(updateSelectedPdf(updatedList));
       return updatedList;
     });
@@ -179,16 +178,16 @@ if(response.isUserViewedPdf)
       <View style={{ flex: 1, }}>
         {pdfFiles.length > 0 ?
           <FlatList data={getFiles()}
-            renderItem={({ item,index }) => <FileCommonRenderItem
+            renderItem={({ item, index }) => <FileCommonRenderItem
               item={item} icon={PdfIcon}
               selectedItems={selectedItem}
               onPressItem={(v: any) => onPressItem(v)}
               isItemSelected={checkisFolderSelected(item?.id)}
               onLongPress={(v: any) => onLongPress(v)}
               onPressDeleteFile={deleteFileHandler}
-              screenName='PdfViewer' 
+              screenName='PdfViewer'
               index={index}
-              />}
+            />}
           // keyExtractor={(item) => item}
           // refreshControl={<RefreshControl
           //   colors={["red", "red"]}
@@ -200,10 +199,10 @@ if(response.isUserViewedPdf)
           <CustomEmptyState onPressReload={onReLoad} />
         }
       </View>
-        
 
 
-      
+
+
 
 
 

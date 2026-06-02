@@ -40,6 +40,7 @@ import CustomHeader from '../../component/CustomHeader'
 import ConfirmationDialog from '../../component/ConfirmationDialog'
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
 import { Theme } from '../theme/ThemeConfig'
+import { getLocalData,setLocalData } from '../../../src/utilies/storageUtility'
 
 
 const data = [
@@ -70,10 +71,10 @@ const data = [
 ];
 
 interface S {
-  onPress: Function
+  onPressBack: Function
 }
 export default function SaveUserCardDetails(props: S) {
-  const { onPress } = props
+  const { onPressBack =()=>Utility.navigation.navigateToBack()} = props
   const { theme, mode } = useTheme()
 
   const [isShowAddCardModal, setIsShowAddCardModal] = useState(false)
@@ -381,14 +382,13 @@ export default function SaveUserCardDetails(props: S) {
     ]
 
   useEffect(() => {
-    const data = async () => {
-      const savedUsers = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
-      // console.log('savedcards----', savedUsers);
+    const data =  () => {
+      const savedUsers =  getLocalData(asyncStorageKeyName.SAVED_USERS) 
+      console.log('savedcards----', savedUsers);
       // console.log('isStateUpdated----', isStateUpdated);
-      const parseObj = JSON.parse(savedUsers)
+      const parseObj = savedUsers?JSON.parse(savedUsers):[]
       if (parseObj && !isStateUpdated) {
         console.log('typeof--', parseObj);
-
         setUserDetails(parseObj)
         setIsStateUpdated(true)
       }
@@ -422,7 +422,7 @@ export default function SaveUserCardDetails(props: S) {
 
     // Set the new state
     setUserDetails(updatedUserCardDetails);
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
   };
 
   const addUserDetail = async () => {
@@ -468,7 +468,7 @@ export default function SaveUserCardDetails(props: S) {
         customerId: customerId, ...selectedBank
       };
       const obj = { id: Utility.generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
-      const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+      const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
       console.log('first', !!data);
 
       if (!!data) {
@@ -476,7 +476,7 @@ export default function SaveUserCardDetails(props: S) {
         console.log('second1 data', data);
         let arr = JSON.parse(data)
         arr.push(obj)
-        await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
         setUserDetails(arr)
         setIsShowAddUserDetailsModal(false)
       }
@@ -486,7 +486,7 @@ export default function SaveUserCardDetails(props: S) {
         console.log('key', asyncStorageKeyName.SAVED_USERS);
         let arr = []
         arr.push(obj)
-        await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
 
         setUserDetails(arr)
         setIsShowAddUserDetailsModal(false)
@@ -504,10 +504,10 @@ export default function SaveUserCardDetails(props: S) {
   }
   const deleteUser = async (index: number) => {
     console.log('index', index);
-    const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+    const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
     const userDeatilsObj = JSON.parse(data)
     userDeatilsObj.splice(index, 1)
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDeatilsObj))
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDeatilsObj))
     setUserDetails(userDeatilsObj)
 
   }
@@ -521,7 +521,7 @@ export default function SaveUserCardDetails(props: S) {
       }
       console.log('Updating user with ID:', updatedDetails);
 
-      const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS);
+      const data = getLocalData(asyncStorageKeyName.SAVED_USERS);
       if (data !== null) {
         const userDetailsObj = JSON.parse(data);
 
@@ -534,7 +534,7 @@ export default function SaveUserCardDetails(props: S) {
           userDetailsObj[userIndex] = { ...userDetailsObj[userIndex], ...updatedDetails };
 
           // Save the updated object back to AsyncStorage
-          await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetailsObj));
+          setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetailsObj));
 
           // Update the state to reflect the changes
           setUserDetails(userDetailsObj);
@@ -673,11 +673,11 @@ export default function SaveUserCardDetails(props: S) {
           padding: scaledSize(18),
           marginVertical: scaledSize(14),
           marginHorizontal: scaledSize(16),
-          borderWidth: .5,
+          borderWidth: 1,
           borderColor: theme.borderColor,
           elevation: 5,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
+          shadowColor: '#d3d3d3',
+          shadowOffset: { width: 0, height: scaledSize(2) },
           shadowOpacity: mode === 'dark' ? 0.2 : 0.08,
           shadowRadius: 6,
         }}
@@ -816,7 +816,7 @@ export default function SaveUserCardDetails(props: S) {
     // Step 7: Update userDetails with the renamed card for the parentIndex
     let updatedUserCardDetails = [...userDetails];
     updatedUserCardDetails[parentIndex] = arr;
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
 
     // Step 8: Set the updated state
     setCardId(0)
@@ -888,7 +888,7 @@ export default function SaveUserCardDetails(props: S) {
 
     // Update the AsyncStorage with the new card details
     userDetails[parentIndex] = arr;
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetails));
 
     // Update the state
     setUserDetails([...userDetails]); // Spread operator to create a new reference
@@ -1047,7 +1047,7 @@ const renderAddCardDetails = () => {
         <CustomHeader
           title="Card holders"
           leftSide={
-            <TouchableOpacity onPress={() => Utility.navigation.navigateToBack()} style={{ paddingHorizontal: scaledSize(16), height: '100%', justifyContent: 'center' }}>
+            <TouchableOpacity onPress={() => onPressBack()} style={{ paddingHorizontal: scaledSize(16), height: '100%', justifyContent: 'center' }}>
               <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.primaryTextColor} />
             </TouchableOpacity>
           } />

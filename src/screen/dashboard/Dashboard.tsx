@@ -492,38 +492,45 @@ function Dashboard({ navigation, route }) {
   }
   useEffect(() => {
 
-    if (isFocused) {
-      console.log('index', screeName)
+    if (!isFocused) return;
 
-      AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES).then((check) => {
-        const obj = JSON.parse(check)
+    console.log('index', screeName);
 
+    const obj = getLocalData(
+      asyncStorageKeyName.ALL_FILES
+    );
 
-        if (check && obj.pdfFiles.length > 0) {
-          setDocuments(obj);
-        }
-        else {
-          // console.log('else part-----');
-          setIsLoading(true)
+    if (
+      obj?.pdfFiles &&
+      obj.pdfFiles.length > 0
+    ) {
 
-          const getAllFiles = async () => {
-            let files = await getFilesFromPhoneByFileExtention(1)
-            //  console.log('all files function called',files);
-            setDocuments(files)
-            setIsLoading(false)
-            setUniqueNumber(Utility.generateUniqueNumber())
+      setDocuments(obj);
 
+    } else {
 
-          }
-          getAllFiles()
+      setIsLoading(true);
 
-        }
+      const getAllFiles = async () => {
 
-      })
+        const files =
+          await getFilesFromPhoneByFileExtention(
+            1
+          );
 
+        setDocuments(files);
+
+        setIsLoading(false);
+
+        setUniqueNumber(
+          Utility.generateUniqueNumber()
+        );
+      };
+
+      getAllFiles();
     }
-  }, [])
 
+  }, [isFocused]);
 
 
   //Linking 
@@ -580,9 +587,9 @@ function Dashboard({ navigation, route }) {
 
     try {
       setIsLoading(true)
-      let files = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
+      let files = getLocalData(asyncStorageKeyName.ALL_FILES)
       const data = JSON.parse(files).filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
-      AsyncStorage.setItem('pdfFiles', JSON.stringify(files))
+      getLocalData('pdfFiles', JSON.stringify(files))
       deleteFile(item.path)
       setPdfData(data)
       setIsLoading(false)
@@ -655,32 +662,6 @@ function Dashboard({ navigation, route }) {
 
 
 
-  const updateCount = async () => {
-    let number = await AsyncStorage.getItem('number')
-    setRandomNumber(Math.floor(Math.random() * 333))
-
-    // console.log('number updateCount--------------', number);
-
-    if (number == null) {
-      // console.log('number null--------------', number);
-      AsyncStorage.setItem('number', '0')
-
-    }
-    else {
-      if (number == '5') {
-        AsyncStorage.setItem('number', '0')
-      }
-      else {
-        const updatedCount = JSON.parse(number)
-        // console.log('before-------', updatedCount);
-        // console.log('after-------------', updatedCount + 1);
-        setCount(updatedCount + 1)
-        AsyncStorage.setItem('number', JSON.stringify(updatedCount + 1))
-      }
-
-    }
-
-  }
 
 
   const getLinearColors = () => {
@@ -780,7 +761,8 @@ function Dashboard({ navigation, route }) {
         }}
       >
         {response.files.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(checkIsUserViewedPdf(true))} style={{ flexDirection: 'row' }}>
+          onPress={() => dispatch(checkIsUserViewedPdf(true))} 
+          style={{ flexDirection: 'row' }}>
           <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} onPress={() => dispatch(checkIsUserViewedPdf(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
@@ -790,7 +772,7 @@ function Dashboard({ navigation, route }) {
           <MaterialIcons
             name="picture-as-pdf"
             size={scaledSize(22)}
-            color={COLORS.THEME_COLOR}
+            color={theme.themeColor}
           />
           {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
         </TouchableOpacity>}

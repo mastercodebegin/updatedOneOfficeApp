@@ -17,7 +17,7 @@ const ICON_SIZE = 24;
 
 interface S {
   placeholder: string;
-  value: string;
+  value?: string;
   onSelect: Function;
   data: Array<any>;
   onFocuse?: Function;
@@ -71,7 +71,7 @@ const CustomDropdown = (props: S) => {
         selectedTextStyle={styles.selectedTextStyle}
         inputSearchStyle={styles.searchInput}
         iconStyle={styles.iconStyle}
-        containerStyle={styles.dropdownContainer}
+        containerStyle={{...styles.dropdownContainer, borderColor: isFocus ? 'gray' : theme.borderColor}}
         itemTextStyle={styles.itemTextStyle}
         activeColor={theme.buttonBGColor}
 
@@ -123,7 +123,7 @@ const CustomDropdown = (props: S) => {
             style={styles.iconStyle}
             color={isFocus ? theme.themeColor : theme.secondaryTextColor}
             name={isFocus ? 'chevron-up' : 'chevron-down'}
-            size={20}
+            size={scaledSize(20)}
           />
         )}
       />
@@ -156,7 +156,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   focusedDropdown: {
-    borderColor: theme.themeColor,
+    // borderColor: theme.themeColor,
     borderWidth: 1.5,
     elevation: 4,
   },
@@ -170,25 +170,25 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   selectedTextStyle: {
     fontSize: scaledSize(14),
     color: theme.primaryTextColor,
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
     marginLeft: 12,
   },
 
   searchInput: {
-    height: 40,
-    fontSize: 14,
-    borderRadius: 12,
+    height: scaledSize(40),
+    fontSize: scaledSize(14),
+    borderRadius: scaledSize(12),
     backgroundColor: theme.bgColor,
     borderColor: theme.borderColor,
     borderWidth: 1,
     color: theme.primaryTextColor,
-    paddingHorizontal: 12,
+    paddingHorizontal: scaledSize(10),
     fontFamily: Fonts.regular,
   },
 
   iconStyle: {
-    width: 22,
-    height: 22,
+    width: scaledSize(22),
+    height: scaledSize(22),
   },
 
   leftIcon: {
@@ -198,23 +198,23 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
   dropdownContainer: {
     backgroundColor: theme.bgColor,
-    borderRadius: 12,
+    borderRadius: scaledSize(12),
     borderColor: theme.borderColor,
-    borderWidth: 1,
-    marginTop: 4,
+    borderWidth: .5,
+    marginTop: scaledSize(4),
     overflow: 'hidden',
   },
 
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: scaledSize(14),
   },
 
   bankIcon: {
-    height: 28,
-    width: 28,
-    marginRight: 12,
+    height: scaledSize(24),
+    width: scaledSize(24),
+    marginRight: scaledSize(10),
   },
 
   bankLabel: {

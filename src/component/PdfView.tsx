@@ -37,7 +37,7 @@ const PdfViewer = (props: any) => {
   const [currentPage, setCurrentPage] =
     useState(1);
 
-  const { theme } = useTheme();
+  const { theme, mode } = useTheme();
 
   const styles = useMemo(
     () => createStyles(theme),
@@ -53,29 +53,29 @@ const PdfViewer = (props: any) => {
   const headerVisible = useRef(true);
   const previousPage = useRef(1);
 
-const headerHeight = useRef(
-  new Animated.Value(scaledSize(65))
-).current;
+  const headerHeight = useRef(
+    new Animated.Value(scaledSize(65))
+  ).current;
 
-const toggleHeader = (show: boolean) => {
-  if (show === headerVisible.current) return;
+  const toggleHeader = (show: boolean) => {
+    if (show === headerVisible.current) return;
 
-  headerVisible.current = show;
+    headerVisible.current = show;
 
-  Animated.parallel([
-    Animated.timing(headerTranslateY, {
-      toValue: show ? 0 : -80,
-      duration: 250,
-      useNativeDriver: true,
-    }),
+    Animated.parallel([
+      Animated.timing(headerTranslateY, {
+        toValue: show ? 0 : -80,
+        duration: 250,
+        useNativeDriver: true,
+      }),
 
-    Animated.timing(headerHeight, {
-      toValue: show ? scaledSize(55) : 0,
-      duration: 250,
-      useNativeDriver: false,
-    }),
-  ]).start();
-};
+      Animated.timing(headerHeight, {
+        toValue: show ? scaledSize(55) : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
 
   /* PASSWORD */
 
@@ -89,6 +89,8 @@ const toggleHeader = (show: boolean) => {
     () => {
       setNumber(prev => prev + 1);
       setVisible(true);
+      console.log('error');
+      
     };
 
   const onPressOkayHandler =
@@ -116,146 +118,174 @@ const toggleHeader = (show: boolean) => {
 
   /* HEADER */
 
- const headerComp = () => {
-  return (
-    <Animated.View
-      style={{
-        height: headerHeight,
-
-        overflow: 'hidden',
-
-        backgroundColor: theme.bgContainor,
-
-        opacity: headerHeight.interpolate({
-          inputRange: [0, scaledSize(65)],
-          outputRange: [0, 1],
-        }),
-      }}>
-
+  const headerComp = () => {
+    return (
       <Animated.View
         style={{
-          transform: [
-            { translateY: headerTranslateY }
-          ],
+          height: headerHeight,
 
-          flexDirection: 'row',
-
-          justifyContent: 'space-between',
-
-          alignItems: 'center',
-
-          paddingHorizontal: scaledSize(14),
-
-          paddingTop: heightFromPercentage(2),
-
-          height: scaledSize(65),
+          overflow: 'hidden',
 
           backgroundColor: theme.bgContainor,
+
+          opacity: headerHeight.interpolate({
+            inputRange: [0, scaledSize(65)],
+            outputRange: [0, 1],
+          }),
         }}>
 
-        <TouchableOpacity
-          onPress={onPressCloseHandler} style={{ padding: scaledSize(8),bottom:scaledSize(4) }}>
-          <CustomBackIcon
-            onPress={onPressCloseHandler}
-            size={22}
-            color={theme.iconColor}
-          />
-        </TouchableOpacity>
+        <Animated.View
+          style={{
+            transform: [
+              { translateY: headerTranslateY }
+            ],
 
-        <TouchableOpacity
-          onPress={() =>
-            Utility.fileShare(
-              props?.route?.params?.uri,
-              props?.route?.params?.name,
-            )
-          } style={{ padding: scaledSize(8),bottom:scaledSize(4) }}>
-          <Entypo
-            name="share"
-            size={24}
-            color={theme.iconColor}
-          />
-        </TouchableOpacity>
+            flexDirection: 'row',
+
+            justifyContent: 'space-between',
+
+            alignItems: 'center',
+
+            paddingHorizontal: scaledSize(14),
+
+            paddingTop: heightFromPercentage(2),
+
+            height: scaledSize(65),
+
+            backgroundColor: theme.bgContainor,
+          }}>
+
+          <TouchableOpacity
+            onPress={onPressCloseHandler} style={{ padding: scaledSize(8), bottom: scaledSize(4) }}>
+            <CustomBackIcon
+              onPress={onPressCloseHandler}
+              size={22}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              Utility.fileShare(
+                props?.route?.params?.uri,
+                props?.route?.params?.name,
+              )
+            } style={{ padding: scaledSize(8), bottom: scaledSize(4) }}>
+            <Entypo
+              name="share"
+              size={24}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+
+        </Animated.View>
 
       </Animated.View>
-
-    </Animated.View>
-  );
-};
+    );
+  };
 
   return (
     <View style={styles.container}>
 
-      {!visible &&
-        headerComp()}
+      {!visible && (
+        <View
+          style={{
+            zIndex: 999,
+            elevation: 999,
+          }}>
+          {headerComp()}
+        </View>
+      )}
 
-      <View style={{ flex: 1 }}>
+      <View
+        style={{
+          flex: 1,
 
-        {!visible ? (
-          <Pdf
-            trustAllCerts={false}
-            password={text}
-            maxScale={100}
-            source={{
-              uri: props.route.params
-                .uri,
-            }}
+          backgroundColor:
+            mode === 'dark'
+              ? '#0F1117'
+              : theme.bgContainor,
 
-            onError={() => {
-              PdfPasswordErrorHandler();
-            }}
+          marginTop: scaledSize(6),
+        }}>
 
-            onPageChanged={(
-              page,
-              totalPages,
-            ) => {
+        {visible ? (
+          <>
+            <Pdf
+              trustAllCerts={false}
+              password={text}
+              maxScale={100}
+              source={{
+                uri: props.route.params.uri,
+              }}
 
-              setCurrentPage(
-                page,
-              );
+              onError={() => {
+                PdfPasswordErrorHandler();
+              }}
 
-              /* HIDE/SHOW */
+              onPageChanged={(page) => {
 
-              if (
-                page >
-                previousPage.current
-              ) {
-                toggleHeader(
-                  false,
-                );
-              } else {
-                toggleHeader(
-                  true,
-                );
-              }
+                setCurrentPage(page);
 
-              previousPage.current =
-                page;
-            }}
+                if (
+                  page >
+                  previousPage.current
+                ) {
+                  toggleHeader(false);
+                } else {
+                  toggleHeader(true);
+                }
 
-            style={styles.pdf}
-          />
+                previousPage.current = page;
+              }}
+
+              style={{
+                flex: 1,
+
+                backgroundColor:
+                  mode === 'dark'
+                    ? '#12151D'
+                    : '#FFFFFF',
+              }}
+            />
+
+            {/* Dark mode overlay */}
+
+            {mode === 'dark' && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+
+                  backgroundColor: '#000',
+
+                  opacity: 0.12,
+                }}
+              />
+            )}
+
+          </>
         ) : (
           <ModalView
             visible={!visible}
             errorRecognize={text}
-            errorMessage={
-              errorMsg
-            }
-            onText={
-              onChangeText
-            }
+            errorMessage={errorMsg}
+            onText={onChangeText}
             num={num}
-            onPressOkay={
-              onPressOkayHandler
-            }
-            onPressClose={
-              onPressCloseHandler
-            }
+            onPressOkay={onPressOkayHandler}
+            onPressClose={onPressCloseHandler}
             close={'CLOSE'}
             open={'OPEN'}
           />
         )}
+
       </View>
+
     </View>
   );
 };

@@ -6,7 +6,7 @@ import { asyncStorageKeyName } from '../../utilies/Constants';
 const getInitialMode = () => {
   const mode= getLocalData(asyncStorageKeyName.THEME_MODE) ;
   console.log('mode',mode);
-  return mode?JSON.parse(mode):'light';
+  return mode?mode:'light';
 };
 
 const initialState = {

@@ -8,6 +8,7 @@ import { Theme } from '../screen/theme/ThemeConfig';
 
 interface CustomHeaderProps {
   title: string;
+  onPressBack?:Function
   leftSide?: React.ReactNode;
   rightSide?: React.ReactNode;
   isShowShareBtn?: boolean;
@@ -20,6 +21,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   rightSide,
   isShowShareBtn = false, // Default to false to not show share button unless specified
   onSharePress,
+  onPressBack=()=>{}
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -27,9 +29,9 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   const DefaultLeft = () => (
     <TouchableOpacity
       style={styles.defaultIconContainer}
-      onPress={() => Utility.navigation.navigateToBack()}
+      onPress={() => onPressBack()}
     >
-      <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.primaryTextColor} />
+      <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.iconColor} />
     </TouchableOpacity>
   );
 

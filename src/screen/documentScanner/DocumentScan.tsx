@@ -1606,7 +1606,7 @@ const renderTags = () => {
   const saveAsyncStorageToFile = async () => {
     try {
       // Fetch data from AsyncStorage
-      const storedData = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS);
+      const storedData = getLocalData(asyncStorageKeyName.DOCUMENTS);
       const jsonData = { imagePaths: JSON.parse(storedData) || [] };
 
       const fileExists = await RNFS.exists(jsonPath);
@@ -1631,8 +1631,8 @@ const renderTags = () => {
     try {
       // Get the image paths from AsyncStorage
 
-      const storedImages = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS);
-      const imagePaths = JSON.parse(storedImages) || [];
+      const storedImages = getLocalData(asyncStorageKeyName.DOCUMENTS);
+      const imagePaths = storedImages?storedImages:[]
       if (imagePaths.length == 0) {
         console.log('imagePaths is zero :', imagePaths);
         setIsBackupStarted(false)

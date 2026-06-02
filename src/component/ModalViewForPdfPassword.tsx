@@ -7,7 +7,7 @@ import {
   Alert,
 } from "react-native";
 import { COLORS } from "../utilies/GlobalColors";
-import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, } from "../utilies/Utilities";
+import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, Utility, } from "../utilies/Utilities";
 import { deviceBasedDynamicDimension } from "../utilies/scale";
 import { Fonts } from "../assets/fonts/GlobalFonts";
 import { Axis, BOB, calendarIcon, clear, eye, eyeClosed, info, } from "../assets/GlobalImages";
@@ -31,6 +31,7 @@ import CustomErrorMsgModal from "./CustomErrorMsgModal";
 import CustomVectorIcon from "./CustomVectorIcon";
 import { useTheme } from "../screen/theme/useTheme";
 import { Theme } from "../screen/theme/ThemeConfig";
+import { getLocalData } from "../utilies/storageUtility";
 
 
 //local imports
@@ -51,7 +52,7 @@ interface myProps {
 
 
 const ModalView = (props: myProps) => {
-  const { theme } = useTheme();
+  const { theme,mode } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [visible, setIsvisible] = useState(false)
   const [open, setOpen] = useState(false)
@@ -100,9 +101,10 @@ const ModalView = (props: myProps) => {
 
   }
   const getSavedUsers = async () => {
-    const savedUser = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+    const savedUser =getLocalData(asyncStorageKeyName.SAVED_USERS)
     console.log('getSavedUsers----', savedUser);
-    let users = JSON.parse(savedUser)
+    console.log('getSavedUsers----',typeof savedUser);
+    let users = savedUser?JSON.parse(savedUser):[]
     let savedCardsArray = users.reduce((acc, obj) => {
 
       const tempObj =
@@ -342,9 +344,10 @@ const ModalView = (props: myProps) => {
                     // setBankLabel('')
                     setSelectedBank({})
                     props.onText('')
-                  }}
-                >
-                  <Icon name="credit-card-plus" size={22} color={COLORS.THEME_COLOR} />
+                  }} style={{borderWidth:1,borderColor:theme.themeColor,
+                  padding:scaledSize(4),borderRadius:scaledSize(16)}}>
+                
+                  <Icon name="plus" size={22} color={theme.themeColor} />
                 </TouchableOpacity>
               </View>
 
@@ -359,7 +362,8 @@ const ModalView = (props: myProps) => {
               <View style={{ marginTop: 15 }}>
                 <CustomDropdown
                   placeholder="Select user"
-                  // value={selectedUser ? selectedUser.firstName : ''}
+                  isShowSearch={false}
+                  value={selectedUser ? selectedUser.firstName : ''}
                   LeftIcon={() => <CustomVectorIcon iconLibrary="Feather" iconName="user"
                     style={{ fontSize: scaledSize(14), marginRight: scaledSize(8), color: theme.secondaryTextColor }} />}
                   data={savedUser}
@@ -372,6 +376,7 @@ const ModalView = (props: myProps) => {
               {/* BANK DROPDOWN */}
               <View style={{ marginTop: 15 }}>
                 <CustomDropdown
+                isShowSearch={false}
                   placeholder="Select Bank"
                   // value={se}
                   LeftIcon={() => selectedBank.value ?
@@ -447,7 +452,7 @@ const ModalView = (props: myProps) => {
         </Modal>
 
         <Modal visible={isAddUserDetails}>
-          <SaveUserCardDetails onPress={() => setIsAddUserDetails(false)} />
+          <SaveUserCardDetails onPressBack={() => setIsAddUserDetails(false)} />
         </Modal>
 
         <CustomErrorMsgModal
@@ -479,13 +484,13 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   modalCard: {
     width: "92%",
     backgroundColor: theme.bgColor,
-    borderRadius: 14,
-    padding: 20
+    borderRadius: scaledSize(6),
+    padding: scaledSize(18)
   },
 
   header: {
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: scaledSize(10)
   },
 
   headerTitle: {
@@ -496,15 +501,15 @@ const createStyles = (theme: Theme) => StyleSheet.create({
 
   descriptionContainer: {
     flexDirection: "row",
-    marginBottom: 20
+    marginBottom: scaledSize(20)
   },
 
   descriptionText: {
-    marginLeft: 8,
+    marginLeft: scaledSize(8),
     fontSize: scaledSize(12),
     color: theme.secondaryTextColor,
     flex: 1,
-    letterSpacing: 1,
+    letterSpacing: scaledSize(1),
     left: scaledSize(4),
     // fontFamily:Fonts.regular,
     lineHeight: scaledSize(16)
@@ -517,7 +522,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 15,
+    fontSize: scaledSize(15),
     letterSpacing: .5,
     color: theme.primaryTextColor,
   },
@@ -537,7 +542,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderColor: theme.borderColor,
     borderRadius: scaledSize(8),
     paddingHorizontal: scaledSize(10),
     height: scaledSize(40),
@@ -546,21 +551,23 @@ const createStyles = (theme: Theme) => StyleSheet.create({
 
   passwordInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: scaledSize(12),
+    letterSpacing: .5,
+    fontFamily: Fonts.regular,
     color: theme.primaryTextColor
   },
 
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 25
+    marginTop: scaledSize(25)
   },
 
   primaryBtn: {
     // backgroundColor: COLORS.THEME_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 8
+    paddingVertical: scaledSize(12),
+    paddingHorizontal: scaledSize(25),
+    borderRadius: scaledSize(8)
   },
 
   primaryText: {
@@ -570,8 +577,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
 
   cancelBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20
+    paddingVertical: scaledSize(12),
+    paddingHorizontal: scaledSize(20)
   },
 
   cancelText: {
@@ -581,7 +588,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
 
   errorMessageStyle: {
     color: theme.deleteIconColor,
-    marginTop: 5
+    marginTop: scaledSize(5)
   },
 
 
@@ -707,11 +714,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontFamily: Fonts.PTSerifBold,
     textAlign: 'center',
   },
-  errorMessageStyle: {
-    textAlign: 'center',
-    color: theme.deleteIconColor,
-    fontFamily: Fonts.regular
-  },
+
   stepText: {
     marginLeft: scaledSize(10),
     fontFamily: Fonts.regular, fontSize:
