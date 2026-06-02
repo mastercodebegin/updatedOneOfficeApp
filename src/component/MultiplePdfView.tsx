@@ -22,6 +22,7 @@ import CustomLinearGradientView from './CustomLinearGradientView';
 import { useDispatch, useSelector } from 'react-redux';
 import { CustomErrorToast, CustomSuccessToast } from './CustomToast';
 import MaterialCommunityIcons from 'react-native-vector-icons'
+import { clearSelectedFiles } from '../screen/dashboard/FileSlice';
 
 interface S {
   pdfArr: Array<any>
@@ -38,7 +39,7 @@ const MultiplePdfView = (props: S) => {
   const [selectedSheet, setSelectedSheet] = useState({})
   const [isMultiView, setIsMultiView] = useState(false)
   const [isAddClosed, setIsAddClosed] = useState(false)
-  const response = useSelector((state) => state.FileSlice);
+  const {selectedFiles} = useSelector((state) => state.FileSlice);
 
   const pdfArr = props?.route?.params
   const dispatch = useDispatch()
@@ -48,8 +49,8 @@ const MultiplePdfView = (props: S) => {
   // }, [pdfArr]);
 
   useEffect(() => {
-    console.log('files======', response.files);
-    setSelectedSheet(response.files[0])
+    console.log('files======', selectedFiles);
+    setSelectedSheet(selectedFiles[0])
   }, [])
 
   const onChangeText = (value: any) => {
@@ -78,6 +79,7 @@ const MultiplePdfView = (props: S) => {
   const onPressCloseHandler = () => {
     setNumber(0), setVisible(false)
     //props.navigation.goBack()
+    dispatch(clearSelectedFiles([]))
     Linking.getInitialURL = async () => null;
     Utility.navigation.navigateToBack()
   }
@@ -152,7 +154,7 @@ const MultiplePdfView = (props: S) => {
     console.log('error=================', val);
 
     CustomErrorToast('We dont support password protected file')
-    navigateToBack()
+    Utility.navigation.navigateToBack()
   }
 
   const renderMultiPdf = () => {
@@ -165,7 +167,7 @@ const MultiplePdfView = (props: S) => {
             }}>
               <FlatList
                 horizontal
-                data={response.files}
+                data={selectedFiles}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
               />
@@ -204,7 +206,7 @@ const MultiplePdfView = (props: S) => {
                 onPressLink={(uri) => {
                   console.log(`Link pressed: ${uri}`);
                 }}
-                source={{ uri: response.files[0].path }}
+                source={{ uri: selectedFiles[0].path }}
 
                 style={styles.pdf} />
             </View>
@@ -226,7 +228,7 @@ const MultiplePdfView = (props: S) => {
                 onPressLink={(uri) => {
                   console.log(`Link pressed: ${uri}`);
                 }}
-                source={{ uri: response.files[1].path }}
+                source={{ uri: selectedFiles[1].path }}
 
                 style={styles.pdf} />
             </View>
@@ -241,7 +243,7 @@ const MultiplePdfView = (props: S) => {
     <View style={[styles.container]}>
       {headerComp()}
 
-      {selectedSheet.path ? renderMultiPdf() : null}
+      {selectedSheet?.path ? renderMultiPdf() : null}
       {/* {!isAddClosed?<View style={{ height: scaledSize(40) }}>
         <CustomBannerAdd onPressAddClose={()=>console.log('closed')
         } />

@@ -17,7 +17,7 @@ import CustomBannerAdd from './admob/CustomBannerAdd';
 import { Fonts } from '../assets/fonts/GlobalFonts';
 import CustomSpinner from './CustomSpinner';
 import { useDispatch, useSelector } from 'react-redux'
-import { checkIsUserViewedPdf, updateSelectedPdf } from '../screen/dashboard/FileSlice';
+import { checkIsUserViewedPdf, updateSelectedFiles, updateSelectedPdf } from '../screen/dashboard/FileSlice';
 import { forwardRef, useImperativeHandle } from 'react';
 import { asyncStorageKeyName } from '../utilies/Constants';
 import { FileCommonRenderItem } from './FileCommonRenderItem';
@@ -36,12 +36,13 @@ interface S {
 }
 const ReadSystemFile = forwardRef((props: S, ref) => {
   const { searchValue, pdfFiles, onReLoad, isLoading, selectedSort } = props
-  const [selectedItem, setSelectedItem] = useState([])
   const [pdfData, setPdfData] = useState([]);
   const dispatch = useDispatch()
   const isFocused = useIsFocused();
   const { theme } = useTheme();
-  const response = useSelector((state) => state.FileSlice);
+  const { isUserViewedPdf, selectedFiles } = useSelector((state) => state.FileSlice);
+
+
 
 
 
@@ -56,17 +57,17 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
   useEffect(() => {
     console.log('pdfdata===', pdfFiles);
 
-    if (isFocused) {
-      // console.log('viewpdf----------',response.isUserViewedPdf)
-      if (response.isUserViewedPdf) {
-        dispatch(checkIsUserViewedPdf(false))
-        dispatch(updateSelectedPdf([]))
-        setSelectedItem([])
-      }
-      if (pdfData.length == 0) {
-        setPdfData(pdfFiles)
-      }
+    // console.log('viewpdf----------',response.isUserViewedPdf)
+    console.log('U viewed PDF', isUserViewedPdf);
+    console.log('User has viewed PDF', isUserViewedPdf);
+
+    // dispatch(checkIsUserViewedPdf(false))
+    // dispatch(updateSelectedPdf([]))
+
+    if (pdfData.length == 0) {
+      setPdfData(pdfFiles)
     }
+
 
   }, [])
 
@@ -135,39 +136,29 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
     }
   }
   const onLongPress = (item) => {
-    if (checkisFolderSelected(item.id)) {
-      const data = selectedItem.filter(selectfolderId => selectfolderId.id != item.id)
-      setSelectedItem(data)
-      dispatch(updateSelectedPdf(data))
-    }
-    else {
-      setSelectedItem([...selectedItem, item])
-      dispatch(updateSelectedPdf([...selectedItem, item]))
-
-    }
-    // setSelectedItem([item])
-
+    dispatch(updateSelectedFiles(item))
   }
 
   const checkisFolderSelected = (id: number) => {
-    const isSelected = selectedItem.find(item => item?.id === id)
-    // console.log('isSelected', isSelected);
-    return !!isSelected
-    // return selectedFoldersId.find(item => item.id === id)
+    return !!selectedFiles.find(item => item?.id === id)
   }
-  const onPressItem = (item) => {
-    // console.log('onpress selecItem',item);
+  const sanitizeFilesForRedux = (file: { id: number, name: string, path: string, mtime: string, size: number }) => {
+   
+    console.log('file====',file);
+    
+      const { id, name, path, mtime, size } = file;
 
-    setSelectedItem(prev => {
-      const exists = prev.some(selected => selected.id === item.id);
-      const updatedList = exists
-        ? prev.filter(selected => selected.id !== item.id) // Remove if exists
-        : [...prev, item]; // Add if doesn't exist
+      return {
+        id,
+        name,
+        path,
+        mtime: mtime ? new Date(mtime).toISOString() : null,
+        size,
+      };
+    
+  };
 
-      dispatch(updateSelectedPdf(updatedList));
-      return updatedList;
-    });
-  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
       <View style={{ position: 'relative', top: scaledSize(10) }}>
@@ -179,9 +170,10 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
         {pdfFiles.length > 0 ?
           <FlatList data={getFiles()}
             renderItem={({ item, index }) => <FileCommonRenderItem
-              item={item} icon={PdfIcon}
-              selectedItems={selectedItem}
-              onPressItem={(v: any) => onPressItem(v)}
+              item={item} 
+              icon={PdfIcon}
+              selectedItems={selectedFiles}
+              onPressItem={(v: any) => dispatch(updateSelectedFiles(sanitizeFilesForRedux(v)))}
               isItemSelected={checkisFolderSelected(item?.id)}
               onLongPress={(v: any) => onLongPress(v)}
               onPressDeleteFile={deleteFileHandler}

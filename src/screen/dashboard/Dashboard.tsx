@@ -48,7 +48,7 @@ import XslxFilesList from '../XlsxFilReader/XslxFilesList';
 import { PermissionsAndroid } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 import LinearGradient from 'react-native-linear-gradient';
-import { checkIsUserViewedPdf, getBankList } from './FileSlice';
+import { checkIsUserViewedPdf, clearSelectedFiles, getBankList } from './FileSlice';
 import { ErrorToast } from '../../component/CustomToast';
 import mobileAds, { BannerAdSize } from 'react-native-google-mobile-ads';
 import { AppOpenAd, InterstitialAd, RewardedAd, BannerAd, TestIds } from 'react-native-google-mobile-ads';
@@ -738,13 +738,14 @@ function Dashboard({ navigation, route }) {
   }
 
   const onPressMultiPdfViewer = () => {
-    if (response.files.length < 2) {
+    if (response.selectedFiles.length < 2) {
       setErrorMsg('Please select atleast 2 Pdfs to see MultiPle PDFs')
       setIsShowErrorModal(true)
     }
     else {
+console.log('selectedFiles',response.selectedFiles);
 
-      Utility.navigation.navigateTo('MultiplePdfView', response.files)
+      Utility.navigation.navigateTo('MultiplePdfView', response.selectedFiles)
       dispatch(checkIsUserViewedPdf(true))
     }
   }
@@ -760,15 +761,16 @@ function Dashboard({ navigation, route }) {
           marginRight: scaledSize(4)
         }}
       >
-        {response.files.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(checkIsUserViewedPdf(true))} 
+        {response.selectedFiles.length > 0 && <TouchableOpacity
+          onPress={() => dispatch(clearSelectedFiles(true))} 
           style={{ flexDirection: 'row' }}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} onPress={() => dispatch(checkIsUserViewedPdf(true))} />
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} 
+          onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
 
-        {response.files.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
+        {response.selectedFiles.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
           <MaterialIcons
             name="picture-as-pdf"
             size={scaledSize(22)}

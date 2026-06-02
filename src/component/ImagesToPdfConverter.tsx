@@ -20,7 +20,6 @@ import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomSpinner from './CustomSpinner';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../utilies/Constants';
 import { useDispatch, useSelector } from 'react-redux'
-import { updateIsLoadingState } from '../screen/dashboard/FileSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Searchbar } from 'react-native-paper'
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
