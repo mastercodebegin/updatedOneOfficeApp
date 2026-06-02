@@ -136,7 +136,7 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
     }
   }
   const onLongPress = (item) => {
-    dispatch(updateSelectedFiles(item))
+    dispatch(updateSelectedFiles (sanitizeFilesForRedux((item))))
   }
 
   const checkisFolderSelected = (id: number) => {

@@ -53,6 +53,8 @@ const FileSlice = createSlice({
             state.files = action.payload
         },
         updateSelectedFiles: (state, action) => {
+            console.log('updateSelectedFiles', action.payload);
+            
             const exists = state.selectedFiles.some(
                 item => item.id === action.payload.id
             );

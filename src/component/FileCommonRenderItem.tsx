@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   StyleSheet,
   Image,
@@ -34,10 +34,9 @@ interface S {
   index: number;
 }
 
-const SELECT_COLOR = "#4D8DFF";
 
 export const FileCommonRenderItem = (props: S) => {
-
+  
   const {
     item,
     icon,
@@ -51,21 +50,20 @@ export const FileCommonRenderItem = (props: S) => {
     onPressEditFile = () => {},
     index,
   } = props;
-
+  
   const { theme, mode } =
-    useTheme();
+  useTheme();
+
+  const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
 
   const [
     isShowDeleteConfirmation,
     setIsShowDeleteConfirmation,
   ] = useState(false);
 
-  const styles =
-    createStyles(
-      theme,
-      mode,
-    );
-
+ 
   const openFile = (
     item: any,
   ) => {
@@ -291,7 +289,7 @@ export const FileCommonRenderItem = (props: S) => {
 
                 <MaterialIcons
                   name="edit"
-                  size={20}
+                  size={scaledSize(20)}
                   color={
                     theme.iconColor
                   }
@@ -313,7 +311,7 @@ export const FileCommonRenderItem = (props: S) => {
 
               <MaterialIcons
                 name="delete"
-                size={20}
+                size={scaledSize(20)}
                 color={
                   theme.deleteIconColor
                 }
@@ -333,7 +331,7 @@ export const FileCommonRenderItem = (props: S) => {
 
               <MaterialIcons
                 name="share"
-                size={20}
+                size={scaledSize(20)}
                 color={
                   theme.themeColor
                 }
@@ -418,10 +416,10 @@ const createStyles = (
 
     selectedCard: {
 
-      borderWidth: 1.3,
+      borderWidth: mode !== "dark" ? 1 : 0.5,
 
       borderColor:
-        SELECT_COLOR,
+        theme.themeColor,
 
       backgroundColor:
         mode === "dark"
@@ -436,20 +434,20 @@ const createStyles = (
       bottom: scaledSize(18),
       width: scaledSize(4),
       backgroundColor:
-        SELECT_COLOR,
+        theme.themeColor,
       borderTopRightRadius: 20,
       borderBottomRightRadius: 20,
     },
 
     checkBadge: {
       position: "absolute",
-      right: scaledSize(10),
-      top: scaledSize(10),
+      right: scaledSize(16),
+      top: scaledSize(34),
       width: scaledSize(26),
       height: scaledSize(26),
       borderRadius: 100,
       backgroundColor:
-        SELECT_COLOR,
+        theme.themeColor,
       justifyContent:
         "center",
       alignItems:
@@ -457,24 +455,27 @@ const createStyles = (
       zIndex: 10,
     },
 
-    iconContainer: {
-      width: scaledSize(44),
-      height: scaledSize(44),
-      borderRadius:
-        scaledSize(12),
-      backgroundColor:
-        theme.buttonBGColor,
-      justifyContent:
-        "center",
-      alignItems:
-        "center",
-      marginRight:
-        scaledSize(14),
-    },
+iconContainer: {
+  width: scaledSize(64),
+  height: scaledSize(64),
+  borderRadius: scaledSize(14),
+  // backgroundColor: '#FEF0F0',  // soft red tint
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: scaledSize(12),
+  // shadowColor: '#C0392B',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.08,
+  shadowRadius: 6,
+  // elevation: 3,
+},
 
     icon: {
-      width: scaledSize(28),
-      height: scaledSize(28),
+      width: scaledSize(38),
+      height: scaledSize(38),
       resizeMode:
         "contain",
     },
@@ -491,7 +492,7 @@ const createStyles = (
       color:
         theme.primaryTextColor,
       fontSize:
-        scaledSize(15),
+        scaledSize(14),
       fontFamily:
         Fonts.regular,
     },
