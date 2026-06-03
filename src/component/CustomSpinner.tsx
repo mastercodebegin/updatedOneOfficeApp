@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useMemo } from 'react'
 import Spinner from 'react-native-loading-spinner-overlay';
-import { COLORS } from '../utilies/GlobalColors';
 import { scaledSize } from '../utilies/Utilities';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 
 interface S {
   isLoading: boolean;
@@ -10,6 +11,9 @@ interface S {
 }
 
 export default function CustomSpinner(props: S) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <Spinner
       visible={props.isLoading}
@@ -21,7 +25,7 @@ export default function CustomSpinner(props: S) {
             <View style={{marginTop: scaledSize(20)}}>
               <ActivityIndicator
                 size="large"
-                color={COLORS.THEME_COLOR}
+                color={theme.themeColor}
               />
 
             </View>
@@ -38,7 +42,7 @@ export default function CustomSpinner(props: S) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -48,7 +52,7 @@ const styles = StyleSheet.create({
     width: scaledSize(220),
     paddingVertical: scaledSize(25),
     borderRadius: scaledSize(12),
-    backgroundColor: '#fff',
+    backgroundColor: theme.bgColor,
     alignItems: 'center',
     height: scaledSize(150),
 
@@ -65,6 +69,6 @@ const styles = StyleSheet.create({
     marginTop: scaledSize(35),
     fontSize: scaledSize(12),
     letterSpacing: 1,
-    color: '#000',
+    color: theme.primaryTextColor,
   },
 });
