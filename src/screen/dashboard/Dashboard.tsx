@@ -436,6 +436,7 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -689,12 +690,16 @@ function Dashboard({ navigation, route }) {
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
           ref={readPdfFileRef}
-          // pdfFiles={pdfs} 
           pdfFiles={documents.pdfFiles}
           selectedSort={selectedSort}
+          viewMode={viewMode}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
+        return <WordFilesList key={uniqueNumber} 
+        searchValue={searchQuery}
+         wordFiles={documents.wordFiles}
+         viewMode={viewMode}
+          onReLoad={readPdfFiles} isLoading={isLoading}
           selectedSort={selectedSort} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
@@ -743,7 +748,7 @@ function Dashboard({ navigation, route }) {
       setIsShowErrorModal(true)
     }
     else {
-console.log('selectedFiles',response.selectedFiles);
+      console.log('selectedFiles', response.selectedFiles);
 
       Utility.navigation.navigateTo('MultiplePdfView', response.selectedFiles)
       dispatch(checkIsUserViewedPdf(true))
@@ -762,13 +767,26 @@ console.log('selectedFiles',response.selectedFiles);
         }}
       >
         {response.selectedFiles.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(clearSelectedFiles(true))} 
+          onPress={() => dispatch(clearSelectedFiles(true))}
           style={{ flexDirection: 'row' }}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} 
-          onPress={() => dispatch(clearSelectedFiles(true))} />
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }}
+            onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
+
+        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')} style={{ right: scaledSize(4) }}>
+          <MaterialIcons
+            name={
+              viewMode !== 'list'
+                ? 'folder'
+                : 'view-list'
+            }
+            size={scaledSize(22)}
+            color={theme.iconColor}
+          />
+        </TouchableOpacity>
+
 
         {response.selectedFiles.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
           <MaterialIcons

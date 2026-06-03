@@ -1,282 +1,209 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
 import {
-  Text, StyleSheet,
-  FlatList, View, TouchableOpacity, Image,
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+
+import {
   SafeAreaView,
+  StyleSheet,
 } from 'react-native';
-import { ConfirmPopup, deleteFile, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
-import { PdfIcon, FilterIcon } from '../assets/GlobalImages';
-import RootView from './RootView';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { useDispatch, useSelector } from 'react-redux';
 
+import {
+  deleteFile,
+} from '../utilies/Utilities';
 
-import { useIsFocused, useNavigation } from '@react-navigation/native';
-import CustomBannerAdd from './admob/CustomBannerAdd';
-import { Fonts } from '../assets/fonts/GlobalFonts';
-import CustomSpinner from './CustomSpinner';
-import { useDispatch, useSelector } from 'react-redux'
-import { checkIsUserViewedPdf, updateSelectedFiles, updateSelectedPdf } from '../screen/dashboard/FileSlice';
-import { forwardRef, useImperativeHandle } from 'react';
+import {
+  getLocalData,
+  setLocalData,
+} from '../utilies/storageUtility';
+
 import { asyncStorageKeyName } from '../utilies/Constants';
-import { FileCommonRenderItem } from './FileCommonRenderItem';
-import CustomeButton from './CustomButton';
+
+import { updateSelectedFiles } from '../screen/dashboard/FileSlice';
+
+import { PdfIcon } from '../assets/GlobalImages';
+
 import { useTheme } from '../screen/theme/useTheme';
-import VideoAdScreen from './admob/VideoAdd';
+
+import CustomSpinner from './CustomSpinner';
 import CustomEmptyState from './CustomEmptyState';
-import { getLocalData, setLocalData } from '../utilies/storageUtility';
+import CommonFolderView from './CommonFolderView';
 
 interface S {
-  searchValue: string
-  onReLoad: Function
-  isLoading: boolean,
-  pdfFiles: Array<{ name: string }>
-  selectedSort: string
+  searchValue: string;
+  onReLoad: Function;
+  isLoading: boolean;
+  pdfFiles: Array<any>;
+  selectedSort: string;
+  viewMode: 'list' | 'folder';
 }
+
 const ReadSystemFile = forwardRef((props: S, ref) => {
-  const { searchValue, pdfFiles, onReLoad, isLoading, selectedSort } = props
-  const [pdfData, setPdfData] = useState([]);
-  const dispatch = useDispatch()
-  const isFocused = useIsFocused();
+
+  const {
+    searchValue,
+    pdfFiles,
+    onReLoad,
+    isLoading,
+    selectedSort,
+    viewMode,
+  } = props;
+
+  const dispatch = useDispatch();
+
   const { theme } = useTheme();
-  const { isUserViewedPdf, selectedFiles } = useSelector((state) => state.FileSlice);
 
+  const { selectedFiles } = useSelector(
+    (state: any) => state.FileSlice,
+  );
 
-
-
+  const [pdfData, setPdfData] = useState([]);
 
   useImperativeHandle(ref, () => ({
-    //when user reload data from dashboard
     async readPdfFiles() {
-      console.log('useImperativeHandle-------');
+      console.log('reload files');
     },
   }));
 
-
   useEffect(() => {
-    console.log('pdfdata===', pdfFiles);
+    setPdfData(pdfFiles);
+  }, [pdfFiles]);
 
-    // console.log('viewpdf----------',response.isUserViewedPdf)
-    console.log('U viewed PDF', isUserViewedPdf);
-    console.log('User has viewed PDF', isUserViewedPdf);
+  const sanitizeFilesForRedux = file => {
+    return {
+      id: file.id,
+      name: file.name,
+      path: file.path,
+      size: file.size,
 
-    // dispatch(checkIsUserViewedPdf(false))
-    // dispatch(updateSelectedPdf([]))
+      mtime: file.mtime
+        ? new Date(
+            file.mtime,
+          ).toISOString()
+        : null,
+    };
+  };
+  const onPressItem = item => {
+    dispatch(
+      updateSelectedFiles(
+        sanitizeFilesForRedux(
+          item,
+        ),
+      ),
+    );
+  };
+  const onLongPress = item => {
+    dispatch(
+      updateSelectedFiles(
+        sanitizeFilesForRedux(
+          item,
+        ),
+      ),
+    );
+  };
+  const deleteFileHandler = item => {
 
-    if (pdfData.length == 0) {
-      setPdfData(pdfFiles)
-    }
+    const allFiles = JSON.parse(
+      getLocalData(
+        asyncStorageKeyName.ALL_FILES,
+      ),
+    );
 
+    const updatedFiles =
+      allFiles.pdfFiles.filter(
+        file =>
 
-  }, [])
+          !(
 
+            file.name ===
+              item.name &&
 
-  const getFiles = () => {
-    // getting search value from dashboard and filtering it
-    if (searchValue.length > 0) {
-      return pdfData.filter(file =>
-        file.name.toLowerCase().includes(searchValue.toLowerCase())
+            file.path ===
+              item.path
+
+          ),
       );
-    } else {
-      if (selectedSort) {
-        return Utility.sortFiles(selectedSort, pdfData)
-      }
-      else
-        return pdfData;
-    }
+
+    deleteFile(item.path);
+
+    setLocalData(
+      asyncStorageKeyName.ALL_FILES,
+
+      JSON.stringify({
+
+        ...allFiles,
+
+        pdfFiles:
+          updatedFiles,
+
+      }),
+    );
+
+    setPdfData(
+      updatedFiles,
+    );
   };
-
-
-
-
-  const deleteFileHandler = async (item) => {
-    //@ts-ignore
-    // console.log(item);
-
-    try {
-      // setIsLoading(true)
-      let allfilesStr = getLocalData(asyncStorageKeyName.ALL_FILES)
-      console.log('AllFiles:', allfilesStr);
-      const allfilesobj = JSON.parse(allfilesStr)
-      const pdfs = allfilesobj.pdfFiles
-
-      const data = pdfs.filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
-      const pdfFiles = data
-      const v = { ...allfilesobj, pdfFiles }
-      deleteFile(item.path)
-
-      setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
-      // deleteFile(item.path)
-      console.log('data=====', data);
-
-      setPdfData(data)
-      setIsLoading(false)
-
-
-    }
-    catch (err) {
-      console.log('error-----', err);
-
-    }
-  }
-
-
-
-  const handleDeletePress = (item) => {
-    ConfirmPopup(() => deleteFileHandler(item));
-  };
-  const deleteAsyncStorage = async () => {
-    try {
-      await AsyncStorage.removeItem(asyncStorageKeyName.ALL_FILES)
-      console.log('AsyncStorage removed successfully');
-    } catch (e) {
-      // remove error
-      console.log('AsyncStorage remove error:', e);
-    }
-  }
-  const onLongPress = (item) => {
-    dispatch(updateSelectedFiles (sanitizeFilesForRedux((item))))
-  }
-
-  const checkisFolderSelected = (id: number) => {
-    return !!selectedFiles.find(item => item?.id === id)
-  }
-  const sanitizeFilesForRedux = (file: { id: number, name: string, path: string, mtime: string, size: number }) => {
-   
-    console.log('file====',file);
-    
-      const { id, name, path, mtime, size } = file;
-
-      return {
-        id,
-        name,
-        path,
-        mtime: mtime ? new Date(mtime).toISOString() : null,
-        size,
-      };
-    
-  };
-
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }}>
-      <View style={{ position: 'relative', top: scaledSize(10) }}>
-        <CustomSpinner isLoading={isLoading} />
-      </View>
 
+    <SafeAreaView
+      style={{
+        flex: 1,
 
-      <View style={{ flex: 1, }}>
-        {pdfFiles.length > 0 ?
-          <FlatList data={getFiles()}
-            renderItem={({ item, index }) => <FileCommonRenderItem
-              item={item} 
-              icon={PdfIcon}
-              selectedItems={selectedFiles}
-              onPressItem={(v: any) => dispatch(updateSelectedFiles(sanitizeFilesForRedux(v)))}
-              isItemSelected={checkisFolderSelected(item?.id)}
-              onLongPress={(v: any) => onLongPress(v)}
-              onPressDeleteFile={deleteFileHandler}
-              screenName='PdfViewer'
-              index={index}
-            />}
-          // keyExtractor={(item) => item}
-          // refreshControl={<RefreshControl
-          //   colors={["red", "red"]}
-          //   refreshing={refreshing}
-          //   onRefresh={() => readFiles(false)} />
-          //}
-          />
-          :
-          <CustomEmptyState onPressReload={onReLoad} />
-        }
-      </View>
+        backgroundColor:
+          theme.bgContainor,
+      }}>
 
+      <CustomSpinner
+        isLoading={isLoading}
+      />
 
+      {pdfData.length === 0 ? (
 
+        <CustomEmptyState
+          onPressReload={
+           ()=> onReLoad()
+          }
+        />
 
+      ) : (
 
+        <CommonFolderView
+          files={pdfData}
+          viewMode={viewMode}
+          searchValue={searchValue}
+          selectedSort={selectedSort}
+          icon={PdfIcon}
+          screenName="PdfViewer"
+          onPressItem={
+            onPressItem
+          }
 
+          onLongPress={
+            onLongPress
+          }
+
+          onPressDeleteFile={
+            deleteFileHandler
+          }
+
+        />
+
+      )}
 
     </SafeAreaView>
+
   );
-})
-
-const styles = StyleSheet.create({
-  ///
-
-  loading: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  body: {
-    fontSize: scaledSize(18),
-  },
-  mainView: {
-    height: scaledSize(80),
-    width: "100%",
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    flexDirection: 'row',
-    // marginTop: .6,
-    backgroundColor: '#FFFF'
-  },
-  icon: {
-    height: scaledSize(30),
-    width: scaledSize(30),
-    marginLeft: scaledSize(6)
-  },
-  fileNameParentView: {
-    width: widthFromPercentage(66),
-    height: scaledSize(50),
-    // backgroundColor: 'red',
-    flexDirection: "column"
-  },
-
-  fileNameView: {
-    flex: 1,
-    // backgroundColor:'red',
-    // height:scaledSize(50),
-    justifyContent: 'center',
-    alignItems: 'flex-start'
-  },
-  dateAndSizeParentView: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  dateView: {
-    flex: 1,
-    // backgroundColor: 'purple',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end'
-
-  },
-  fileSizeView: {
-    flex: 1,
-    // backgroundColor: 'orange',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  favAndUnfavoriteView: {
-    width: widthFromPercentage(10),
-    height: scaledSize(50),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  shareFileView: {
-    width: widthFromPercentage(10),
-    height: scaledSize(50),
-    justifyContent: 'center'
-  },
-
-  fontStyle: {
-    fontSize: scaledSize(13),
-    fontFamily: Fonts.regular,
-  }
 });
-export default React.memo(ReadSystemFile)
+
+export default React.memo(
+  ReadSystemFile,
+);
+
+const styles =
+StyleSheet.create({});

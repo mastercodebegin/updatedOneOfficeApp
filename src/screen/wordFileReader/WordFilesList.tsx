@@ -12,6 +12,9 @@ import { useIsFocused } from '@react-navigation/native'
 import CustomeButton from '../../component/CustomButton'
 import CustomEmptyState from '../../component/CustomEmptyState'
 import { getLocalData, setLocalData } from '../../utilies/storageUtility'
+import CommonFolderView from '../../component/CommonFolderView'
+import { useDispatch } from 'react-redux'
+import { updateSelectedFiles } from '../dashboard/FileSlice'
 
 // import { FileType, getAllFilesFromPhoneStorage } from '../../utilies/Utilities'
 
@@ -21,6 +24,8 @@ interface S {
   isLoading: boolean
   wordFiles: Array<{ name: string }>,
   selectedSort: string
+    viewMode: 'list' | 'folder';
+
 }
 interface File {
   name: string;
@@ -30,10 +35,11 @@ interface File {
 }
 
 export default function WordFilesList(props: S) {
-  const { searchValue, wordFiles, isLoading, onReLoad, selectedSort } = props
+  const { searchValue, wordFiles, isLoading, onReLoad, selectedSort, viewMode } = props
   const [files, setFiles] = useState<File[]>([]);
   const toast = useToast();
   const isFocused = useIsFocused();
+  const dispatch = useDispatch();
 
   useEffect(() => {
 
@@ -64,39 +70,77 @@ export default function WordFilesList(props: S) {
     setFiles(data)
   }
 
-  const getFiles = () => {
-    // getting search value from dashboard and filtering it
-    if (searchValue.length > 0) {
-      return files.filter(file =>
-        file.name.toLowerCase().includes(searchValue.toLowerCase())
+
+    const sanitizeFilesForRedux = file => {
+      return {
+        id: file.id,
+        name: file.name,
+        path: file.path,
+        size: file.size,
+  
+        mtime: file.mtime
+          ? new Date(
+              file.mtime,
+            ).toISOString()
+          : null,
+      };
+    };
+    const onPressItem = item => {
+      dispatch(
+        updateSelectedFiles(
+          sanitizeFilesForRedux(
+            item,
+          ),
+        ),
       );
-    } else {
-      if (selectedSort) {
-        return Utility.sortFiles(selectedSort, files)
-      }
-      else {
-        return files;
-      }
-    }
-  };
+    };
+    const onLongPress = item => {
+      dispatch(
+        updateSelectedFiles(
+          sanitizeFilesForRedux(
+            item,
+          ),
+        ),
+      );
+    };
+
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {wordFiles.length > 0 ? (
-          <FlatList data={getFiles()}
-            renderItem={({ item, index }) => <FileCommonRenderItem
-              index={index}
-              item={item} icon={MSOffice} onPressDeleteFile={deleteFileHandler} screenName='WordReader' />}
-          // keyExtractor={(item) => item}
-          // refreshControl={<RefreshControl
-          //   colors={["red", "red"]}
-          //   refreshing={refreshing}
-          //   onRefresh={() => readFiles(false)} />
-          //}
-          />
+          // <FlatList data={getFiles()}
+          //   renderItem={({ item, index }) => 
+          //   <FileCommonRenderItem
+          //     index={index}
+          //     item={item}
+          //     icon={MSOffice} 
+          //     onPressDeleteFile={deleteFileHandler}
+          //      screenName='WordReader' />}
+ 
+          // />
+          <CommonFolderView
+          files={wordFiles}
+          viewMode={viewMode}
+          searchValue={searchValue}
+          selectedSort={selectedSort}
+          icon={MSOffice}
+          screenName="WordReader"
+          onPressItem={
+            onPressItem
+          }
+
+          onLongPress={
+            onLongPress
+          }
+
+          onPressDeleteFile={
+            deleteFileHandler
+          }
+
+        />
         ) :
-          <CustomEmptyState onPressReload={onReLoad} />
+          <CustomEmptyState onPressReload={() => onReLoad()} />
         }
 
       </View>

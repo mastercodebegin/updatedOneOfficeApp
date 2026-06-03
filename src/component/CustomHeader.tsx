@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewProps, ViewStyle, StyleProp } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../screen/theme/useTheme';
 import { scaledSize, Utility } from '../utilies/Utilities';
@@ -8,11 +8,12 @@ import { Theme } from '../screen/theme/ThemeConfig';
 
 interface CustomHeaderProps {
   title: string;
-  onPressBack?:Function
+  onPressBack?: Function
   leftSide?: React.ReactNode;
   rightSide?: React.ReactNode;
   isShowShareBtn?: boolean;
   onSharePress?: () => void;
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 const CustomHeader: React.FC<CustomHeaderProps> = ({
@@ -21,7 +22,8 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   rightSide,
   isShowShareBtn = false, // Default to false to not show share button unless specified
   onSharePress,
-  onPressBack=()=>{}
+  containerStyle,
+  onPressBack = () => { }
 }) => {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -46,7 +48,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
     ) : <></>;
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, containerStyle]}>
       <View style={styles.sideContainer}>
         {leftSide !== undefined ? leftSide : <DefaultLeft />}
       </View>
@@ -75,9 +77,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   titleText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: scaledSize(18),
+    fontSize: scaledSize(14),
     fontWeight: '500',
-    fontFamily: Fonts.medium,
+    fontFamily: Fonts.regular,
     color: theme.primaryTextColor,
   },
   defaultIconContainer: {

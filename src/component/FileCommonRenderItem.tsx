@@ -19,7 +19,8 @@ import { Fonts } from "../assets/fonts/GlobalFonts";
 import { useTheme } from "../screen/theme/useTheme";
 import { Theme } from "../screen/theme/ThemeConfig";
 import ConfirmationDialog from "./ConfirmationDialog";
-
+import FileSlice from "../screen/dashboard/FileSlice";
+import { useSelector } from "react-redux";
 interface S {
   item: any;
   icon: any;
@@ -27,8 +28,6 @@ interface S {
   screenName: string;
   onPressItem: Function;
   onLongPress: any;
-  isItemSelected: boolean;
-  selectedItems: Array<any>;
   isShowEditBtn?: boolean;
   onPressEditFile?: (item: any) => void;
   index: number;
@@ -43,20 +42,24 @@ export const FileCommonRenderItem = (props: S) => {
     onPressDeleteFile,
     screenName,
     onLongPress,
-    isItemSelected,
-    selectedItems,
     onPressItem,
     isShowEditBtn = false,
     onPressEditFile = () => {},
     index,
   } = props;
   
-  const { theme, mode } =
-  useTheme();
+  const { selectedFiles,selectedItems } = useSelector((state: any) => state.FileSlice,
+  );  const { theme, mode } =useTheme();
 
   const styles = useMemo(() => {
     return createStyles(theme, mode)
   }, [theme])
+
+  const checkisFolderSelected = (id: number) => {
+    return selectedFiles.some(
+      item => item.id === id,
+    );
+  };
 
   const [
     isShowDeleteConfirmation,
@@ -126,7 +129,7 @@ export const FileCommonRenderItem = (props: S) => {
     () => {
 
       if (
-        selectedItems?.length >
+        selectedFiles?.length >
         0
       ) {
 
@@ -154,13 +157,13 @@ export const FileCommonRenderItem = (props: S) => {
                 : 0,
           },
 
-          isItemSelected &&
+          checkisFolderSelected(item.id) &&
             styles.selectedCard,
         ]}>
 
         {/* selection ui */}
 
-        {isItemSelected && (
+        {checkisFolderSelected(item.id) && (
           <>
 
             <View
@@ -268,7 +271,7 @@ export const FileCommonRenderItem = (props: S) => {
 
         {/* actions hidden during selection */}
 
-        {!isItemSelected && (
+        {!checkisFolderSelected(item.id) && (
 
           <View
             style={
