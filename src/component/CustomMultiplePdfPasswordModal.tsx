@@ -26,6 +26,7 @@ import {
 import {
   Fonts,
 } from '../assets/fonts/GlobalFonts';
+import CustomErrorMsgModal from './CustomErrorMsgModal';
 
 interface Props {
 
@@ -558,9 +559,7 @@ const CustomMultiplePdfPasswordModal =
        <TouchableOpacity
 
         onPress={() =>
-         onSubmit(
-          passwords
-         )
+         handleSubmit()
         }
 
         style={{
@@ -605,6 +604,13 @@ const CustomMultiplePdfPasswordModal =
     </View>
 
    </View>
+    <CustomErrorMsgModal
+      isVisible={!!modalError}
+      errorMessage={modalError}
+      onPressClose={() =>
+        setModalError('')
+      }
+    />
 
   </Modal>
  );

@@ -127,20 +127,9 @@ const ModalView = (props: myProps) => {
 
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
     if (isCap == undefined) {
-      Alert.alert(
-        'Sorry ',
-        'we could not generate the password please check user details again',
-        [
-          {
-            text: '',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          { text: 'Ok', onPress: () => console.log('Yes Pressed') },
-        ],
-        { cancelable: false }
-      )
-      return true
+      setErrorMsg('Could not generate password. Please check user details again.');
+      setIsShowErrorModal(true);
+      return;
     }
     if (isCap) {
       props.onText(value.toUpperCase())
@@ -167,8 +156,9 @@ const ModalView = (props: myProps) => {
 
 
     if (selectedUser.id == undefined) {
-      alert('Please select user first! ');
-      return true
+      setErrorMsg('Please select a user first!');
+      setIsShowErrorModal(true);
+      return;
     }
     const { isFirstName4CharAndDobDDMM, isFirstName4CharAndCardLast4Digit,
       isFirstName4CharAndDobDDMMYYYY, isFirstName4CharAndDobYYYY,
@@ -182,8 +172,9 @@ const ModalView = (props: myProps) => {
     console.log('selectedCard ', selectedUser.cards);
     console.log('selectedCard ', selectedCard);
     if (selectedCard == undefined) {
-      alert('No card found for this bank please add card first! ');
-      return true
+      setErrorMsg('No card found for this bank. Please add the card first!');
+      setIsShowErrorModal(true);
+      return;
     }
     const { lastFourDigit } = selectedCard
     // console.log(v);

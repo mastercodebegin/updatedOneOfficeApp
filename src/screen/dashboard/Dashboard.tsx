@@ -70,7 +70,8 @@ import { AuthService } from '../../service/AuthService';
 
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
-
+import RNFetchBlob from 'rn-fetch-blob';
+import * as Progress from 'react-native-progress';
 function Dashboard({ navigation, route }) {
 
 
@@ -437,6 +438,8 @@ function Dashboard({ navigation, route }) {
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
   const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
+  const [downloadProgress, setDownloadProgress] =
+  useState(0);
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -500,18 +503,25 @@ function Dashboard({ navigation, route }) {
   // }, [navigation, route, isFocused]);
 
 // ********************************************
-
 useEffect(() => {
-  const copyContentUriToLocal = async (
-    uri,
-  ) => {
+const copyContentUriToLocal =
+  async (uri) => {
     try {
       const filePath =
         `${RNFS.CachesDirectoryPath}/pdf_${Date.now()}.pdf`;
 
+      console.log(
+        'Copying from:',
+        uri,
+      );
+
       await RNFS.copyFile(
         uri,
         filePath,
+      );
+
+      setDownloadProgress(
+        100,
       );
 
       return `file://${filePath}`;
@@ -525,69 +535,75 @@ useEffect(() => {
     }
   };
 
-  const handleIncomingUri = async (
-    uri,
-  ) => {
-    try {
-      console.log(
-        'Received URI:',
-        uri,
-      );
+  const handleIncomingUri =
+    async (uri) => {
+      try {
+        if (!uri) return;
 
-      if (!uri) return;
-
-      setIsLoading(true);
-
-      let finalUri = uri;
-
-      if (
-        uri.startsWith(
-          'content://',
-        )
-      ) {
-        finalUri =
-          await copyContentUriToLocal(
-            uri,
-          );
-      }
-
-      if (!finalUri) {
-        alert(
-          'Unable to open file',
+        console.log(
+          'Received URI:',
+          uri,
         );
 
-        return;
+        setIsLoading(true);
+
+        setDownloadProgress(
+          0,
+        );
+
+        let finalUri = uri;
+
+        if (
+          uri.startsWith(
+            'content://',
+          )
+        ) {
+          finalUri =
+            await copyContentUriToLocal(
+              uri,
+            );
+        }
+
+        if (
+          !finalUri
+        ) {
+          alert(
+            'Unable to open file',
+          );
+
+          return;
+        }
+
+        navigation.navigate(
+          'PdfViewer',
+          {
+            uri: finalUri,
+          },
+        );
+      } catch (e) {
+        console.log(
+          'Handle Error:',
+          e,
+        );
+
+        alert(
+          'Failed to open file',
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+
+        setDownloadProgress(
+          0,
+        );
       }
-
-      navigation.navigate(
-        'PdfViewer',
-        {
-          uri: finalUri,
-        },
-      );
-    } catch (e) {
-      console.log(
-        'Handle URI Error:',
-        e,
-      );
-
-      alert(
-        'Failed to open file',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
   const linkingSubscription =
     Linking.addEventListener(
       'url',
       ({ url }) => {
-        console.log(
-          'Deep Link URL:',
-          url,
-        );
-
         handleIncomingUri(
           url,
         );
@@ -598,15 +614,13 @@ useEffect(() => {
     BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        console.log(
-          'press back btn',
-        );
-
         setIsShowEditPdfModal(
           false,
         );
 
-        setIsUserBack(true);
+        setIsUserBack(
+          true,
+        );
 
         return true;
       },
@@ -617,7 +631,8 @@ useEffect(() => {
       try {
         if (
           !isUserBack &&
-          route?.params?.pdf ===
+          route?.params
+            ?.pdf ===
             undefined
         ) {
           const url =
@@ -634,25 +649,10 @@ useEffect(() => {
             );
           }
         }
-      } catch (err) {
-        console.log(
-          'Initial URL Error:',
-          err,
-        );
+      } catch (e) {
+        console.log(e);
       }
     };
-
-  if (route?.params?.pdf) {
-    setIsUserBack(true);
-  }
-
-  if (
-    route?.params?.pdf ===
-      'pdf' &&
-    pdfData.length === 0
-  ) {
-    // checkStorage();
-  }
 
   checkInitialUrl();
 
@@ -662,6 +662,7 @@ useEffect(() => {
     backHandler.remove();
   };
 }, []);
+
 // ********************************************
 
 
@@ -878,7 +879,50 @@ useEffect(() => {
       dispatch(checkIsUserViewedPdf(true))
     }
   }
+const renderDownloadLoader = () => {
+  if (!isLoading) return null;
 
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+
+        justifyContent: 'center',
+        alignItems: 'center',
+
+        backgroundColor:
+          'rgba(0,0,0,0.5)',
+
+        zIndex: 999,
+      }}
+    >
+      <Text
+        style={{
+          color: '#FFF',
+          marginBottom: 12,
+          fontSize: 15,
+        }}
+      >
+        Downloading PDF...
+        {' '}
+        {downloadProgress}%
+      </Text>
+
+      <Progress.Bar
+        progress={
+          downloadProgress / 100
+        }
+        width={220}
+        height={8}
+        borderRadius={8}
+      />
+    </View>
+  );
+};
   const renderHeaderIcons = () => {
     return (
       <View
@@ -890,7 +934,7 @@ useEffect(() => {
           marginRight: scaledSize(4)
         }}
       >
-        {response.selectedFiles.length > 0 && <TouchableOpacity
+            {response.selectedFiles.length > 0 && <TouchableOpacity
           onPress={() => dispatch(clearSelectedFiles(true))}
           style={{ flexDirection: 'row' }}>
           <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }}
@@ -1023,9 +1067,9 @@ useEffect(() => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
-
+{renderDownloadLoader()}
       <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
-        <CustomSpinner isLoading={isLoading} />
+        {/* <CustomSpinner isLoading={isLoading} /> */}
       </View>
       <LinearGradient
         colors={[theme.bgContainor, theme.bgContainor]}

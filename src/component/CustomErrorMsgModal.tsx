@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native'
 import React, { useMemo } from 'react'
-
 import { Fonts } from '../../src/assets/fonts/GlobalFonts'
 import { Theme, useTheme } from '../screen/theme/useTheme'
 import CustomVectorIcon from './CustomVectorIcon'
@@ -20,15 +19,12 @@ export default function CustomErrorMsgModal(props: S) {
     isVisible,
     errorMessage,
     onPressClose,
-    onPressRetry,
-    errorCode,
-    title = 'Something went wrong',
+    title = 'Error',
   } = props
 
   const { theme, mode } = useTheme()
   const isDark = mode === 'dark'
-
-  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode])
 
   return (
     <Modal
@@ -38,89 +34,33 @@ export default function CustomErrorMsgModal(props: S) {
       onRequestClose={() => onPressClose()}
     >
       <View style={styles.modalOverlay}>
-        <View
-          style={styles.modalContainer}
-        >
+        <View style={styles.modalContainer}>
 
-        {/* Icon */}
-        <View
-          style={{
-            width: scaledSize(70),
-            height: scaledSize(70),
-            borderRadius: scaledSize(46),
-            borderWidth:1,
-            borderColor:'red',
-            // backgroundColor: isDark ? '#2A2A2C' : '#F5F5F5',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: scaledSize(14),
-          }}
-        >
-          <CustomVectorIcon
-            iconLibrary="MaterialCommunityIcons"
-            iconName="exclamation"
-            style={{
-              fontSize: scaledSize(56),
-              color: '#E53935',
-            }}
-          />
-        </View>
+          {/* Icon */}
+          <View style={styles.iconWrapper}>
+            <CustomVectorIcon
+              iconLibrary="MaterialCommunityIcons"
+              iconName="alert-circle-outline"
+              style={styles.icon}
+            />
+          </View>
 
-        {/* Title */}
-        <View style={{height:scaledSize(70),justifyContent:'center'}}>
+          {/* Title */}
+          <Text style={styles.titleText}>{title}</Text>
 
-        <Text
-          style={{
-              fontSize: scaledSize(14),
-              textAlign: 'center',
-              letterSpacing: 1,
-              marginBottom: scaledSize(10),
-              color: theme.primaryTextColor,
-              fontFamily: 'calibri',
-            }}
-            >
-          {errorMessage}
-        </Text>
-            </View>
+          {/* Message */}
+          <Text style={styles.messageText}>{errorMessage}</Text>
 
-        {/* Message */}
-        
-
-      
-
-        {/* Buttons */}
-        <View style={{ flexDirection: 'row', width: '50%', }}>
-
+          {/* Dismiss Button */}
           <TouchableOpacity
-            activeOpacity={0.7}
+            activeOpacity={0.8}
             onPress={() => onPressClose()}
-            style={{
-              flex: 1,
-              height: scaledSize(40),
-              borderRadius: scaledSize(8),
-              borderWidth: 1.5,
-              top:scaledSize(10),
-              borderColor: isDark ? 'gray' : '#E5E7EB',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
+            style={styles.dismissButton}
           >
-            <Text
-              style={{
-                fontSize: scaledSize(14),
-                letterSpacing:2,
-                color: isDark ? '#8E8E93' : '#6B7280',
-                fontFamily: Fonts.regular,
-              }}
-            >
-              Close
-            </Text>
+            <Text style={styles.dismissText}>Dismiss</Text>
           </TouchableOpacity>
 
-        
-
         </View>
-      </View>
       </View>
     </Modal>
   )
@@ -129,68 +69,74 @@ export default function CustomErrorMsgModal(props: S) {
 const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     width: scaledSize(300),
-    paddingHorizontal: scaledSize(22),
-    paddingTop: scaledSize(30),
-    paddingBottom: scaledSize(20),
-    borderRadius: scaledSize(18),
+    paddingHorizontal: scaledSize(24),
+    paddingTop: scaledSize(32),
+    paddingBottom: scaledSize(24),
+    borderRadius: scaledSize(24),
     backgroundColor: theme.bgContainor,
     alignItems: 'center',
+    gap: scaledSize(10),
+    borderWidth: 0.5,
+    borderColor: mode === 'dark' ? '#2a2a36' : '#e8e8e8',
     shadowColor: '#000',
-    minHeight:scaledSize(250),
-    shadowOpacity: 0.18,
-    shadowRadius: scaledSize(36),
-    shadowOffset: { width: 0, height: scaledSize(20) },
-    elevation: scaledSize(16),
+    shadowOpacity: 0.2,
+    shadowRadius: scaledSize(24),
+    shadowOffset: { width: 0, height: scaledSize(12) },
+    elevation: scaledSize(12),
   },
   iconWrapper: {
-    width: scaledSize(64),
-    height: scaledSize(64),
-    borderRadius: scaledSize(40),
-    backgroundColor: mode === 'dark' ? '#2A2A2C' : '#F5F5F5',
+    width: scaledSize(68),
+    height: scaledSize(68),
+    borderRadius: scaledSize(34),
+    backgroundColor: mode === 'dark' ? '#2a0e0e' : '#fff0f0',
+    borderWidth: .5,
+    borderColor: mode === 'dark' ? '#7a2020' : '#f5c0c0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: scaledSize(14),
+    marginBottom: scaledSize(4),
   },
+
   icon: {
-    fontSize: scaledSize(56),
-    color: '#E53935',
+    fontSize: scaledSize(32),
+    color: '#e24b4a',
   },
-  messageContainer: {
-    height: 70,
-    justifyContent: 'center',
+  
+  titleText: {
+    fontSize: scaledSize(16),
+    fontWeight: '500',
+    textAlign: 'center',
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.regular,
+    letterSpacing: 0.3,
   },
   messageText: {
-    fontSize: scaledSize(14),
+    fontSize: scaledSize(13),
     textAlign: 'center',
-    letterSpacing: 1,
-    marginBottom: scaledSize(10),
-    color: theme.primaryTextColor,
-    fontFamily: 'calibri',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    width: '100%',
-    marginTop: scaledSize(20),
+    lineHeight: scaledSize(20),
+    color: mode === 'dark' ? '#666' : '#999',
+    fontFamily: Fonts.regular,
+    paddingHorizontal: scaledSize(8),
   },
   dismissButton: {
-    flex: 1,
-    height: scaledSize(54),
-    borderRadius: scaledSize(18),
-    borderWidth: 1,
-    borderColor: theme.borderColor,
+    width: '100%',
+    height: scaledSize(46),
+    borderRadius: scaledSize(12),
+    backgroundColor: '#e24b4a',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: scaledSize(8),
   },
   dismissText: {
     fontSize: scaledSize(14),
+    fontWeight: '500',
+    color: '#fff',
+    fontFamily: Fonts.regular,
     letterSpacing: 0.5,
-    color: theme.primaryTextColor,
-    fontFamily: Fonts.medium,
   },
-});
+})

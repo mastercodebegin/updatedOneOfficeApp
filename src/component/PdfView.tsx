@@ -26,6 +26,7 @@ import ModalView from './ModalViewForPdfPassword';
 import CustomBackIcon from './CustomBackIcon';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
+import CustomErrorMsgModal from './CustomErrorMsgModal';
 
 const PdfViewer = (props: any) => {
   const [text, setText] = useState('');
@@ -36,6 +37,8 @@ const PdfViewer = (props: any) => {
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] =
     useState(1);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalErrorMessage, setModalErrorMessage] = useState('');
 
   const { theme, mode } = useTheme();
 
@@ -96,9 +99,8 @@ const PdfViewer = (props: any) => {
   const onPressOkayHandler =
     () => {
       if (!text.length) {
-        alert(
-          'Please Enter valid password',
-        );
+        setModalErrorMessage('Please enter a valid password');
+        setShowErrorModal(true);
         return;
       }
 
@@ -286,6 +288,11 @@ const PdfViewer = (props: any) => {
 
       </View>
 
+      <CustomErrorMsgModal
+        isVisible={showErrorModal}
+        errorMessage={modalErrorMessage}
+        onPressClose={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };
