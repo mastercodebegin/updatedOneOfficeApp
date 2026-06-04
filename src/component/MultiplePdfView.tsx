@@ -73,7 +73,7 @@ const MultiplePdfView = (props: S) => {
     console.log('text-------', text);
 
     if (text.length == 0) {
-      alert('Please Enter password')
+      alert('Please Enter valid password')
       return false
     }
     else {

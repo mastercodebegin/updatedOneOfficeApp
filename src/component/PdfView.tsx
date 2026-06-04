@@ -30,7 +30,7 @@ import { Theme } from '../screen/theme/ThemeConfig';
 const PdfViewer = (props: any) => {
   const [text, setText] = useState('');
   const [errorMsg] = useState(
-    'Please Enter password',
+    'Please Enter valid password',
   );
   const [num, setNumber] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -97,7 +97,7 @@ const PdfViewer = (props: any) => {
     () => {
       if (!text.length) {
         alert(
-          'Please Enter password',
+          'Please Enter valid password',
         );
         return;
       }
@@ -209,7 +209,7 @@ const PdfViewer = (props: any) => {
           marginTop: scaledSize(6),
         }}>
 
-        {visible ? (
+        {!visible ? (
           <>
             <Pdf
               trustAllCerts={false}
@@ -272,7 +272,7 @@ const PdfViewer = (props: any) => {
           </>
         ) : (
           <ModalView
-            visible={!visible}
+            visible={visible}
             errorRecognize={text}
             errorMessage={errorMsg}
             onText={onChangeText}

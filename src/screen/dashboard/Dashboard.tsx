@@ -454,26 +454,216 @@ function Dashboard({ navigation, route }) {
   };
 
 
+  //Linking 
+  // useEffect(() => {
+  //   let isRead = true
+
+  //   Linking.addEventListener('url', (url) => {
+  //     console.log('addEventListener', url);
+
+  //     navigation.navigate('PdfViewer', { uri: url.url })
+  //   });
+
+  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+  //     console.log('press back btn');
+  //     setIsShowEditPdfModal(false)
+  //     setIsUserBack(true)
+
+  //   });
+
+  //   if (route?.params?.pdf) { setIsUserBack(true) }
+
+  //   if (!isUserBack) {
+
+  //     Linking.getInitialURL()
+  //       .then((url) => {
+  //         if (url && route?.params?.pdf == undefined) {
+  //           console.log('listener2', url);
+
+  //           navigation.navigate('PdfViewer', { uri: url })
+  //         }
+  //       })
+  //       .catch((err) => {
+  //         console.error('Error getting initial URL:', err)
+  //       })
+  //       ;
+  //   }
+
+  //   if (route?.params?.pdf == 'pdf' && pdfData.length == 0) {
+  //     //checkStorage()
+  //   }
+  //   return () => {
+  //     backHandler.remove();
+  //   };
 
 
+  // }, [navigation, route, isFocused]);
 
-  const DesendingreadPdfFiles = async () => {
-    console.log('Decending order by date-------');
+// ********************************************
 
-    setIsLoading(true)
-    setDocuments({
-      pdfFiles: [],
-      wordFiles: [],
-      xlsxFiles: [],
-      pptFiles: [],
-    })
-    const files = await getFilesFromPhoneByFileExtention(1)
-    console.log('DesendingreadPdfFiles: ', files);
+useEffect(() => {
+  const copyContentUriToLocal = async (
+    uri,
+  ) => {
+    try {
+      const filePath =
+        `${RNFS.CachesDirectoryPath}/pdf_${Date.now()}.pdf`;
 
-    setDocuments(files)
-    setIsLoading(false)
-    setUniqueNumber(Utility.generateUniqueNumber())
+      await RNFS.copyFile(
+        uri,
+        filePath,
+      );
+
+      return `file://${filePath}`;
+    } catch (e) {
+      console.log(
+        'Copy Error:',
+        e,
+      );
+
+      return null;
+    }
+  };
+
+  const handleIncomingUri = async (
+    uri,
+  ) => {
+    try {
+      console.log(
+        'Received URI:',
+        uri,
+      );
+
+      if (!uri) return;
+
+      setIsLoading(true);
+
+      let finalUri = uri;
+
+      if (
+        uri.startsWith(
+          'content://',
+        )
+      ) {
+        finalUri =
+          await copyContentUriToLocal(
+            uri,
+          );
+      }
+
+      if (!finalUri) {
+        alert(
+          'Unable to open file',
+        );
+
+        return;
+      }
+
+      navigation.navigate(
+        'PdfViewer',
+        {
+          uri: finalUri,
+        },
+      );
+    } catch (e) {
+      console.log(
+        'Handle URI Error:',
+        e,
+      );
+
+      alert(
+        'Failed to open file',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const linkingSubscription =
+    Linking.addEventListener(
+      'url',
+      ({ url }) => {
+        console.log(
+          'Deep Link URL:',
+          url,
+        );
+
+        handleIncomingUri(
+          url,
+        );
+      },
+    );
+
+  const backHandler =
+    BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        console.log(
+          'press back btn',
+        );
+
+        setIsShowEditPdfModal(
+          false,
+        );
+
+        setIsUserBack(true);
+
+        return true;
+      },
+    );
+
+  const checkInitialUrl =
+    async () => {
+      try {
+        if (
+          !isUserBack &&
+          route?.params?.pdf ===
+            undefined
+        ) {
+          const url =
+            await Linking.getInitialURL();
+
+          console.log(
+            'Initial URL:',
+            url,
+          );
+
+          if (url) {
+            await handleIncomingUri(
+              url,
+            );
+          }
+        }
+      } catch (err) {
+        console.log(
+          'Initial URL Error:',
+          err,
+        );
+      }
+    };
+
+  if (route?.params?.pdf) {
+    setIsUserBack(true);
   }
+
+  if (
+    route?.params?.pdf ===
+      'pdf' &&
+    pdfData.length === 0
+  ) {
+    // checkStorage();
+  }
+
+  checkInitialUrl();
+
+  return () => {
+    linkingSubscription.remove();
+
+    backHandler.remove();
+  };
+}, []);
+// ********************************************
+
 
   useEffect(() => {
     if (documents.pdfFiles.length == 0) {
@@ -534,76 +724,12 @@ function Dashboard({ navigation, route }) {
   }, [isFocused]);
 
 
-  //Linking 
-  useEffect(() => {
-    let isRead = true
-
-    Linking.addEventListener('url', (url) => {
-      console.log('addEventListener', url);
-
-      navigation.navigate('PdfViewer', { uri: url.url })
-    });
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      console.log('press back btn');
-      setIsShowEditPdfModal(false)
-      setIsUserBack(true)
-
-    });
-
-    if (route?.params?.pdf) { setIsUserBack(true) }
-
-    if (!isUserBack) {
-
-      Linking.getInitialURL()
-        .then((url) => {
-          if (url && route?.params?.pdf == undefined) {
-            console.log('listener2', url);
-
-            navigation.navigate('PdfViewer', { uri: url })
-          }
-        })
-        .catch((err) => {
-          console.error('Error getting initial URL:', err)
-        })
-        ;
-    }
-
-    if (route?.params?.pdf == 'pdf' && pdfData.length == 0) {
-      //checkStorage()
-    }
-    return () => {
-      backHandler.remove();
-    };
-
-
-  }, [navigation, route, isFocused]);
 
 
 
 
-  const deleteFileHandler = async (item: any) => {
-    //@ts-ignore
-    // console.log(item);
-
-    try {
-      setIsLoading(true)
-      let files = getLocalData(asyncStorageKeyName.ALL_FILES)
-      const data = JSON.parse(files).filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
-      getLocalData('pdfFiles', JSON.stringify(files))
-      deleteFile(item.path)
-      setPdfData(data)
-      setIsLoading(false)
-      toastForDeleteFile(toast, 'File deleted successfully')
 
 
-      // getPdfFilesFromPhoneStorage()
-    }
-    catch (err) {
-      console.log('error-----', err);
-
-    }
-  }
 
   // will implement later if user add/download file needs to update
 
@@ -637,9 +763,7 @@ function Dashboard({ navigation, route }) {
 
 
 
-  const addCardDetails = () => {
-    setIsShowCardModal(true)
-  }
+ 
 
   const search = (data: any) => {
     // sending search text to readsystemfile screen to filter data
