@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewProps, ViewStyle, StyleProp } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewProps, ViewStyle, StyleProp, TextProps, TextStyle } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../screen/theme/useTheme';
 import { scaledSize, Utility } from '../utilies/Utilities';
@@ -14,7 +14,7 @@ interface CustomHeaderProps {
   isShowShareBtn?: boolean;
   onSharePress?: () => void;
   containerStyle?: StyleProp<ViewStyle>;
-}
+titleStyle?: StyleProp<TextStyle>;}
 
 const CustomHeader: React.FC<CustomHeaderProps> = ({
   title,
@@ -23,6 +23,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   isShowShareBtn = false, // Default to false to not show share button unless specified
   onSharePress,
   containerStyle,
+  titleStyle,
   onPressBack = () => { }
 }) => {
   const { theme } = useTheme();
@@ -52,7 +53,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
       <View style={styles.sideContainer}>
         {leftSide !== undefined ? leftSide : <DefaultLeft />}
       </View>
-      <Text style={styles.titleText} numberOfLines={1}>
+      <Text style={[styles.titleText, titleStyle]} numberOfLines={1}>
         {title}
       </Text>
       <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}>

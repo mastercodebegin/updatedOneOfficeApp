@@ -386,115 +386,18 @@ const getFolderByFileName = filename => {
   );
 };
 
-const renderBackButton = (title:string) => {
+const renderBackButton = () => {
+  
   return (
 <>
 <View style={{height:60}}>
 
 <CustomHeader onPressBack={() =>
         setSelectedFolder(null)
-      } title='' />
+      } title={selectedFolder.folder}
+       titleStyle={{fontSize:scaledSize(12),letterSpacing:.5}} />
 </View>
-    {/* <TouchableOpacity
-      activeOpacity={0.8}
 
-      
-
-      style={{
-
-        flexDirection:
-          'row',
-
-        alignItems:
-          'center',
-
-        alignSelf:
-          'flex-start',
-
-        marginHorizontal:
-          scaledSize(18),
-
-        marginTop:
-          scaledSize(10),
-
-        marginBottom:
-          scaledSize(8),
-
-        paddingLeft:
-          scaledSize(12),
-
-        paddingRight:
-          scaledSize(18),
-
-        height:
-          scaledSize(44),
-
-        borderRadius:
-          scaledSize(22),
-
-        backgroundColor:
-          'rgba(0,212,255,0.08)',
-
-        borderWidth: 1,
-
-        borderColor:
-          'rgba(0,212,255,0.20)',
-
-      }}>
-
-      <View
-        style={{
-
-          width:
-            scaledSize(30),
-
-          height:
-            scaledSize(30),
-
-          borderRadius:
-            scaledSize(15),
-
-          alignItems:
-            'center',
-
-          justifyContent:
-            'center',
-
-          backgroundColor:
-            'rgba(0,212,255,0.12)',
-
-        }}>
-
-        <MaterialIcons
-          name="arrow-back"
-          size={scaledSize(18)}
-          color="#00D4FF"
-        />
-
-      </View>
-
-      <Text
-        style={{
-
-          color:
-            '#00D4FF',
-
-          marginLeft:
-            scaledSize(10),
-
-          fontSize:
-            scaledSize(15),
-
-          fontWeight:
-            '600',
-
-        }}>
-
-        Back
-
-      </Text>
-
-    </TouchableOpacity> */}
 </>
 
   );
