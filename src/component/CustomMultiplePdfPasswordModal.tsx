@@ -12,609 +12,481 @@ import {
   FlatList,
 } from 'react-native';
 
-import MaterialIcons
-from 'react-native-vector-icons/MaterialIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-import {
-  scaledSize,
-} from '../utilies/Utilities';
+import { scaledSize } from '../utilies/Utilities';
 
-import {
-  useTheme,
-} from '../screen/theme/useTheme';
+import { useTheme } from '../screen/theme/useTheme';
 
-import {
-  Fonts,
-} from '../assets/fonts/GlobalFonts';
+import { Fonts } from '../assets/fonts/GlobalFonts';
+
 import CustomErrorMsgModal from './CustomErrorMsgModal';
 
 interface Props {
-
-  visible:boolean;
-
-  files:Array<any>;
-
-  protectedFiles?:Array<any>;
-
-  onClose:()=>void;
-
-  onSubmit:(
-    passwords:any
-  )=>void;
+  visible: boolean;
+  files: Array<any>;
+  protectedFiles?: Array<any>;
+  onClose: () => void;
+  onSubmit: (passwords: any) => void;
 }
 
-const CustomMultiplePdfPasswordModal =
-(
- props:Props
+const CustomMultiplePdfPasswordModal = (
+  props: Props,
 ) => {
+  const {
+    visible,
+    files,
+    onClose,
+    onSubmit,
+    protectedFiles = [],
+  } = props;
 
- const {
+  const { theme } = useTheme();
 
-  visible,
+  const [passwords, setPasswords] =
+    useState<
+      {
+        id: number | string;
+        pass: string;
+      }[]
+    >([]);
 
-  files,
+  const [hidden, setHidden] =
+    useState<Record<
+      string,
+      boolean
+    >>({});
 
-  onClose,
+  const [modalError, setModalError] =
+    useState('');
 
-  onSubmit,
+  useEffect(() => {
+    console.log(
+      'protectedFiles',
+      protectedFiles,
+    );
+  }, [protectedFiles]);
 
-  protectedFiles=[],
+  const updatePassword = (
+    id: string,
+    value: string,
+  ) => {
+    setPasswords(prev => {
+      const exists =
+        prev.some(
+          item =>
+            item.id === id,
+        );
 
- } = props;
+      if (exists) {
+        return prev.map(
+          item =>
+            item.id === id
+              ? {
+                  ...item,
+                  pass: value,
+                }
+              : item,
+        );
+      }
 
- const {
-  theme,
- } = useTheme();
+      return [
+        ...prev,
+        {
+          id,
+          pass: value,
+        },
+      ];
+    });
+  };
 
- const [
-  passwords,
+  const checkIsProtectedFile = (
+    item: any,
+  ) => {
+    return protectedFiles.some(
+      file =>
+        file.id === item.id,
+    );
+  };
 
-  setPasswords,
+  const handleSubmit = () => {
+    const missingPassword =
+      protectedFiles.some(
+        file => {
+          const password =
+            passwords.find(
+              p =>
+                p.id === file.id,
+            )?.pass || '';
 
- ] = useState<
-  Array<{
-
-   id:number|string;
-
-   pass:string;
-
-  }>
- >([]);
-
- const [
-
-  hidden,
-
-  setHidden,
-
- ] = useState({});
-
- useEffect(() => {
-
-  console.log(
-   'protectedFiles',
-   protectedFiles
-  );
-
- }, []);
-
- const updatePassword =
- (
-  id:string,
-
-  value:string,
- ) => {
-
-  setPasswords(
-   prev => {
-
-    const exists =
-      prev.some(
-       item =>
-       item.id === id
+          return !password.trim();
+        },
       );
 
-    if (exists) {
-
-      return prev.map(
-       item =>
-
-       item.id === id
-
-       ? {
-
-          ...item,
-
-          pass:value,
-
-         }
-
-       : item
+    if (
+      missingPassword
+    ) {
+      setModalError(
+        'Please enter all passwords',
       );
+
+      return;
     }
 
-    return [
+    onSubmit(passwords);
+  };
 
-      ...prev,
+  const renderItem = ({
+    item,
+  }: any) => {
+    const password =
+      passwords.find(
+        file =>
+          file.id === item.id,
+      )?.pass || '';
 
-      {
+    const secure =
+      hidden[item.id] !== false;
 
-       id,
+    return (
+      <View
+        style={{
+          backgroundColor:
+            theme.bgColor,
 
-       pass:value,
+          borderRadius:
+            scaledSize(18),
 
-      },
+          padding:
+            scaledSize(14),
 
-    ];
-   }
-  );
- };
+          marginBottom:
+            scaledSize(14),
+        }}
+      >
+        <View
+          style={{
+            flexDirection:
+              'row',
 
- const checkIsProtectedFile =
- (
-  item:any,
- ) => {
+            alignItems:
+              'center',
+          }}
+        >
+          <View
+            style={{
+              width: 48,
 
-  return protectedFiles.some(
-   file =>
+              height: 48,
 
-   file.id === item.id
-  );
- };
+              borderRadius: 12,
 
- const renderItem =
- ({ item }) => {
+              justifyContent:
+                'center',
 
-  const password =
+              alignItems:
+                'center',
 
-   passwords.find(
+              marginRight: 12,
 
-    file =>
+              backgroundColor:
+                theme.buttonBGColor,
+            }}
+          >
+            {checkIsProtectedFile(
+              item,
+            ) ? (
+              <MaterialIcons
+                name="lock"
+                size={20}
+                color="#FF4D67"
+              />
+            ) : (
+              <Text
+                style={{
+                  color:
+                    'green',
 
-    file.id === item.id
+                  fontWeight:
+                    '700',
+                }}
+              >
+                PDF
+              </Text>
+            )}
+          </View>
 
-   )?.pass || '';
+          <View
+            style={{
+              flex: 1,
+            }}
+          >
+            <Text
+              numberOfLines={
+                1
+              }
+              style={{
+                fontSize: 18,
 
-  const secure =
+                color:
+                  theme.primaryTextColor,
+              }}
+            >
+              {item.name}
+            </Text>
 
-   hidden[item.id]
+            <Text
+              style={{
+                marginTop: 4,
 
-   !== false;
+                color:
+                  theme.secondaryTextColor,
+              }}
+            >
+              {item.size}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            height: 52,
+
+            marginTop: 18,
+
+            borderWidth: 1,
+
+            borderRadius: 14,
+
+            flexDirection:
+              'row',
+
+            alignItems:
+              'center',
+
+            paddingHorizontal: 14,
+
+            borderColor:
+              theme.borderColor,
+          }}
+        >
+          <TextInput
+            value={
+              password
+            }
+            secureTextEntry={
+              secure
+            }
+            placeholder="Password"
+            placeholderTextColor="#7C8798"
+            style={{
+              flex: 1,
+
+              height: 52,
+
+              color:
+                theme.primaryTextColor,
+            }}
+            onChangeText={txt =>
+              updatePassword(
+                item.id,
+                txt,
+              )
+            }
+          />
+
+          <TouchableOpacity
+            onPress={() =>
+              setHidden(
+                prev => ({
+                  ...prev,
+
+                  [item.id]:
+                    !secure,
+                }),
+              )
+            }
+          >
+            <MaterialIcons
+              size={22}
+              color="#A2A9B8"
+              name={
+                secure
+                  ? 'visibility-off'
+                  : 'visibility'
+              }
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   return (
-
-   <View
-    style={{
-
-      backgroundColor:
-
-      theme.bgColor,
-
-      borderRadius:
-
-      scaledSize(18),
-
-      padding:
-
-      scaledSize(14),
-
-      marginBottom:
-
-      scaledSize(14),
-
-    }}>
-
-    {/* top */}
-
-    <View
-     style={{
-
-      flexDirection:'row',
-
-      alignItems:'center',
-
-     }}>
-
-      {/* icon */}
-
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+    >
       <View
-       style={{
+        style={{
+          flex: 1,
 
-        width:48,
+          padding:
+            scaledSize(18),
 
-        height:48,
+          justifyContent:
+            'center',
 
-        borderRadius:12,
+          backgroundColor:
+            'rgba(0,0,0,.65)',
+        }}
+      >
+        <View
+          style={{
+            padding:
+              scaledSize(20),
 
-        backgroundColor:
+            borderRadius:
+              scaledSize(24),
 
-        theme.buttonBGColor,
+            maxHeight:
+              '82%',
 
-        justifyContent:
+            backgroundColor:
+              theme.bgContainor,
+          }}
+        >
+          <Text
+            style={{
+              fontSize:
+                scaledSize(20),
 
-        'center',
+              marginBottom: 18,
 
-        alignItems:
+              fontWeight:
+                '500',
 
-        'center',
+              fontFamily:
+                Fonts.regular,
 
-        marginRight:12,
+              color:
+                theme.primaryTextColor,
+            }}
+          >
+            Password Required
+          </Text>
 
-       }}>
+          <FlatList
+            data={files}
+            renderItem={
+              renderItem
+            }
+            keyExtractor={
+              item =>
+                item.id.toString()
+            }
+            showsVerticalScrollIndicator={
+              false
+            }
+          />
 
-       {checkIsProtectedFile(
-         item
-       ) ? (
+          <View
+            style={{
+              marginTop: 20,
 
-        <MaterialIcons
+              flexDirection:
+                'row',
 
-         name='lock'
+              justifyContent:
+                'space-between',
+            }}
+          >
+            <TouchableOpacity
+              onPress={
+                onClose
+              }
+              style={{
+                flex: 0.45,
 
-         size={20}
+                height: 50,
 
-         color='#FF4D67'
+                borderWidth: 1,
 
+                borderRadius: 14,
+
+                justifyContent:
+                  'center',
+
+                alignItems:
+                  'center',
+
+                borderColor:
+                  theme.borderColor,
+              }}
+            >
+              <Text
+                style={{
+                  color:
+                    '#AAB2C0',
+                }}
+              >
+                Cancel
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={
+                handleSubmit
+              }
+              style={{
+                flex: 0.45,
+
+                height: 50,
+
+                borderRadius: 14,
+
+                justifyContent:
+                  'center',
+
+                alignItems:
+                  'center',
+
+                backgroundColor:
+                  theme.buttonBGColor,
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight:
+                    '700',
+
+                  color:
+                    theme.iconColor,
+                }}
+              >
+                Open Files
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <CustomErrorMsgModal
+          isVisible={
+            !!modalError
+          }
+          errorMessage={
+            modalError
+          }
+          onPressClose={() =>
+            setModalError(
+              '',
+            )
+          }
         />
-
-       ) : (
-
-        <Text
-         style={{
-
-          color:'green',
-
-          fontWeight:'700',
-
-         }}>
-
-         PDF
-
-        </Text>
-
-       )}
-
       </View>
-
-      {/* file */}
-
-      <View
-       style={{
-        flex:1,
-       }}>
-
-       <Text
-        numberOfLines={1}
-
-        style={{
-
-         color:
-
-         theme.primaryTextColor,
-
-         fontSize:18,
-
-        }}>
-
-        {item.name}
-
-       </Text>
-
-       <Text
-        style={{
-
-         color:
-
-         theme.secondaryTextColor,
-
-         marginTop:4,
-
-        }}>
-
-        {item.size}
-
-       </Text>
-
-      </View>
-
-    </View>
-
-    {/* input */}
-
-    <View
-     style={{
-
-      marginTop:18,
-
-      borderWidth:1,
-
-      borderColor:
-
-      theme.borderColor,
-
-      borderRadius:14,
-
-      flexDirection:'row',
-
-      alignItems:'center',
-
-      paddingHorizontal:14,
-
-     }}>
-
-      <TextInput
-
-       value={password}
-
-       secureTextEntry={
-        secure
-       }
-
-       placeholder='Password'
-
-       placeholderTextColor=
-       '#7C8798'
-
-       style={{
-
-        flex:1,
-
-        color:
-
-        theme.primaryTextColor,
-
-        height:52,
-
-       }}
-
-       onChangeText={
-        txt =>
-
-        updatePassword(
-         item.id,
-
-         txt
-        )
-       }
-      />
-
-      <TouchableOpacity
-       onPress={() => {
-
-        setHidden(
-         prev => ({
-
-          ...prev,
-
-          [item.id]:
-           !secure,
-
-         })
-        );
-       }}>
-
-       <MaterialIcons
-
-        name={
-         secure
-         ? 'visibility-off'
-         : 'visibility'
-        }
-
-        size={22}
-
-        color='#A2A9B8'
-       />
-
-      </TouchableOpacity>
-
-    </View>
-
-   </View>
+    </Modal>
   );
- };
-
- return (
-
-  <Modal
-
-   visible={visible}
-
-   transparent
-
-   animationType='fade'>
-
-   <View
-    style={{
-
-      flex:1,
-
-      backgroundColor:
-      'rgba(0,0,0,.65)',
-
-      justifyContent:
-      'center',
-
-      padding:
-      scaledSize(18),
-
-    }}>
-
-    <View
-     style={{
-
-      backgroundColor:
-
-      theme.bgContainor,
-
-      borderRadius:
-
-      scaledSize(24),
-
-      padding:
-
-      scaledSize(20),
-
-      maxHeight:'82%',
-
-     }}>
-
-      {/* title */}
-
-      <Text
-       style={{
-
-        color:
-
-        theme.primaryTextColor,
-
-        fontSize:
-
-        scaledSize(20),
-
-        fontWeight:'500',
-
-        fontFamily:
-
-        Fonts.regular,
-
-        marginBottom:18,
-
-       }}>
-
-       Password Required
-
-      </Text>
-
-      {/* list */}
-
-      <FlatList
-
-       data={files}
-
-       keyExtractor={
-        item =>
-
-        item.id.toString()
-       }
-
-       renderItem={
-        renderItem
-       }
-
-       showsVerticalScrollIndicator=
-       {false}
-      />
-
-      {/* buttons */}
-
-      <View
-       style={{
-
-        flexDirection:'row',
-
-        justifyContent:
-        'space-between',
-
-        marginTop:20,
-
-       }}>
-
-       <TouchableOpacity
-
-        onPress={onClose}
-
-        style={{
-
-         flex:.45,
-
-         height:50,
-
-         borderWidth:1,
-
-         borderColor:
-
-         theme.borderColor,
-
-         borderRadius:14,
-
-         justifyContent:
-         'center',
-
-         alignItems:
-         'center',
-
-        }}>
-
-        <Text
-         style={{
-          color:'#AAB2C0',
-         }}>
-
-         Cancel
-
-        </Text>
-
-       </TouchableOpacity>
-
-       <TouchableOpacity
-
-        onPress={() =>
-         handleSubmit()
-        }
-
-        style={{
-
-         flex:.45,
-
-         height:50,
-
-         backgroundColor:
-
-         theme.buttonBGColor,
-
-         borderRadius:14,
-
-         justifyContent:
-         'center',
-
-         alignItems:
-         'center',
-
-        }}>
-
-        <Text
-         style={{
-
-          color:
-
-          theme.iconColor,
-
-          fontWeight:'700',
-
-         }}>
-
-         Open Files
-
-        </Text>
-
-       </TouchableOpacity>
-
-      </View>
-
-    </View>
-
-   </View>
-    <CustomErrorMsgModal
-      isVisible={!!modalError}
-      errorMessage={modalError}
-      onPressClose={() =>
-        setModalError('')
-      }
-    />
-
-  </Modal>
- );
 };
 
-export default
-CustomMultiplePdfPasswordModal;
+export default CustomMultiplePdfPasswordModal;

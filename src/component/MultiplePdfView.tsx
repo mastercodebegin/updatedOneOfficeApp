@@ -1,35 +1,22 @@
-import { StackActions } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler, Animated, Linking, ScrollView } from 'react-native'
-import Pdf from 'react-native-pdf';
-import { heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
-
-import RNFetchBlob from 'rn-fetch-blob';
-import Share from 'react-native-share';
-import { deviceBasedDynamicDimension } from '../utilies/scale';
-import { COLORS } from "../utilies/GlobalColors";
-import ModalView from './ModalViewForPdfPassword';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, Linking, StyleSheet, View } from 'react-native';
 import { Button } from 'react-native-elements';
-import BannerAddMob from './admob/CustomBannerAdd';
-import CustomMenu from './Menu';
-import Entypo from 'react-native-vector-icons/Entypo';
-import { backIcon, share } from '../assets/GlobalImages';
-import CustomBannerAdd from './admob/CustomBannerAdd';
-import CustomBackIcon from './CustomBackIcon';
-import { FlatList } from 'react-native';
-import CustomVectorIcon from './CustomVectorIcon';
-import CustomLinearGradientView from './CustomLinearGradientView';
+import Pdf from 'react-native-pdf';
 import { useDispatch, useSelector } from 'react-redux';
-import { CustomErrorToast, CustomSuccessToast } from './CustomToast';
-import MaterialCommunityIcons from 'react-native-vector-icons'
 import { clearSelectedFiles, updateFilesPassword } from '../screen/dashboard/FileSlice';
+import { Theme } from '../screen/theme/ThemeConfig';
+import { useTheme } from '../screen/theme/useTheme';
+import { heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
+import CustomHeader from './CustomHeader';
 import CustomMultiplePdfPasswordModal from './CustomMultiplePdfPasswordModal';
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
+import CustomVectorIcon from './CustomVectorIcon';
 
 interface S {
   pdfArr: Array<any>
 }
 const MultiplePdfView = (props: S) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [text, setText] = useState('')
   const [errorMsg, setErrorMsg] = useState('Please Enter password')
   const [num, setNumber] = useState(0)
@@ -73,7 +60,7 @@ const MultiplePdfView = (props: S) => {
     console.log('text-------', text);
 
     if (text.length == 0) {
-      alert('Please Enter valid password')
+      alert('Please Enter password')
       return false
     }
     else {
@@ -90,62 +77,37 @@ const MultiplePdfView = (props: S) => {
   const headerComp = () => {
     return (
       <View style={{
-        height: scaledSize(40),
-        marginRight: scaledSize(0),
-        justifyContent: 'space-between',
-        zIndex: 99, marginTop: heightFromPercentage(2),
-        flexDirection: 'row',
+        height: scaledSize(50),
+        width: '100%',
+        zIndex: 99,
+        backgroundColor: theme.bgContainor,
       }}>
-
-
-
-        <View style={{
-          flexDirection: 'row',
-          flex: 1,
-          justifyContent: 'center', alignItems: 'center'
-        }}>
-          <View style={{ flexDirection: 'row', flex: 1, }}>
-            <TouchableOpacity style={{
-              height: scaledSize(20),
-              width: scaledSize(30),
-              borderRadius: scaledSize(30),
-              marginLeft: scaledSize(10)
-            }} onPress={() => onPressCloseHandler()} >
-              <CustomBackIcon onPress={onPressCloseHandler} size={22} color='black' />
-            </TouchableOpacity>
-          </View>
-
-
+        <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
           <CustomVectorIcon
             iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
             iconLibrary='MaterialCommunityIcons'
             style={{
-              color: COLORS.THEME_COLOR, fontSize: scaledSize(20),
+              color: theme.themeColor, fontSize: scaledSize(20),
               right: 30
             }}
             onPress={() => { setIsMultiView(!isMultiView) }} />
-
-        </View>
-
-
+        } />
       </View>
     )
-
-
   }
 
   const renderItem = ({ item, index }) => {
+    const isSelected = selectedSheet.name === item.name;
     return (<Button
       containerStyle={{ justifyContent: 'center', alignItems: 'center', }}
       buttonStyle={{
-        // backgroundColor: 'white',
         backgroundColor: 'transparent',
         paddingLeft: scaledSize(10), height: 40,
         marginLeft: index == 0 ? 0 : scaledSize(10),
-        borderBottomWidth: selectedSheet.name === item.name ? 2 : .5,
-        borderColor: selectedSheet.name === item.name ? 'green' : 'gray',
+        borderBottomWidth: isSelected ? 2 : .5,
+        borderColor: isSelected ? theme.themeColor : theme.borderColor,
       }}
-      titleStyle={{ color: 'black', textAlign: 'center' }}
+      titleStyle={{ color: theme.primaryTextColor, textAlign: 'center' }}
       key={Utility.generateUniqueNumber()}
       title={item.name.slice(0, 15)}
       onPress={() => {
@@ -155,7 +117,6 @@ const MultiplePdfView = (props: S) => {
       }} />)
   }
   // const onErrorHandlerm = (val) => {
-
   //   setIsShowPasswordModal(true)
   // }
   const onErrorHandler = (item) => {
@@ -183,7 +144,12 @@ const MultiplePdfView = (props: S) => {
         {isMultiView ?
           <View style={{ flex: 1 }}>
             <View style={{
-              marginTop: scaledSize(2), justifyContent: 'flex-start', alignItems: 'flex-start', flexDirection: 'row'
+              marginTop: scaledSize(2),
+              justifyContent: 'flex-start',
+              alignItems: 'flex-start',
+              flexDirection: 'row',
+              backgroundColor: theme.bgColor
+
             }}>
               <FlatList
                 horizontal
@@ -211,9 +177,7 @@ const MultiplePdfView = (props: S) => {
           <View style={{}}>
 
             <View style={{
-              backgroundColor: 'yellow',
               height: heightFromPercentage(45),
-              // borderBottomWidth: 2, borderColor: 'green'
             }}>
 
               <Pdf
@@ -231,10 +195,9 @@ const MultiplePdfView = (props: S) => {
 
                 style={styles.pdf} />
             </View>
-            <View style={{ height: scaledSize(5), backgroundColor: '#d3d3d3' }}></View>
+            <View style={{ height: scaledSize(5), backgroundColor: theme.borderColor }}></View>
 
             <View style={{
-              backgroundColor: 'yellow',
               height: heightFromPercentage(45),
               borderColor: 'black'
             }}>
@@ -264,7 +227,7 @@ const MultiplePdfView = (props: S) => {
   return (
 
     <View style={[styles.container]}>
-      {headerComp()}
+      {headerComp()} 
 
       {selectedSheet?.path ? renderMultiPdf() : null}
       {isShowPasswordModal && (
@@ -290,19 +253,14 @@ const MultiplePdfView = (props: S) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    // justifyContent: 'flex-start',
-    // alignItems: 'center',
-    // marginTop: scaledSize(25),
-    //marginBottom:150
-    // backgroundColor: 'white'
+    backgroundColor: theme.bgContainor,
   },
   pdf: {
     flex: 1,
-    // width: Dimensions.get('window').width,
-    // height: Dimensions.get('window').height,
+    backgroundColor: theme.bgColor,
   }
 });
 

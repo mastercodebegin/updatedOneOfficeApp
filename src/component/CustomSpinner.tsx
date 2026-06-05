@@ -51,7 +51,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   box: {
     width: scaledSize(220),
     paddingVertical: scaledSize(25),
-    borderRadius: scaledSize(12),
+    borderRadius: scaledSize(4),
     backgroundColor: theme.bgColor,
     alignItems: 'center',
     height: scaledSize(150),

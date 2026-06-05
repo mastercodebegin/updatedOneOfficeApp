@@ -87,6 +87,80 @@ function Dashboard({ navigation, route }) {
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
 
+    const [convertedFiles, setConvertedFiles] = useState(
+    []);
+
+  const layout = useWindowDimensions();
+  const [randomNumber, setRandomNumber] = useState(1)
+  const [count, setCount] = useState('')
+  const [isUserBack, setIsUserBack] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFocused = useIsFocused();
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const onChangeSearch = query => setSearchQuery(query);
+  const [uniqueNumber, setUniqueNumber] = React.useState(0)
+  const [index, setIndex] = React.useState(0);
+  const [routes] = React.useState([
+    { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
+    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
+    // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
+    // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
+
+  ]);
+  const [screeName, setScreenName] = React.useState('Pdf')
+  const toast = useToast();
+  const dispatch = useDispatch();
+  const response = useSelector((state) => state.FileSlice);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('')
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+  const { theme, mode, toggleTheme } = useTheme();
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
+  const [downloadProgress, setDownloadProgress] =
+  useState(0);
+  const webViewRef = React.useRef(null);
+
+    const [documents, setDocuments] = useState<DocumentTypes>({
+    pdfFiles: [],
+    wordFiles: [],
+    xlsxFiles: [],
+    pptFiles: [],
+  });
+  const readPdfFileRef = React.useRef(null)
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+    {
+      id: 'size',
+      name: 'Size',
+      icon: 'swap-vertical-outline',
+    },
+  ];
+
+
   // generate sample file data for renderfiles
 
   const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
@@ -369,78 +443,8 @@ function Dashboard({ navigation, route }) {
 
   }
 
-  const [documents, setDocuments] = useState<DocumentTypes>({
-    pdfFiles: [],
-    wordFiles: [],
-    xlsxFiles: [],
-    pptFiles: [],
-  });
-  const readPdfFileRef = React.useRef(null)
-  const [isShowSortModal, setIsShowSortModal] = useState(false)
-  const [selectedSort, setSelectedSort] = useState('latest')
-  const sortOptions = [
-    {
-      id: 'latest',
-      name: 'Latest First',
-      icon: 'time-outline',
-    },
-    {
-      id: 'oldest',
-      name: 'Oldest First',
-      icon: 'calendar-outline',
-    },
-    {
-      id: 'name_asc',
-      name: 'Name A - Z',
-      icon: 'text-outline',
-    },
-    {
-      id: 'name_desc',
-      name: 'Name Z - A',
-      icon: 'swap-vertical-outline',
-    },
-    {
-      id: 'size',
-      name: 'Size',
-      icon: 'swap-vertical-outline',
-    },
-  ];
 
-  const [convertedFiles, setConvertedFiles] = useState(
-    []);
 
-  const layout = useWindowDimensions();
-  const [randomNumber, setRandomNumber] = useState(1)
-  const [count, setCount] = useState('')
-  const [isUserBack, setIsUserBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFocused = useIsFocused();
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const onChangeSearch = query => setSearchQuery(query);
-  const [uniqueNumber, setUniqueNumber] = React.useState(0)
-  const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
-    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
-    // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
-    // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
-
-  ]);
-  const [screeName, setScreenName] = React.useState('Pdf')
-  const toast = useToast();
-  const dispatch = useDispatch();
-  const response = useSelector((state) => state.FileSlice);
-  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
-  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-  const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
-  const [downloadProgress, setDownloadProgress] =
-  useState(0);
-  const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
     try {
