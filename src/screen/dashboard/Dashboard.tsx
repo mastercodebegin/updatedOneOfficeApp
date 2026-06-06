@@ -70,8 +70,7 @@ import { AuthService } from '../../service/AuthService';
 
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
-import RNFetchBlob from 'rn-fetch-blob';
-import * as Progress from 'react-native-progress';
+
 function Dashboard({ navigation, route }) {
 
 
@@ -86,80 +85,6 @@ function Dashboard({ navigation, route }) {
   const [filterData, setFilterData] = useState([]);
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
-
-    const [convertedFiles, setConvertedFiles] = useState(
-    []);
-
-  const layout = useWindowDimensions();
-  const [randomNumber, setRandomNumber] = useState(1)
-  const [count, setCount] = useState('')
-  const [isUserBack, setIsUserBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFocused = useIsFocused();
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const onChangeSearch = query => setSearchQuery(query);
-  const [uniqueNumber, setUniqueNumber] = React.useState(0)
-  const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
-    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
-    // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
-    // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
-
-  ]);
-  const [screeName, setScreenName] = React.useState('Pdf')
-  const toast = useToast();
-  const dispatch = useDispatch();
-  const response = useSelector((state) => state.FileSlice);
-  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
-  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-  const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
-  const [downloadProgress, setDownloadProgress] =
-  useState(0);
-  const webViewRef = React.useRef(null);
-
-    const [documents, setDocuments] = useState<DocumentTypes>({
-    pdfFiles: [],
-    wordFiles: [],
-    xlsxFiles: [],
-    pptFiles: [],
-  });
-  const readPdfFileRef = React.useRef(null)
-  const [isShowSortModal, setIsShowSortModal] = useState(false)
-  const [selectedSort, setSelectedSort] = useState('latest')
-  const sortOptions = [
-    {
-      id: 'latest',
-      name: 'Latest First',
-      icon: 'time-outline',
-    },
-    {
-      id: 'oldest',
-      name: 'Oldest First',
-      icon: 'calendar-outline',
-    },
-    {
-      id: 'name_asc',
-      name: 'Name A - Z',
-      icon: 'text-outline',
-    },
-    {
-      id: 'name_desc',
-      name: 'Name Z - A',
-      icon: 'swap-vertical-outline',
-    },
-    {
-      id: 'size',
-      name: 'Size',
-      icon: 'swap-vertical-outline',
-    },
-  ];
-
 
   // generate sample file data for renderfiles
 
@@ -443,8 +368,78 @@ function Dashboard({ navigation, route }) {
 
   }
 
+  const [documents, setDocuments] = useState<DocumentTypes>({
+    pdfFiles: [],
+    wordFiles: [],
+    xlsxFiles: [],
+    pptFiles: [],
+  });
+  const readPdfFileRef = React.useRef(null)
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+    {
+      id: 'size',
+      name: 'Size',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
+  const [convertedFiles, setConvertedFiles] = useState(
+    []);
 
+  const layout = useWindowDimensions();
+  const [randomNumber, setRandomNumber] = useState(1)
+  const [count, setCount] = useState('')
+  const [isUserBack, setIsUserBack] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFocused = useIsFocused();
+  const [fileScanProgress, setFileScanProgress] = useState(0);
+  const [isScanning, setIsScanning] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const onChangeSearch = query => setSearchQuery(query);
+  const [uniqueNumber, setUniqueNumber] = React.useState(0)
+  const [index, setIndex] = React.useState(0);
+  const [routes] = React.useState([
+    { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
+    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
+    // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
+    // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
+
+  ]);
+  const [screeName, setScreenName] = React.useState('Pdf')
+  const toast = useToast();
+  const dispatch = useDispatch();
+  const response = useSelector((state) => state.FileSlice);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('')
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+  const { theme, mode, toggleTheme } = useTheme();
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
     try {
@@ -461,214 +456,26 @@ function Dashboard({ navigation, route }) {
   };
 
 
-  //Linking 
-  // useEffect(() => {
-  //   let isRead = true
-
-  //   Linking.addEventListener('url', (url) => {
-  //     console.log('addEventListener', url);
-
-  //     navigation.navigate('PdfViewer', { uri: url.url })
-  //   });
-
-  //   const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-  //     console.log('press back btn');
-  //     setIsShowEditPdfModal(false)
-  //     setIsUserBack(true)
-
-  //   });
-
-  //   if (route?.params?.pdf) { setIsUserBack(true) }
-
-  //   if (!isUserBack) {
-
-  //     Linking.getInitialURL()
-  //       .then((url) => {
-  //         if (url && route?.params?.pdf == undefined) {
-  //           console.log('listener2', url);
-
-  //           navigation.navigate('PdfViewer', { uri: url })
-  //         }
-  //       })
-  //       .catch((err) => {
-  //         console.error('Error getting initial URL:', err)
-  //       })
-  //       ;
-  //   }
-
-  //   if (route?.params?.pdf == 'pdf' && pdfData.length == 0) {
-  //     //checkStorage()
-  //   }
-  //   return () => {
-  //     backHandler.remove();
-  //   };
 
 
-  // }, [navigation, route, isFocused]);
 
-// ********************************************
-useEffect(() => {
-const copyContentUriToLocal =
-  async (uri) => {
-    try {
-      const filePath =
-        `${RNFS.CachesDirectoryPath}/pdf_${Date.now()}.pdf`;
+  const DesendingreadPdfFiles = async () => {
+    console.log('Decending order by date-------');
 
-      console.log(
-        'Copying from:',
-        uri,
-      );
+    setIsLoading(true)
+    setDocuments({
+      pdfFiles: [],
+      wordFiles: [],
+      xlsxFiles: [],
+      pptFiles: [],
+    })
+    const files = await getFilesFromPhoneByFileExtention(1)
+    console.log('DesendingreadPdfFiles: ', files);
 
-      await RNFS.copyFile(
-        uri,
-        filePath,
-      );
-
-      setDownloadProgress(
-        100,
-      );
-
-      return `file://${filePath}`;
-    } catch (e) {
-      console.log(
-        'Copy Error:',
-        e,
-      );
-
-      return null;
-    }
-  };
-
-  const handleIncomingUri =
-    async (uri) => {
-      try {
-        if (!uri) return;
-
-        console.log(
-          'Received URI:',
-          uri,
-        );
-
-        setIsLoading(true);
-
-        setDownloadProgress(
-          0,
-        );
-
-        let finalUri = uri;
-
-        if (
-          uri.startsWith(
-            'content://',
-          )
-        ) {
-          finalUri =
-            await copyContentUriToLocal(
-              uri,
-            );
-        }
-
-        if (
-          !finalUri
-        ) {
-          alert(
-            'Unable to open file',
-          );
-
-          return;
-        }
-
-        navigation.navigate(
-          'PdfViewer',
-          {
-            uri: finalUri,
-          },
-        );
-      } catch (e) {
-        console.log(
-          'Handle Error:',
-          e,
-        );
-
-        alert(
-          'Failed to open file',
-        );
-      } finally {
-        setIsLoading(
-          false,
-        );
-
-        setDownloadProgress(
-          0,
-        );
-      }
-    };
-
-  const linkingSubscription =
-    Linking.addEventListener(
-      'url',
-      ({ url }) => {
-        handleIncomingUri(
-          url,
-        );
-      },
-    );
-
-  const backHandler =
-    BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        setIsShowEditPdfModal(
-          false,
-        );
-
-        setIsUserBack(
-          true,
-        );
-
-        return true;
-      },
-    );
-
-  const checkInitialUrl =
-    async () => {
-      try {
-        if (
-          !isUserBack &&
-          route?.params
-            ?.pdf ===
-            undefined
-        ) {
-          const url =
-            await Linking.getInitialURL();
-
-          console.log(
-            'Initial URL:',
-            url,
-          );
-
-          if (url) {
-            await handleIncomingUri(
-              url,
-            );
-          }
-        }
-      } catch (e) {
-        console.log(e);
-      }
-    };
-
-  checkInitialUrl();
-
-  return () => {
-    linkingSubscription.remove();
-
-    backHandler.remove();
-  };
-}, []);
-
-// ********************************************
-
+    setDocuments(files)
+    setIsLoading(false)
+    setUniqueNumber(Utility.generateUniqueNumber())
+  }
 
   useEffect(() => {
     if (documents.pdfFiles.length == 0) {
@@ -679,11 +486,19 @@ const copyContentUriToLocal =
     console.log('Accending order by date-------');
 
     setIsLoading(true)
-    const files = await getFilesFromPhoneByFileExtention(1)
+    setIsScanning(true)
+    setFileScanProgress(0)
+    const files = await getFilesFromPhoneByFileExtention(
+      1,
+      progress => {
+        setFileScanProgress(progress);
+      },
+    );
     console.log('readPdfFiles:', files);
 
     setDocuments(files)
-    setIsLoading(false)
+    setIsLoading(false);
+    setIsScanning(false);
     setUniqueNumber(Utility.generateUniqueNumber())
   }
   useEffect(() => {
@@ -729,12 +544,76 @@ const copyContentUriToLocal =
   }, [isFocused]);
 
 
+  //Linking 
+  useEffect(() => {
+    let isRead = true
+
+    Linking.addEventListener('url', (url) => {
+      console.log('addEventListener', url);
+
+      navigation.navigate('PdfViewer', { uri: url.url })
+    });
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      console.log('press back btn');
+      setIsShowEditPdfModal(false)
+      setIsUserBack(true)
+
+    });
+
+    if (route?.params?.pdf) { setIsUserBack(true) }
+
+    if (!isUserBack) {
+
+      Linking.getInitialURL()
+        .then((url) => {
+          if (url && route?.params?.pdf == undefined) {
+            console.log('listener2', url);
+
+            navigation.navigate('PdfViewer', { uri: url })
+          }
+        })
+        .catch((err) => {
+          console.error('Error getting initial URL:', err)
+        })
+        ;
+    }
+
+    if (route?.params?.pdf == 'pdf' && pdfData.length == 0) {
+      //checkStorage()
+    }
+    return () => {
+      backHandler.remove();
+    };
+
+
+  }, [navigation, route, isFocused]);
 
 
 
 
+  const deleteFileHandler = async (item: any) => {
+    //@ts-ignore
+    // console.log(item);
+
+    try {
+      setIsLoading(true)
+      let files = getLocalData(asyncStorageKeyName.ALL_FILES)
+      const data = JSON.parse(files).filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
+      getLocalData('pdfFiles', JSON.stringify(files))
+      deleteFile(item.path)
+      setPdfData(data)
+      setIsLoading(false)
+      toastForDeleteFile(toast, 'File deleted successfully')
 
 
+      // getPdfFilesFromPhoneStorage()
+    }
+    catch (err) {
+      console.log('error-----', err);
+
+    }
+  }
 
   // will implement later if user add/download file needs to update
 
@@ -768,7 +647,9 @@ const copyContentUriToLocal =
 
 
 
- 
+  const addCardDetails = () => {
+    setIsShowCardModal(true)
+  }
 
   const search = (data: any) => {
     // sending search text to readsystemfile screen to filter data
@@ -819,16 +700,13 @@ const copyContentUriToLocal =
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
           ref={readPdfFileRef}
+          // pdfFiles={pdfs} 
           pdfFiles={documents.pdfFiles}
           selectedSort={selectedSort}
           viewMode={viewMode}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} 
-        searchValue={searchQuery}
-         wordFiles={documents.wordFiles}
-         viewMode={viewMode}
-          onReLoad={readPdfFiles} isLoading={isLoading}
+        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
           selectedSort={selectedSort} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
@@ -877,56 +755,13 @@ const copyContentUriToLocal =
       setIsShowErrorModal(true)
     }
     else {
-      console.log('selectedFiles', response.selectedFiles);
+console.log('selectedFiles',response.selectedFiles);
 
       Utility.navigation.navigateTo('MultiplePdfView', response.selectedFiles)
       dispatch(checkIsUserViewedPdf(true))
     }
   }
-const renderDownloadLoader = () => {
-  if (!isLoading) return null;
 
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-
-        justifyContent: 'center',
-        alignItems: 'center',
-
-        backgroundColor:
-          'rgba(0,0,0,0.5)',
-
-        zIndex: 999,
-      }}
-    >
-      <Text
-        style={{
-          color: '#FFF',
-          marginBottom: 12,
-          fontSize: 15,
-        }}
-      >
-        Downloading PDF...
-        {' '}
-        {downloadProgress}%
-      </Text>
-
-      <Progress.Bar
-        progress={
-          downloadProgress / 100
-        }
-        width={220}
-        height={8}
-        borderRadius={8}
-      />
-    </View>
-  );
-};
   const renderHeaderIcons = () => {
     return (
       <View
@@ -938,24 +773,20 @@ const renderDownloadLoader = () => {
           marginRight: scaledSize(4)
         }}
       >
-            {response.selectedFiles.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(clearSelectedFiles(true))}
+        {response.selectedFiles.length > 0 && <TouchableOpacity
+          onPress={() => dispatch(clearSelectedFiles(true))} 
           style={{ flexDirection: 'row' }}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }}
-            onPress={() => dispatch(clearSelectedFiles(true))} />
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} 
+          onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
 
-        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')} style={{ right: scaledSize(4) }}>
-          <MaterialIcons
-            name={
-              viewMode !== 'list'
-                ? 'folder'
-                : 'view-list'
-            }
+        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')} style={{ right: scaledSize(4) }}>
+          <MaterialCommunityIcons
+            name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
             size={scaledSize(22)}
-            color={theme.iconColor}
+            color={theme.primaryTextColor}
           />
         </TouchableOpacity>
 
@@ -1071,9 +902,13 @@ const renderDownloadLoader = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
-{renderDownloadLoader()}
+
       <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
-        {/* <CustomSpinner isLoading={isLoading} /> */}
+        <CustomSpinner
+          isLoading={isLoading}
+          progress={isScanning ? fileScanProgress : undefined}
+          text={isScanning ? 'Scanning files...' : 'Loading...'}
+        />
       </View>
       <LinearGradient
         colors={[theme.bgContainor, theme.bgContainor]}

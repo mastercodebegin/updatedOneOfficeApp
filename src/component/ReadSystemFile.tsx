@@ -159,9 +159,9 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
           theme.bgContainor,
       }}>
 
-      <CustomSpinner
-        isLoading={isLoading}
-      />
+      {/* <CustomSpinner
+        isLoading={true}
+      /> */}
 
       {pdfData.length === 0 ? (
 

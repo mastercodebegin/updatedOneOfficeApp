@@ -235,7 +235,7 @@ export const deleteFile = (path) => {
     });
 }
 
-export const getFilesFromPhoneByFileExtention = async (data?: any) => {
+export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: number) => void) => {
   interface File {
     name: string;
     path: string;
@@ -248,9 +248,13 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
   let pptFiles: File[] = [];
   console.log(`Reading directory=========`,);
 
+  const scannedPaths = new Set<string>();
+
   const readDirectory = async (path: any) => {
 
     try {
+      if (scannedPaths.has(path)) return;
+      scannedPaths.add(path);
 
       const result = await RNFS.readDir(path);
       // console.log('result:', result);
@@ -291,14 +295,32 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
   };
 
 
-
   try {
-    // Start by reading the root external storage directory
-    await readDirectory(RNFS.ExternalStorageDirectoryPath);
+    const rootItems = await RNFS.readDir(RNFS.ExternalStorageDirectoryPath);
+    const rootDirs = rootItems.filter(item => item.isDirectory() && !item.name.startsWith('.'));
+    const totalDirs = rootDirs.length;
+    let processedDirs = 0;
 
-    //Explicitly include WhatsApp directory if it exists
+    // Scan files in the root directory first
+    for (const item of rootItems) {
+      if (item.isFile()) {
+        item.id = generateUniqueNumber();
+        if (item.name.toLowerCase().endsWith('.pdf')) pdfFiles.push(item);
+        else if (item.name.toLowerCase().endsWith('.docx')) wordFiles.push(item);
+        else if (item.name.toLowerCase().endsWith('.xlsx') || item.name.toLowerCase().endsWith('.xls')) xlsxFiles.push(item);
+        else if (item.name.toLowerCase().endsWith('.pptx')) pptFiles.push(item);
+      }
+    }
 
-    //console.log('List finished:', pdfFiles);
+    // Then scan each top-level directory recursively
+    for (const dir of rootDirs) {
+      await readDirectory(dir.path);
+      processedDirs++;
+      if (onProgress) {
+        const progress = Math.round((processedDirs / totalDirs) * 100);
+        onProgress(progress > 100 ? 100 : progress);
+      }
+    }
   } catch (error) {
     console.log('Error:', error);
   } finally {
