@@ -13,6 +13,11 @@ import CustomHeader from '../../component/CustomHeader';
 import CustomSpinner from '../../component/CustomSpinner';
 
 const SettingsScreen = () => {
+
+  useEffect(()=>{
+const savedTheme = getLocalData(asyncStorageKeyName.THEME_MODE);
+console.log('savedTheme', savedTheme);
+  },[])
   const { theme, mode, toggleTheme } = useTheme();
   const { user, signIn, signOut, loading } = useGoogleAuth();
 

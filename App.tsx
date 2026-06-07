@@ -8,10 +8,11 @@ import Dashboard from './src/screen/dashboard/Dashboard';
 import ImagesToPdfConverter from './src/component/ImagesToPdfConverter';
 // import Admob from './src/component/Admob';
 import Splashscreen from './src/screen/splash/Splashscreen';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import Store from './src/redux/Store';
 import { heightFromPercentage, navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
 import { Root as PopupRootProvider } from '@sekizlipenguen/react-native-popup-confirm-toast';
+import { useColorScheme } from 'react-native';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import PdfViewer from './src/component/PdfView';
 import ReadSystemFile from './src/component/ReadSystemFile';
@@ -44,6 +45,8 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { initDB } from './src/db/migration';
 
 import { useTheme } from './src/screen/theme/useTheme';
+import { getLocalData, removeLocalData, setLocalData } from './src/utilies/storageUtility';
+import { asyncStorageKeyName } from './src/utilies/Constants';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
 // import { checkForUpdate } from './src/utilies/InAppUpdates'
@@ -59,16 +62,17 @@ export default function App(props) {
   const size = scaledSize(24)
   const screensData = [
     { name: 'Documents', component: Dashboard, focus: (color) => <Ionicons name='documents' color={color} size={size} />, unFocus: (color) => <Ionicons name='documents-outline' color={color} size={size} /> },
-    { name: 'Scan', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color} 
-    size={size + 4} style={{ marginBottom: scaledSize(4) }}  /> },
+    {
+      name: 'Scan', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color}
+        size={size + 4} style={{ marginBottom: scaledSize(4) }} />
+    },
     { name: 'Converter', component: ImagesToPdfConverter, focus: (color) => <Ionicons name='swap-horizontal' color={color} size={size} />, unFocus: (color) => <Ionicons name='swap-horizontal-outline' color={color} size={size} /> },
     { name: 'Settings', component: SettingsScreen, focus: (color) => <Ionicons name='settings' color={color} size={size} />, unFocus: (color) => <Ionicons name='settings-outline' color={color} size={size} /> },
   ]
 
   const BottomTabs = createBottomTabNavigator();
-
   // React.useEffect(() => {
-    // checkForUpdate()
+  // checkForUpdate()
 
   // }, [])
 
@@ -98,8 +102,6 @@ export default function App(props) {
   //     console.log('✅ App is up to date.');
   //   }
   // };
-
-
 
   React.useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -137,7 +139,26 @@ export default function App(props) {
 
 
   function MyTabs() {
-    const { theme, mode } = useTheme();
+    const { theme, mode, toggleTheme } = useTheme();
+    const colorScheme = useColorScheme();
+
+    React.useEffect(() => {
+      const savedTheme = getLocalData(asyncStorageKeyName.THEME_MODE);
+      // On first launch, if no theme is saved, sync with OS theme.
+      console.log('colorsec',colorScheme,'savedthm',savedTheme);
+      
+      if (savedTheme == null && colorScheme) {
+        if (mode !== colorScheme) {
+          // This should handle state update and storage persistence.
+          toggleTheme();
+        } else {
+          // If default theme already matches OS, just save it to prevent re-checking.
+          setLocalData(asyncStorageKeyName.THEME_MODE, colorScheme);
+        }
+      }
+    }, [colorScheme]);
+
+
     return (
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,

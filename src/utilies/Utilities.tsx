@@ -261,7 +261,7 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
       // console.log('result:', result);
 
       for (const item of result) {
-console.log('item of result ',item);
+// console.log('item of result ',item);
 
         item.id = generateUniqueNumber()
         if (item.name.toLowerCase().endsWith('.pdf')) {
@@ -309,10 +309,10 @@ console.log('item of result ',item);
 
     // Scan files in the root directory first
     for (const item of rootItems) {
-      console.log('item===',item);
+      // console.log('item===',item);
       
       if (item.isFile()) {
-              console.log('is file item===',item);
+              // console.log('is file item===',item);
 
         item.id = generateUniqueNumber();
         if (item.name.toLowerCase().endsWith('.pdf')) {

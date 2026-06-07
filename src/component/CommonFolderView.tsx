@@ -279,12 +279,12 @@ const getFolderByFileName = filename => {
           scaledSize(22),
 
         backgroundColor:
-          '#181818',
+          theme.bgColor,
 
         borderWidth: 1,
 
         borderColor:
-          'rgba(255,255,255,0.04)',
+          theme.borderColor,
 
         flexDirection:
           'row',
@@ -323,7 +323,7 @@ const getFolderByFileName = filename => {
               scaledSize(10),
 
             backgroundColor:
-              'rgba(0,212,255,0.10)',
+              theme.bgColor,
 
             justifyContent:
               'center',
@@ -336,7 +336,7 @@ const getFolderByFileName = filename => {
           <MaterialIcons
             name="folder"
             size={scaledSize(26)}
-            color="#00D4FF"
+            color={theme.themeColor}
           />
 
         </View>

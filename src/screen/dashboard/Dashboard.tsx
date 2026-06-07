@@ -782,7 +782,8 @@ console.log('selectedFiles',response.selectedFiles);
         {response.selectedFiles.length > 0 && <TouchableOpacity
           onPress={() => dispatch(clearSelectedFiles(true))} 
           style={{ flexDirection: 'row' }}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} 
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off'
+           style={{ color: 'red' }} 
           onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
@@ -792,7 +793,7 @@ console.log('selectedFiles',response.selectedFiles);
           <MaterialCommunityIcons
             name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
             size={scaledSize(22)}
-            color={theme.primaryTextColor}
+            color={theme.iconColor}
           />
         </TouchableOpacity>
 
@@ -810,29 +811,30 @@ console.log('selectedFiles',response.selectedFiles);
         <TouchableOpacity onPress={() => setIsShowSortModal(true)} style={{ right: scaledSize(4) }}>
           <MaterialCommunityIcons
             name="sort"
-            size={scaledSize(22)} color={theme.primaryTextColor} />
+            size={scaledSize(22)} color={theme.iconColor} />
         </TouchableOpacity>
 
 
         <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')} style={{ right: scaledSize(4) }}>
-          <Feather name="user" size={scaledSize(22)} color={theme.primaryTextColor} />
+          <Feather name="user" size={scaledSize(22)} color={theme.iconColor} />
         </TouchableOpacity>
 
         <MaterialCommunityIcons
           name="refresh"
           size={scaledSize(22)}
-          color={theme.primaryTextColor}
+          color={theme.iconColor}
           onPress={() => readPdfFiles()}
         />
 
         <TouchableOpacity onPress={openFile}>
 
           {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
-          <Feather name="folder" size={scaledSize(20)} color={theme.themeColor} />
+          <Feather name="folder" size={scaledSize(20)}
+           color={theme.themeColor} />
         </TouchableOpacity>
 
         <CustomMenu
-          Icon={<Feather name="more-vertical" size={18} color="#555" />}
+          Icon={<Feather name="more-vertical" size={18} color={theme.iconColor} />}
           menuOptionstyle={{
             padding: scaledSize(13),
             width: scaledSize(150),
@@ -943,8 +945,9 @@ console.log('selectedFiles',response.selectedFiles);
               <Searchbar
                 placeholder="Search"
                 style={{
-                  borderRadius: scaledSize(45), letterSpacing: 1, height: scaledSize(44),
-                  backgroundColor: theme.bgColor,
+                  borderRadius: scaledSize(45), 
+                  letterSpacing: 1, height: scaledSize(44),
+                  backgroundColor: theme.bgContainor,
                   borderWidth: 1,
                   borderColor: theme.borderColor,
                 }}

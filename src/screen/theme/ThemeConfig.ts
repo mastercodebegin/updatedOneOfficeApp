@@ -35,11 +35,11 @@ const commonThemeProperties = {
 // };
 export const lightTheme: Theme = {
   ...commonThemeProperties,
-  bgColor: 'white',
-  bgContainor: '#f5f5f7',
+  bgColor: '#ECECEC',
+  bgContainor: '#F5F5F7',
   primaryTextColor: '#000000',
   secondaryTextColor: '#000000',
-  iconColor: '#000000',
+  iconColor: '#6B7280',
   borderColor: '#d3d3d3',
   // themeColor: '#47b16a',
   buttonBGColor:'#F5F5F5',
