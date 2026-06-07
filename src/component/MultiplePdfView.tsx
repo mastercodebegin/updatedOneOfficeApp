@@ -15,6 +15,12 @@ interface S {
   pdfArr: Array<any>
 }
 const MultiplePdfView = (props: S) => {
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const headerVisible = useRef(true);
+  const headerHeight = useRef(new Animated.Value(scaledSize(50))).current;
+  const previousPage1 = useRef(1);
+  const previousPage2 = useRef(1);
+
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [text, setText] = useState('')
@@ -74,25 +80,50 @@ const MultiplePdfView = (props: S) => {
     Linking.getInitialURL = async () => null;
     Utility.navigation.navigateToBack()
   }
+
+  const toggleHeader = (show: boolean) => {
+    if (show === headerVisible.current) return;
+
+    headerVisible.current = show;
+
+    Animated.parallel([
+      Animated.timing(headerTranslateY, {
+        toValue: show ? 0 : -scaledSize(50),
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerHeight, {
+        toValue: show ? scaledSize(50) : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
   const headerComp = () => {
     return (
-      <View style={{
-        height: scaledSize(50),
+      <Animated.View style={{
+        height: headerHeight,
         width: '100%',
         zIndex: 99,
         backgroundColor: theme.bgContainor,
+        overflow: 'hidden'
       }}>
-        <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
-          <CustomVectorIcon
-            iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
-            iconLibrary='MaterialCommunityIcons'
-            style={{
-              color: theme.themeColor, fontSize: scaledSize(20),
-              right: 30
-            }}
-            onPress={() => { setIsMultiView(!isMultiView) }} />
-        } />
-      </View>
+        <Animated.View style={{
+          transform: [{ translateY: headerTranslateY }],
+        }}>
+          <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
+            <CustomVectorIcon
+              iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
+              iconLibrary='MaterialCommunityIcons'
+              style={{
+                color: theme.themeColor, fontSize: scaledSize(20),
+                right: 30
+              }}
+              onPress={() => { setIsMultiView(!isMultiView) }} />
+          } />
+        </Animated.View>
+      </Animated.View>
     )
   }
 
@@ -112,13 +143,28 @@ const MultiplePdfView = (props: S) => {
       title={item.name.slice(0, 15)}
       onPress={() => {
         console.log('sheetName')
-        setSelectedSheet(item)
-
+        setSelectedSheet(item);
+        previousPage1.current = 1;
       }} />)
   }
-  // const onErrorHandlerm = (val) => {
-  //   setIsShowPasswordModal(true)
-  // }
+
+  const handlePageChange1 = (page: number) => {
+    if (page > previousPage1.current) {
+      toggleHeader(false); // Scrolling down
+    } else if (page < previousPage1.current) {
+      toggleHeader(true); // Scrolling up
+    }
+    previousPage1.current = page;
+  };
+  const handlePageChange2 = (page: number) => {
+    if (page > previousPage2.current) {
+      toggleHeader(false); // Scrolling down
+    } else if (page < previousPage2.current) {
+      toggleHeader(true); // Scrolling up
+    }
+    previousPage2.current = page;
+  };
+
   const onErrorHandler = (item) => {
 
     const file = protectedFiles.find((file) => file.path == item.path)
@@ -160,6 +206,9 @@ const MultiplePdfView = (props: S) => {
 
             </View>
             <Pdf
+              onPageChanged={(page) => {
+                handlePageChange1(page);
+              }}
               onScaleChanged={(v) => console.log('changed================================', v)
               }
               trustAllCerts={false}
@@ -181,6 +230,9 @@ const MultiplePdfView = (props: S) => {
             }}>
 
               <Pdf
+                onPageChanged={(page) => {
+                  handlePageChange1(page);
+                }}
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
@@ -203,6 +255,9 @@ const MultiplePdfView = (props: S) => {
             }}>
 
               <Pdf
+                onPageChanged={(page) => {
+                  handlePageChange2(page);
+                }}
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
