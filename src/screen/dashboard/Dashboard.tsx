@@ -793,6 +793,7 @@ console.log('selectedFiles',response.selectedFiles);
           gap: scaledSize(20),
           paddingHorizontal: scaledSize(16),
           minHeight: scaledSize(56),
+          alignSelf:'flex-end'
         }}
       >
         {response.selectedFiles.length > 0 && <TouchableOpacity
@@ -953,11 +954,12 @@ console.log('selectedFiles',response.selectedFiles);
                 placeholder="Search"
                 style={{
                   width: '100%',
-                  borderRadius: scaledSize(18),
+                  borderRadius: scaledSize(30),
                   letterSpacing: 1,
-                  height: scaledSize(54),
+                  height: scaledSize(44),
+                  // backgroundColor: theme.bgColor,
                   backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
-                  borderWidth: mode === 'dark' ? 1 : 0,
+                  borderWidth: 1,
                   borderColor: theme.borderColor,
                   elevation: mode === 'dark' ? 0 : 5,
                   shadowColor: '#9CA3AF',
@@ -972,11 +974,12 @@ console.log('selectedFiles',response.selectedFiles);
                   letterSpacing: 0,
                   alignSelf: 'center',
                   color: theme.primaryTextColor,
-                  minHeight: scaledSize(44),
+                  minHeight: scaledSize(40),
                 }}
                 loading={false}
                 icon={() => <Image source={searchIcon} style={{
                   height: scaledSize(19), width: scaledSize(19),
+                  tintColor:theme.borderColor
                 }}
 
                 />}

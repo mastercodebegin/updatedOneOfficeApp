@@ -4,6 +4,9 @@ import {
   Image,
   TouchableOpacity,
   Text,
+  ViewProps,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 import { View } from "react-native";
 
@@ -29,6 +32,8 @@ interface S {
   onPressItem: Function;
   onLongPress: any;
   isShowEditBtn?: boolean;
+  actionButtonContainerStyle?:StyleProp<ViewStyle>
+  leftIconStyle?:StyleProp<ViewStyle>
   onPressEditFile?: (item: any) => void;
   index: number;
 }
@@ -43,7 +48,9 @@ export const FileCommonRenderItem = (props: S) => {
     screenName,
     onLongPress,
     onPressItem,
+    actionButtonContainerStyle,
     isShowEditBtn = false,
+    leftIconStyle,
     onPressEditFile = () => {},
     index,
   } = props;
@@ -144,7 +151,7 @@ export const FileCommonRenderItem = (props: S) => {
   return (
     <>
 
-      <View
+      <TouchableOpacity
         style={[
           styles.card,
 
@@ -159,7 +166,11 @@ export const FileCommonRenderItem = (props: S) => {
 
           checkisFolderSelected(item.id) &&
             styles.selectedCard,
-        ]}>
+        ]} onLongPress={()=>onLongPress(
+              item,
+            )}
+            onPress={onPressItemHandler}
+            >
 
         {/* selection ui */}
 
@@ -190,7 +201,7 @@ export const FileCommonRenderItem = (props: S) => {
 
         {/* icon */}
 
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer,leftIconStyle]}>
 
           <Image
             source={icon}
@@ -208,11 +219,12 @@ export const FileCommonRenderItem = (props: S) => {
           onPress={
             onPressItemHandler
           }
-          onLongPress={() =>
-            onLongPress(
-              item,
-            )
-          }>
+          // onLongPress={() =>
+          //   onLongPress(
+          //     item,
+          //   )
+          // }
+          >
 
           <View
             style={
@@ -271,7 +283,7 @@ export const FileCommonRenderItem = (props: S) => {
 
           <View
             style={
-              styles.actionContainer
+              [styles.actionContainer,actionButtonContainerStyle]
             }>
 
             {isShowEditBtn && (
@@ -344,7 +356,7 @@ export const FileCommonRenderItem = (props: S) => {
 
         )}
 
-      </View>
+      </TouchableOpacity>
 
       <ConfirmationDialog
         visible={
@@ -479,17 +491,18 @@ const createStyles = (
     },
 
     iconContainer: {
-      width: scaledSize(62),
-      height: scaledSize(62),
+      width: scaledSize(50),
+      height: scaledSize(50),
       borderRadius: scaledSize(12),
       justifyContent: 'center',
       alignItems: 'center',
+      // backgroundColor:'red',
       marginRight: scaledSize(20),
     },
 
     icon: {
-      width: scaledSize(60),
-      height: scaledSize(60),
+      width: scaledSize(55),
+      height: scaledSize(55),
       resizeMode:
         "contain",
     },

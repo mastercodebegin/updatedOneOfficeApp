@@ -285,8 +285,10 @@ const ImagesToPdfConverter = () => {
       screenName='PdfViewer'
       onPressItem={() => navigation.navigate('PdfViewer', { uri: item.path })}
       onLongPress={() => {}}
-      isItemSelected={false}
-      selectedItems={[]}
+      // isItemSelected={false}
+      // selectedItems={[]}
+      actionButtonContainerStyle={{left:scaledSize(10)}}
+      leftIconStyle={{width:scaledSize(46),height:scaledSize(46)}}
       index={index}
     />
   )

@@ -163,7 +163,7 @@ export default function App(props) {
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.bgColor,
+          backgroundColor: mode =='dark' ? theme.bgColor : '#FFFFFF',
           height: heightFromPercentage(8),
           borderTopWidth: 1,
           position: 'absolute',
