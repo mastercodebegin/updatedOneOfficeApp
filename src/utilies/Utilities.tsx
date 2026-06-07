@@ -361,10 +361,10 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
     }
     // console.log('stoaring files in asyncstorage start=======', sorted);
 
-    setLocalData(asyncStorageKeyName.PDF_FILES, JSON.stringify(pdfFiles));
+    setLocalData(asyncStorageKeyName.PDF_FILES, pdfFiles);
     console.log('pptFiles------', pptFiles);
 
-    setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify({ pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles }));
+    setLocalData(asyncStorageKeyName.ALL_FILES, { pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles });
 
     return { pdfFiles, wordFiles, xlsxFiles, pptFiles };
 

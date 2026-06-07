@@ -458,40 +458,28 @@ function Dashboard({ navigation, route }) {
 
 
 
-
-
-  const DesendingreadPdfFiles = async () => {
-    console.log('Decending order by date-------');
-
-    setIsLoading(true)
-    setDocuments({
-      pdfFiles: [],
-      wordFiles: [],
-      xlsxFiles: [],
-      pptFiles: [],
-    })
-    const files = await getFilesFromPhoneByFileExtention(1)
-    console.log('DesendingreadPdfFiles: ', files);
-
-    setDocuments(files)
-    setIsLoading(false)
-    setUniqueNumber(Utility.generateUniqueNumber())
-  }
-
   useEffect(() => {
-    if (documents.pdfFiles.length == 0) {
-      readPdfFiles()
+    const obj = getLocalData(asyncStorageKeyName.ALL_FILES);
+    console.log('obj', obj);
+    console.log('obj type of >>>>>>>',typeof obj);
+    if (obj?.pdfFiles?.length > 0) {
+
+      setDocuments(obj);
+    }
+    else {
+
+      console.log('No  files found, Please allow storage permission and click on refresh button to load files')
+      // readPdfFiles()
     }
   }, [])
   const readPdfFiles = async () => {
-    console.log('Accending order by date-------');
-
+ 
     setIsLoading(true)
     setIsScanning(true)
     setFileScanProgress(0);
     setFilesFound(0);
     const files = await getFilesFromPhoneByFileExtention(
-      1,
+      1, 
       (status: {
         percentage: number,
         filesFound: number
@@ -507,47 +495,47 @@ function Dashboard({ navigation, route }) {
     setIsScanning(false);
     setUniqueNumber(Utility.generateUniqueNumber())
   }
-  useEffect(() => {
 
-    if (!isFocused) return;
 
-    console.log('index', screeName);
+  //   if (!isFocused) return;
 
-    const obj = getLocalData(
-      asyncStorageKeyName.ALL_FILES
-    );
+  //   console.log('index', screeName);
 
-    if (
-      obj?.pdfFiles &&
-      obj.pdfFiles.length > 0
-    ) {
+  //   const obj = getLocalData(
+  //     asyncStorageKeyName.ALL_FILES
+  //   );
 
-      setDocuments(obj);
+  //   if (
+  //     obj?.pdfFiles &&
+  //     obj.pdfFiles.length > 0
+  //   ) {
 
-    } else {
+  //     setDocuments(obj);
 
-      setIsLoading(true);
+  //   } else {
 
-      const getAllFiles = async () => {
+  //     setIsLoading(true);
 
-        const files =
-          await getFilesFromPhoneByFileExtention(
-            1
-          );
+  //     const getAllFiles = async () => {
 
-        setDocuments(files);
+  //       const files =
+  //         await getFilesFromPhoneByFileExtention(
+  //           1
+  //         );
 
-        setIsLoading(false);
+  //       setDocuments(files);
 
-        setUniqueNumber(
-          Utility.generateUniqueNumber()
-        );
-      };
+  //       setIsLoading(false);
 
-      getAllFiles();
-    }
+  //       setUniqueNumber(
+  //         Utility.generateUniqueNumber()
+  //       );
+  //     };
 
-  }, [isFocused]);
+  //     getAllFiles();
+  //   }
+
+  // }, [isFocused]);
 
 
   //Linking 
@@ -598,28 +586,7 @@ function Dashboard({ navigation, route }) {
 
 
 
-  const deleteFileHandler = async (item: any) => {
-    //@ts-ignore
-    // console.log(item);
 
-    try {
-      setIsLoading(true)
-      let files = getLocalData(asyncStorageKeyName.ALL_FILES)
-      const data = JSON.parse(files).filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
-      getLocalData('pdfFiles', JSON.stringify(files))
-      deleteFile(item.path)
-      setPdfData(data)
-      setIsLoading(false)
-      toastForDeleteFile(toast, 'File deleted successfully')
-
-
-      // getPdfFilesFromPhoneStorage()
-    }
-    catch (err) {
-      console.log('error-----', err);
-
-    }
-  }
 
   // will implement later if user add/download file needs to update
 
@@ -653,9 +620,6 @@ function Dashboard({ navigation, route }) {
 
 
 
-  const addCardDetails = () => {
-    setIsShowCardModal(true)
-  }
 
   const search = (data: any) => {
     // sending search text to readsystemfile screen to filter data
@@ -713,7 +677,7 @@ function Dashboard({ navigation, route }) {
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
         return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
-          selectedSort={selectedSort} viewMode={viewMode}/>;
+          selectedSort={selectedSort} viewMode={viewMode} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -774,7 +738,7 @@ function Dashboard({ navigation, route }) {
       setIsShowErrorModal(true)
     }
     else {
-console.log('selectedFiles',response.selectedFiles);
+      console.log('selectedFiles', response.selectedFiles);
 
       Utility.navigation.navigateTo('MultiplePdfView', response.selectedFiles)
       dispatch(checkIsUserViewedPdf(true))
@@ -793,15 +757,15 @@ console.log('selectedFiles',response.selectedFiles);
           gap: scaledSize(20),
           paddingHorizontal: scaledSize(16),
           minHeight: scaledSize(56),
-          alignSelf:'flex-end'
+          alignSelf: 'flex-end'
         }}
       >
         {response.selectedFiles.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(clearSelectedFiles(true))} 
+          onPress={() => dispatch(clearSelectedFiles(true))}
           style={{ flexDirection: 'row' }}>
           <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off'
-           style={{ color: 'red' }} 
-          onPress={() => dispatch(clearSelectedFiles(true))} />
+            style={{ color: 'red' }}
+            onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
@@ -847,7 +811,7 @@ console.log('selectedFiles',response.selectedFiles);
 
           {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
           <Feather name="folder" size={scaledSize(24)}
-           color={theme.themeColor} />
+            color={theme.themeColor} />
         </TouchableOpacity>
 
         <CustomMenu
@@ -945,59 +909,59 @@ console.log('selectedFiles',response.selectedFiles);
           paddingTop: scaledSize(8),
           paddingBottom: scaledSize(22),
         }}>
-          {renderHeaderIcons()}
+        {renderHeaderIcons()}
 
-          <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: scaledSize(16) }}>
-            <View style={{ width: '92%', height: scaledSize(54), justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: scaledSize(16) }}>
+          <View style={{ width: '92%', height: scaledSize(54), justifyContent: 'center', alignItems: 'center' }}>
 
-              <Searchbar
-                placeholder="Search"
-                style={{
-                  width: '100%',
-                  borderRadius: scaledSize(30),
-                  letterSpacing: 1,
-                  height: scaledSize(44),
-                  // backgroundColor: theme.bgColor,
-                  backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
-                  borderWidth: 1,
-                  borderColor: theme.borderColor,
-                  elevation: mode === 'dark' ? 0 : 5,
-                  shadowColor: '#9CA3AF',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: mode === 'dark' ? 0 : 0.18,
-                  shadowRadius: 18,
-                }}
-                onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
-                placeholderTextColor={mode=='dark'?"#9CA3AF":'#7B8190'}
-                inputStyle={{
-                  fontSize: scaledSize(15),
-                  letterSpacing: 0,
-                  alignSelf: 'center',
-                  color: theme.primaryTextColor,
-                  minHeight: scaledSize(40),
-                }}
-                loading={false}
-                icon={() => <Image source={searchIcon} style={{
-                  height: scaledSize(19), width: scaledSize(19),
-                  tintColor:theme.borderColor
-                }}
+            <Searchbar
+              placeholder="Search"
+              style={{
+                width: '100%',
+                borderRadius: scaledSize(30),
+                letterSpacing: 1,
+                height: scaledSize(44),
+                // backgroundColor: theme.bgColor,
+                backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: theme.borderColor,
+                elevation: mode === 'dark' ? 0 : 5,
+                shadowColor: '#9CA3AF',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: mode === 'dark' ? 0 : 0.18,
+                shadowRadius: 18,
+              }}
+              onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
+              placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
+              inputStyle={{
+                fontSize: scaledSize(15),
+                letterSpacing: 0,
+                alignSelf: 'center',
+                color: theme.primaryTextColor,
+                minHeight: scaledSize(40),
+              }}
+              loading={false}
+              icon={() => <Image source={searchIcon} style={{
+                height: scaledSize(19), width: scaledSize(19),
+                tintColor: theme.borderColor
+              }}
 
-                />}
-                clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                  setSearchQuery(''), console.log('press search')
-                }}>
-                  <Image source={clear} style={{
-                    height: scaledSize(16), width: scaledSize(16),
+              />}
+              clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
+                setSearchQuery(''), console.log('press search')
+              }}>
+                <Image source={clear} style={{
+                  height: scaledSize(16), width: scaledSize(16),
 
-                  }} />
-                </TouchableOpacity> : <></>
-                }
-                value={searchQuery}
-              />
+                }} />
+              </TouchableOpacity> : <></>
+              }
+              value={searchQuery}
+            />
 
 
-            </View>
           </View>
+        </View>
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
       <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
