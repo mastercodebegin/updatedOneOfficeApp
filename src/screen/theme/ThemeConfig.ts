@@ -18,7 +18,7 @@ export type Theme = {
 };
 
 const commonThemeProperties = {
-  themeColor: '#00b6cc',
+  themeColor: '#47b16a',
   deleteIconColor: '#FF3B5C'
 }
 // export const lightTheme: Theme = {

@@ -725,10 +725,22 @@ function Dashboard({ navigation, route }) {
   const renderTabBar = (props: any) => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: theme.themeColor, height: 1 }}
-      style={{ backgroundColor: theme.bgContainor }}
+      indicatorStyle={{
+        backgroundColor: theme.themeColor,
+        height: scaledSize(2),
+      }}
+      style={{
+        backgroundColor: mode === 'dark' ? theme.bgContainor : '#FFFFFF',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: mode === 'dark' ? theme.borderColor : '#EEF0F4',
+      }}
+      tabStyle={{
+        height: scaledSize(62),
+      }}
       activeColor={theme.themeColor}
-      inactiveColor={theme.secondaryTextColor}
+      inactiveColor={theme.iconColor}
       lazy
       lalazyPreloadDistance={1}
       onTabPress={({
@@ -741,8 +753,9 @@ function Dashboard({ navigation, route }) {
 
       }}
       labelStyle={{
-        color: theme.primaryTextColor,
-        textTransform: 'capitalize',
+        textTransform: 'uppercase',
+        fontSize: scaledSize(13),
+        fontFamily: Fonts.bold,
       }}
 
     />
@@ -769,14 +782,17 @@ console.log('selectedFiles',response.selectedFiles);
   }
 
   const renderHeaderIcons = () => {
+    const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
+
     return (
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: scaledSize(16),
-          marginRight: scaledSize(4)
+          justifyContent: 'center',
+          gap: scaledSize(20),
+          paddingHorizontal: scaledSize(16),
+          minHeight: scaledSize(56),
         }}
       >
         {response.selectedFiles.length > 0 && <TouchableOpacity
@@ -789,11 +805,11 @@ console.log('selectedFiles',response.selectedFiles);
         </TouchableOpacity>
         }
 
-        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')} style={{ right: scaledSize(4) }}>
+        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')}>
           <MaterialCommunityIcons
             name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
-            size={scaledSize(22)}
-            color={theme.iconColor}
+            size={scaledSize(24)}
+            color={headerIconColor}
           />
         </TouchableOpacity>
 
@@ -808,33 +824,33 @@ console.log('selectedFiles',response.selectedFiles);
         </TouchableOpacity>}
 
 
-        <TouchableOpacity onPress={() => setIsShowSortModal(true)} style={{ right: scaledSize(4) }}>
+        <TouchableOpacity onPress={() => setIsShowSortModal(true)}>
           <MaterialCommunityIcons
             name="sort"
-            size={scaledSize(22)} color={theme.iconColor} />
+            size={scaledSize(24)} color={headerIconColor} />
         </TouchableOpacity>
 
 
-        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')} style={{ right: scaledSize(4) }}>
-          <Feather name="user" size={scaledSize(22)} color={theme.iconColor} />
+        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')}>
+          <Feather name="user" size={scaledSize(24)} color={headerIconColor} />
         </TouchableOpacity>
 
         <MaterialCommunityIcons
           name="refresh"
-          size={scaledSize(22)}
-          color={theme.iconColor}
+          size={scaledSize(25)}
+          color={headerIconColor}
           onPress={() => readPdfFiles()}
         />
 
         <TouchableOpacity onPress={openFile}>
 
           {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
-          <Feather name="folder" size={scaledSize(20)}
+          <Feather name="folder" size={scaledSize(24)}
            color={theme.themeColor} />
         </TouchableOpacity>
 
         <CustomMenu
-          Icon={<Feather name="more-vertical" size={18} color={theme.iconColor} />}
+          Icon={<Feather name="more-vertical" size={scaledSize(22)} color={theme.iconColor} />}
           menuOptionstyle={{
             padding: scaledSize(13),
             width: scaledSize(150),
@@ -920,43 +936,47 @@ console.log('selectedFiles',response.selectedFiles);
         />
       </View>
       <LinearGradient
-        colors={[theme.bgContainor, theme.bgContainor]}
+        colors={[
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+        ]}
+        style={{
+          paddingTop: scaledSize(8),
+          paddingBottom: scaledSize(22),
+        }}>
+          {renderHeaderIcons()}
 
-        style={{ flex: .2, flexDirection: 'column' }}>
-        <ScrollView style={{ flex: 1 }}>
-          <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
-            <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
-              <View style={{ flex: 1, justifyContent: 'center', paddingLeft: scaledSize(16) }}>
-                {/* <Switch
-                  trackColor={{ false: '#767577', true: 'green' }}
-                  thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
-                  ios_backgroundColor="#3e3e3e"
-                  onValueChange={() => toggleTheme()}
-                  value={mode == 'dark' ? true : false}
-                /> */}
-              </View>
-            </View>
-
-            {renderHeaderIcons()}
-          </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', }}>
-            <View style={{ width: '96%', height: scaledSize(50), justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: scaledSize(16) }}>
+            <View style={{ width: '92%', height: scaledSize(54), justifyContent: 'center', alignItems: 'center' }}>
 
               <Searchbar
                 placeholder="Search"
                 style={{
-                  borderRadius: scaledSize(45), 
-                  letterSpacing: 1, height: scaledSize(44),
-                  backgroundColor: theme.bgContainor,
-                  borderWidth: 1,
+                  width: '100%',
+                  borderRadius: scaledSize(18),
+                  letterSpacing: 1,
+                  height: scaledSize(54),
+                  backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
+                  borderWidth: mode === 'dark' ? 1 : 0,
                   borderColor: theme.borderColor,
+                  elevation: mode === 'dark' ? 0 : 5,
+                  shadowColor: '#9CA3AF',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: mode === 'dark' ? 0 : 0.18,
+                  shadowRadius: 18,
                 }}
                 onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
-                placeholderTextColor={mode=='dark'?"#9CA3AF":'#4B5563'}
-                inputStyle={{ fontSize: scaledSize(14), letterSpacing: 1, alignSelf: 'center',color:theme.primaryTextColor }}
+                placeholderTextColor={mode=='dark'?"#9CA3AF":'#7B8190'}
+                inputStyle={{
+                  fontSize: scaledSize(15),
+                  letterSpacing: 0,
+                  alignSelf: 'center',
+                  color: theme.primaryTextColor,
+                  minHeight: scaledSize(44),
+                }}
                 loading={false}
                 icon={() => <Image source={searchIcon} style={{
-                  height: scaledSize(16), width: scaledSize(16),
+                  height: scaledSize(19), width: scaledSize(19),
                 }}
 
                 />}
@@ -975,7 +995,6 @@ console.log('selectedFiles',response.selectedFiles);
 
             </View>
           </View>
-        </ScrollView>
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
       <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>

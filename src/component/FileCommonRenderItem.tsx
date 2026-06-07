@@ -57,7 +57,7 @@ export const FileCommonRenderItem = (props: S) => {
 
   const checkisFolderSelected = (id: number) => {
     return selectedFiles.some(
-      item => item.id === id,
+      (item: any) => item.id === id,
     );
   };
 
@@ -152,7 +152,7 @@ export const FileCommonRenderItem = (props: S) => {
             marginTop:
               index === 0
                 ? scaledSize(
-                    6,
+                    20,
                   )
                 : 0,
           },
@@ -190,16 +190,11 @@ export const FileCommonRenderItem = (props: S) => {
 
         {/* icon */}
 
-        <View
-          style={
-            styles.iconContainer
-          }>
+        <View style={styles.iconContainer}>
 
           <Image
             source={icon}
-            style={
-              styles.icon
-            }
+            style={styles.icon}
           />
 
         </View>
@@ -234,34 +229,35 @@ export const FileCommonRenderItem = (props: S) => {
 
             </Text>
 
-            <View
-              style={
-                styles.dateAndSizeParentView
-              }>
+            <View style={styles.dateAndSizeParentView}>
 
-              <Text
-                style={
-                  styles.metaText
-                }>
-                {Utility.date.getDateByMomentFormat(
-                  item.mtime,
-                )}
-              </Text>
+              <View style={styles.metaRow}>
+                <MaterialIcons
+                  name="calendar-today"
+                  size={scaledSize(13)}
+                  color={theme.iconColor}
+                />
 
-              <Text
-                style={[
-                  styles.metaText,
-                  {
-                    marginTop:
-                      scaledSize(
-                        4,
-                      ),
-                  },
-                ]}>
-                {getFileSize(
-                  item?.size,
-                )}
-              </Text>
+                <Text style={styles.metaText}>
+                  {Utility.date.getDateByMomentFormat(
+                    item.mtime,
+                  )}
+                </Text>
+              </View>
+
+              <View style={styles.metaRow}>
+                <MaterialIcons
+                  name="insert-drive-file"
+                  size={scaledSize(14)}
+                  color={theme.iconColor}
+                />
+
+                <Text style={styles.metaText}>
+                  {getFileSize(
+                    item?.size,
+                  )}
+                </Text>
+              </View>
 
             </View>
 
@@ -303,9 +299,10 @@ export const FileCommonRenderItem = (props: S) => {
             )}
 
             <TouchableOpacity
-              style={
-                styles.actionButton
-              }
+              style={[
+                styles.actionButton,
+                styles.deleteButton,
+              ]}
               onPress={() =>
                 setIsShowDeleteConfirmation(
                   true,
@@ -323,9 +320,10 @@ export const FileCommonRenderItem = (props: S) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={
-                styles.actionButton
-              }
+              style={[
+                styles.actionButton,
+                styles.shareButton,
+              ]}
               onPress={() =>
                 Utility.fileShare(
                   item.path,
@@ -382,19 +380,22 @@ const createStyles = (
 
     card: {
       minHeight:
-        scaledSize(99),
+        scaledSize(100),
 
       marginHorizontal:
-        scaledSize(10),
+        scaledSize(16),
 
       marginBottom:
-        scaledSize(10),
+        scaledSize(16),
 
-      padding:
-        scaledSize(14),
+      paddingVertical:
+        scaledSize(22),
+
+      paddingHorizontal:
+        scaledSize(20),
 
       borderRadius:
-        scaledSize(18),
+        scaledSize(14),
 
       flexDirection:
         "row",
@@ -403,7 +404,9 @@ const createStyles = (
         "center",
 
       backgroundColor:
-        theme.bgColor,
+        mode === "dark"
+          ? theme.bgColor
+          : "#FFFFFF",
 
       borderWidth:
         mode === "dark"
@@ -415,6 +418,23 @@ const createStyles = (
 
       overflow:
         "hidden",
+
+      shadowColor:
+        "#9CA3AF",
+
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+
+      shadowOpacity:
+        mode === "dark" ? 0 : 0.16,
+
+      shadowRadius:
+        18,
+
+      elevation:
+        mode === "dark" ? 0 : 4,
     },
 
     selectedCard: {
@@ -458,27 +478,18 @@ const createStyles = (
       zIndex: 10,
     },
 
-iconContainer: {
-  width: scaledSize(64),
-  height: scaledSize(64),
-  borderRadius: scaledSize(14),
-  // backgroundColor: '#FEF0F0',  // soft red tint
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: scaledSize(12),
-  // shadowColor: '#C0392B',
-  shadowOffset: {
-    width: 0,
-    height: 2,
-  },
-  shadowOpacity: 0.08,
-  shadowRadius: 6,
-  // elevation: 3,
-},
+    iconContainer: {
+      width: scaledSize(62),
+      height: scaledSize(62),
+      borderRadius: scaledSize(12),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scaledSize(20),
+    },
 
     icon: {
-      width: scaledSize(38),
-      height: scaledSize(38),
+      width: scaledSize(60),
+      height: scaledSize(60),
       resizeMode:
         "contain",
     },
@@ -497,19 +508,32 @@ iconContainer: {
       fontSize:
         scaledSize(14),
       fontFamily:
-        Fonts.regular,
+        Fonts.bold,
     },
 
     dateAndSizeParentView: {
       marginTop:
-        scaledSize(8),
+        scaledSize(14),
+      gap:
+        scaledSize(10),
+    },
+
+    metaRow: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        scaledSize(10),
     },
 
     metaText: {
       color:
-        theme.secondaryTextColor,
+        theme.primaryTextColor,
       fontSize:
-        scaledSize(11),
+        scaledSize(12),
+      fontFamily:
+        Fonts.regular,
     },
 
     actionContainer: {
@@ -518,21 +542,37 @@ iconContainer: {
       alignItems:
         "center",
       gap:
-        scaledSize(8),
+        scaledSize(12),
     },
 
     actionButton: {
       width:
-        scaledSize(36),
+        scaledSize(34),
       height:
-        scaledSize(36),
+        scaledSize(34),
       borderRadius:
         scaledSize(8),
       backgroundColor:
-        theme.buttonBGColor,
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "#F5F5F5",
       justifyContent:
         "center",
       alignItems:
         "center",
+    },
+
+    deleteButton: {
+      backgroundColor:
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "rgba(255, 59, 92, 0.1)",
+    },
+
+    shareButton: {
+      backgroundColor:
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "rgba(0, 182, 204, 0.1)",
     },
   });

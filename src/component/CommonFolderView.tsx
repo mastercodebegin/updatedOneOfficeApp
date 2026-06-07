@@ -32,6 +32,11 @@ interface Props {
   onPressDeleteFile: Function;
 }
 
+type FolderGroup = {
+  folder: string;
+  files: any[];
+};
+
 const CommonFolderView = (props: Props) => {
   const {
     files,
@@ -48,16 +53,16 @@ const CommonFolderView = (props: Props) => {
   const { theme } = useTheme();
 
   const [selectedFolder, setSelectedFolder] =
-    useState(null);
+    useState<FolderGroup | null>(null);
 
-const getFolderByFileName = filename => {
+const getFolderByFileName = (filename: string) => {
   const name = filename.toLowerCase();
 
   /* Banking */
 
   if (
     name.includes('statement') ||
-    name.includes('Acct') ||
+    name.includes('acct') ||
     name.includes('credit-card') ||
     name.includes('debit-card') ||
     name.includes('bank') ||
@@ -67,7 +72,7 @@ const getFolderByFileName = filename => {
     name.includes('transaction') ||
     name.includes('loan') ||
     name.includes('emi') ||
-    name.includes('Refund') ||
+    name.includes('refund') ||
     name.includes('cheque')
   ) {
     return 'Banking';
@@ -204,7 +209,7 @@ const getFolderByFileName = filename => {
   ]);
 
   const groupedFiles = useMemo(() => {
-    const grouped = {};
+    const grouped: Record<string, any[]> = {};
 
     filteredFiles.forEach(file => {
       const folder =
@@ -230,6 +235,9 @@ const getFolderByFileName = filename => {
   const renderCommonFile = ({
     item,
     index,
+  }: {
+    item: any;
+    index: number;
   }) => {
 
     return (
@@ -252,7 +260,7 @@ const getFolderByFileName = filename => {
         ? groupedFiles
         : filteredFiles;
 
- const renderFolder = ({ item }) => {
+ const renderFolder = ({ item }: { item: FolderGroup }) => {
   return (
 
     <TouchableOpacity
@@ -394,7 +402,7 @@ const renderBackButton = () => {
 
 <CustomHeader onPressBack={() =>
         setSelectedFolder(null)
-      } title={selectedFolder.folder}
+      } title={selectedFolder?.folder || ''}
        titleStyle={{fontSize:scaledSize(12),letterSpacing:.5}} />
 </View>
 
@@ -403,7 +411,7 @@ const renderBackButton = () => {
   );
 };
 
-  const renderItem = ({ item, index }) => {
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
 
     if (
       viewMode === 'folder' &&
@@ -421,7 +429,11 @@ const renderBackButton = () => {
     });
   };
   return (
-    <View style={{ flex: 1 }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: theme.bgContainor,
+      }}>
 
       {selectedFolder && 
 
@@ -452,6 +464,14 @@ const renderBackButton = () => {
         showsVerticalScrollIndicator={false}
 
         contentContainerStyle={{
+          paddingTop:
+            selectedFolder
+              ? scaledSize(8)
+              : scaledSize(2),
+
+          paddingHorizontal:
+            scaledSize(2),
+
           paddingBottom:
             scaledSize(120),
         }}
