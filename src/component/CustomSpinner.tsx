@@ -10,6 +10,7 @@ interface S {
   isLoading: boolean;
   text?: string;
   progress?: number;
+  filesFound?: number;
 }
 
 export default function CustomSpinner(props: S) {
@@ -25,17 +26,23 @@ export default function CustomSpinner(props: S) {
       customIndicator={
         <View style={styles.box}>
           {showProgress ? (
-            <>
-              <Text style={styles.progressTitle}>{props.text || 'Scanning files...'}</Text>
+            <View style={{ alignItems: 'center', width: '100%' }}>
+              <Text style={styles.progressTitle}>{props.text || 'Scanning your device...'}</Text>
+              <Text style={styles.filesFoundText}>{`${props.filesFound || 0} files found`}</Text>
               <Progress.Bar
+              indeterminate={props.progress === 0}
                 progress={props.progress / 100}
-                width={scaledSize(180)}
+                width={scaledSize(220)}
+                height={scaledSize(12)}
+                borderRadius={scaledSize(6)}
                 color={theme.themeColor}
                 unfilledColor={theme.buttonBGColor}
                 borderColor={theme.borderColor}
+                style={{ marginTop: scaledSize(18) }}
+                useNativeDriver={true}
               />
-              <Text style={styles.progressPercentage}>{`${props.progress}%`}</Text>
-            </>
+              <Text style={styles.progressPercentage}>{`${props.progress || 0}% complete`}</Text>
+            </View>
           ) : (
             <>
               <ActivityIndicator
@@ -53,38 +60,40 @@ export default function CustomSpinner(props: S) {
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   box: {
-    width: scaledSize(220),
-    paddingVertical: scaledSize(25),
-    borderRadius: scaledSize(12),
+    width: scaledSize(280),
+    paddingVertical: scaledSize(35),
+    borderRadius: scaledSize(24),
     backgroundColor: theme.bgColor,
     alignItems: 'center',
-    height: scaledSize(150),
     justifyContent: 'center',
-
-    // Android shadow
     elevation: 5,
 
     // iOS shadow
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
   },
   text: {
     marginTop: scaledSize(20),
-    fontSize: scaledSize(12),
-    letterSpacing: 1,
+    fontSize: scaledSize(14),
+    letterSpacing: 0.5,
     color: theme.primaryTextColor,
   },
   progressTitle: {
-    marginBottom: scaledSize(15),
-    fontSize: scaledSize(14),
+    marginBottom: scaledSize(12),
+    fontSize: scaledSize(18),
     color: theme.primaryTextColor,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  filesFoundText: {
+    fontSize: scaledSize(13),
+    color: theme.secondaryTextColor,
+    marginBottom: scaledSize(18),
   },
   progressPercentage: {
-    marginTop: scaledSize(10),
-    fontSize: scaledSize(12),
+    marginTop: scaledSize(16),
+    fontSize: scaledSize(14),
     color: theme.secondaryTextColor,
     fontWeight: '500',
   },

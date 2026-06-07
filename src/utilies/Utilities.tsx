@@ -235,7 +235,7 @@ export const deleteFile = (path) => {
     });
 }
 
-export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: number) => void) => {
+export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: { percentage: number, filesFound: number }) => void) => {
   interface File {
     name: string;
     path: string;
@@ -246,6 +246,7 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
   let wordFiles: File[] = [];
   let xlsxFiles: File[] = [];
   let pptFiles: File[] = [];
+  let filesFound = 0;
   console.log(`Reading directory=========`,);
 
   const scannedPaths = new Set<string>();
@@ -260,28 +261,33 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
       // console.log('result:', result);
 
       for (const item of result) {
+console.log('item of result ',item);
 
         item.id = generateUniqueNumber()
         if (item.name.toLowerCase().endsWith('.pdf')) {
           pdfFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.docx')) {
           wordFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
+        }
+        else if (item.name.toLowerCase().endsWith('.doc')) {
+          wordFiles.push(item);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xlsx')) {
           xlsxFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xls')) {
           xlsxFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
 
         else if (item.name.toLowerCase().endsWith('.pptx')) {
           pptFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.isDirectory()) {
           // console.log(`Entering directory: ${item.path}`);
@@ -290,7 +296,7 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
       }
 
     } catch (error) {
-      console.log(`Error reading directory ${path}:`, error);
+      // console.log(`Error reading directory ${path}:`, error);
     }
   };
 
@@ -303,12 +309,28 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
 
     // Scan files in the root directory first
     for (const item of rootItems) {
+      console.log('item===',item);
+      
       if (item.isFile()) {
+              console.log('is file item===',item);
+
         item.id = generateUniqueNumber();
-        if (item.name.toLowerCase().endsWith('.pdf')) pdfFiles.push(item);
-        else if (item.name.toLowerCase().endsWith('.docx')) wordFiles.push(item);
-        else if (item.name.toLowerCase().endsWith('.xlsx') || item.name.toLowerCase().endsWith('.xls')) xlsxFiles.push(item);
-        else if (item.name.toLowerCase().endsWith('.pptx')) pptFiles.push(item);
+        if (item.name.toLowerCase().endsWith('.pdf')) {
+          pdfFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.docx')) {
+          wordFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.doc')) {
+          wordFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.xlsx') || item.name.toLowerCase().endsWith('.xls')) {
+          xlsxFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.pptx')) {
+          pptFiles.push(item);
+          filesFound++;
+        }
       }
     }
 
@@ -317,8 +339,8 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
       await readDirectory(dir.path);
       processedDirs++;
       if (onProgress) {
-        const progress = Math.round((processedDirs / totalDirs) * 100);
-        onProgress(progress > 100 ? 100 : progress);
+        const percentage = Math.round((processedDirs / totalDirs) * 100);
+        onProgress({ percentage: percentage > 100 ? 100 : percentage, filesFound });
       }
     }
   } catch (error) {
@@ -339,16 +361,10 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
     }
     // console.log('stoaring files in asyncstorage start=======', sorted);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.PDF_FILES, JSON.stringify(pdfFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.WORD_FILES, JSON.stringify(wordFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.XLSX_FILES, JSON.stringify(xlsxFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.PPT_FILES, JSON.stringify(pptFiles));
+    setLocalData(asyncStorageKeyName.PDF_FILES, JSON.stringify(pdfFiles));
     console.log('pptFiles------', pptFiles);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify({ pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles }));
-    // console.log('stoaring files in asyncstorage end=======');
-    // console.log('returning files as per extension=======');
-    // console.log('logs object=======', { pdfFiles, wordFiles, xlsxFiles, pptFiles });
+    setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify({ pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles }));
 
     return { pdfFiles, wordFiles, xlsxFiles, pptFiles };
 

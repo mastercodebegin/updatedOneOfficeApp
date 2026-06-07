@@ -415,6 +415,7 @@ function Dashboard({ navigation, route }) {
   const [isLoading, setIsLoading] = useState(false);
   const isFocused = useIsFocused();
   const [fileScanProgress, setFileScanProgress] = useState(0);
+  const [filesFound, setFilesFound] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -438,7 +439,7 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -487,12 +488,17 @@ function Dashboard({ navigation, route }) {
 
     setIsLoading(true)
     setIsScanning(true)
-    setFileScanProgress(0)
+    setFileScanProgress(0);
+    setFilesFound(0);
     const files = await getFilesFromPhoneByFileExtention(
       1,
-      progress => {
-        setFileScanProgress(progress);
-      },
+      (status: {
+        percentage: number,
+        filesFound: number
+      }) => {
+        setFileScanProgress(status.percentage);
+        setFilesFound(status.filesFound);
+      }
     );
     console.log('readPdfFiles:', files);
 
@@ -707,7 +713,7 @@ function Dashboard({ navigation, route }) {
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
         return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
-          selectedSort={selectedSort} />;
+          selectedSort={selectedSort} viewMode={viewMode}/>;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -782,7 +788,7 @@ console.log('selectedFiles',response.selectedFiles);
         </TouchableOpacity>
         }
 
-        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'grid' : 'list')} style={{ right: scaledSize(4) }}>
+        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')} style={{ right: scaledSize(4) }}>
           <MaterialCommunityIcons
             name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
             size={scaledSize(22)}
@@ -907,6 +913,7 @@ console.log('selectedFiles',response.selectedFiles);
         <CustomSpinner
           isLoading={isLoading}
           progress={isScanning ? fileScanProgress : undefined}
+          filesFound={isScanning ? filesFound : undefined}
           text={isScanning ? 'Scanning files...' : 'Loading...'}
         />
       </View>
@@ -942,8 +949,8 @@ console.log('selectedFiles',response.selectedFiles);
                   borderColor: theme.borderColor,
                 }}
                 onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
-                placeholderTextColor="#9CA3AF"
-                inputStyle={{ fontSize: scaledSize(14), letterSpacing: 1, alignSelf: 'center' }}
+                placeholderTextColor={mode=='dark'?"#9CA3AF":'#4B5563'}
+                inputStyle={{ fontSize: scaledSize(14), letterSpacing: 1, alignSelf: 'center',color:theme.primaryTextColor }}
                 loading={false}
                 icon={() => <Image source={searchIcon} style={{
                   height: scaledSize(16), width: scaledSize(16),
