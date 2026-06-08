@@ -416,6 +416,7 @@ function Dashboard({ navigation, route }) {
   const isFocused = useIsFocused();
   const [fileScanProgress, setFileScanProgress] = useState(0);
   const [filesFound, setFilesFound] = useState(0);
+  const [foundFilesList, setFoundFilesList] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -478,21 +479,22 @@ function Dashboard({ navigation, route }) {
     setIsScanning(true)
     setFileScanProgress(0);
     setFilesFound(0);
+    setFoundFilesList([]);
     const files = await getFilesFromPhoneByFileExtention(
       1, 
       (status: {
         percentage: number,
-        filesFound: number
+        filesFound: number,
+        allFoundFiles: any[]
       }) => {
         setFileScanProgress(status.percentage);
         setFilesFound(status.filesFound);
+        setFoundFilesList(status.allFoundFiles);
       }
     );
     console.log('readPdfFiles:', files);
 
     setDocuments(files)
-    setIsLoading(false);
-    setIsScanning(false);
     setUniqueNumber(Utility.generateUniqueNumber())
   }
 
@@ -889,6 +891,16 @@ function Dashboard({ navigation, route }) {
     }
   }
 
+  const handleContinue = () => {
+    setIsLoading(false);
+    setIsScanning(false);
+  };
+
+  const handleRescan = () => {
+    // The spinner is already visible, just restart the scanning process
+    readPdfFiles();
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
 
@@ -897,7 +909,10 @@ function Dashboard({ navigation, route }) {
           isLoading={isLoading}
           progress={isScanning ? fileScanProgress : undefined}
           filesFound={isScanning ? filesFound : undefined}
+          foundFiles={isScanning ? foundFilesList : []}
           text={isScanning ? 'Scanning files...' : 'Loading...'}
+          onRescan={handleRescan}
+          onContinue={handleContinue}
         />
       </View>
       <LinearGradient

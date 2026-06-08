@@ -235,7 +235,7 @@ export const deleteFile = (path) => {
     });
 }
 
-export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: { percentage: number, filesFound: number }) => void) => {
+export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: { percentage: number, filesFound: number, allFoundFiles: any[] }) => void) => {
   interface File {
     name: string;
     path: string;
@@ -340,7 +340,8 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
       processedDirs++;
       if (onProgress) {
         const percentage = Math.round((processedDirs / totalDirs) * 100);
-        onProgress({ percentage: percentage > 100 ? 100 : percentage, filesFound });
+        const allFoundFiles = [...pdfFiles, ...wordFiles, ...xlsxFiles, ...pptFiles];
+        onProgress({ percentage: percentage > 100 ? 100 : percentage, filesFound, allFoundFiles });
       }
     }
   } catch (error) {

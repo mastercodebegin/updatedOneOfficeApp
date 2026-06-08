@@ -2170,6 +2170,22 @@ const renderTags = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={scanDocument}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons
+                    name="refresh"
+                    size={scaledSize(16)}
+                    color={theme.primaryTextColor}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.cancelText}>Rescan</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={
                   styles.renameButton
                 }
