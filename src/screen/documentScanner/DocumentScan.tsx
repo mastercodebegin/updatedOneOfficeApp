@@ -104,6 +104,8 @@ export const DocumentScan = () => {
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [tagToRename, setTagToRename] = useState(null);
+  const [isShowDeleteMultipleTagsConfirmation, setIsShowDeleteMultipleTagsConfirmation] = useState(false)
   const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('')
   const [selectedTags, setSelectedTags] = useState([]);
@@ -938,97 +940,88 @@ const renderTags = () => {
       </View>
 
       {/* TAGS */}
+<FlatList
+  horizontal
+  data={userTags}
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={styles.scrollContent}
+  keyExtractor={item => item.id.toString()}
+  renderItem={({item}) => {
+    const isSelected = selectedTags.some(
+      tag => tag.id === item.id,
+    );
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {userTags.map((item: any) => {
-          const isSelected = selectedTags.some(
-            (tag: any) => tag.id === item.id,
-          );
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => selectTagHandler(item)}
+        style={[
+          styles.tagChip,
+          {
+            backgroundColor: theme.bgContainor,
+            borderColor: isSelected
+              ? theme.themeColor
+              : theme.borderColor,
+          },
+        ]}>
+        <MaterialIcons
+          name={getTagIcon(item.name)}
+          size={18}
+          color={
+            isSelected
+              ? theme.themeColor
+              : theme.iconColor
+          }
+        />
 
-          return (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.85}
-              onPress={() => selectTagHandler(item)}
-              style={[
-                styles.tagChip,
-                {
-                  backgroundColor:
-                    theme.bgContainor,
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[
+            styles.tagText,
+            {
+              color: theme.primaryTextColor,
+            },
+          ]}>
+          {Utility.string.getFirstLetterCapitalize(
+            item.name,
+          )}
+        </Text>
 
-                  borderColor: isSelected
-                    ? theme.themeColor
-                    : theme.borderColor,
-                },
-              ]}
-            >
-              <MaterialIcons
-                name={getTagIcon(item.name)}
-                size={18}
-                color={
-                  isSelected
-                    ? theme.themeColor
-                    : theme.iconColor
-                }
-              />
-
-              <Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={[
-                  styles.tagText,
-                  {
-                    color:
-                      theme.primaryTextColor,
-                  },
-                ]}
-              >
-                {Utility.string.getFirstLetterCapitalize(
-                  item.name,
-                )}
-              </Text>
-
-              <CustomMenu
-                Icon={
-                  <MaterialIcons
-                    name="more-horiz"
-                    size={18}
-                    color={
-                      theme.secondaryTextColor
-                    }
-                    style={styles.menuIcon}
-                  />
-                }
-                menuOption={[
-                  {
-                    label: 'Rename',
-                    onSelect: () => {
-                      setTagName(item.name);
-                      setIsShowRenderRenameTagModal(
-                        true,
-                      );
-                    },
-                  },
-                  {
-                    label: 'Delete',
-                    onSelect: () => {
-                      setTagForDeletion(item);
-                      setIsShowDeleteTagConfirmation(
-                        true,
-                      );
-                    },
-                  },
-                ]}
-              />
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        <CustomMenu
+          Icon={
+            <MaterialIcons
+              name="more-horiz"
+              size={18}
+              color={theme.secondaryTextColor}
+              style={styles.menuIcon}
+            />
+          }
+          menuOption={[
+            {
+              label: 'Rename',
+              onSelect: () => {
+                setTagToRename(item);
+                setTagName(item.name);
+                setIsShowRenderRenameTagModal(true);
+              },
+            },
+            {
+              label: 'Delete',
+              onSelect: () => {
+                setTagForDeletion(item);
+                setIsShowDeleteTagConfirmation(
+                  true,
+                );
+              },
+            },
+          ]}
+        />
+      </TouchableOpacity>
+    );
+  }}
+  ListEmptyComponent={<Text style={{alignSelf:'center'}}>No Tags</Text>}
+/>
 
       {/* ACTION */}
 
@@ -1036,7 +1029,7 @@ const renderTags = () => {
         activeOpacity={0.85}
         onPress={() => {
           if (selectedTags.length > 0) {
-            setSelectedTags([]);
+            setIsShowDeleteMultipleTagsConfirmation(true);
           } else {
             setIsTagModalVisible(true);
           }
@@ -1048,9 +1041,9 @@ const renderTags = () => {
               theme.bgContainor,
 
             borderColor:
-              selectedTags.length > 0
-                ? theme.themeColor
-                : theme.borderColor,
+              selectedTags.length > 0 ?
+                theme.deleteIconColor :
+                theme.borderColor,
           },
         ]}
       >
@@ -1061,7 +1054,10 @@ const renderTags = () => {
               : 'add'
           }
           size={22}
-          color={theme.themeColor}
+          color={
+            selectedTags.length > 0 ?
+              theme.deleteIconColor :
+              theme.themeColor}
         />
       </TouchableOpacity>
 
@@ -1288,33 +1284,36 @@ const renderTags = () => {
   }
 
   const renameTagHandler = async () => {
-    if (tagName.length == 0) {
+    if (!tagName?.trim()) {
       setIsShowErrorModal(true)
       setErrorMessage('Tag name is invalid')
       return
     }
-    const existingTag = await tagLocalService.getTagById(selectedTag.id)
-    console.log('existingTag===', existingTag);
-    const updatedTags = await tagLocalService.updateTag(selectedTag.id, { name: tagName })
-    console.log('updatedTags===', updatedTags);
+
+    const existingTagWithName = await tagLocalService.getTagByName(tagName.trim());
+    if (existingTagWithName && existingTagWithName.id !== tagToRename?.id) {
+      setIsShowErrorModal(true);
+      setErrorMessage('A tag with this name already exists.');
+      return;
+    }
+
+    await tagLocalService.updateTag(tagToRename.id, { name: tagName })
     const tags = await tagLocalService.getTags()
-    console.log('existing tags===', tags);
     setUserTags(tags)
-    setIsTagModalVisible(false)
-    setIsShowRenderRenameTagModal(false)
-    setTagName('')
+    handleCancelRename();
   }
 
+  const handleCancelRename = () => {
+    setIsShowRenderRenameTagModal(false);
+    setTagName('');
+    setTagToRename(null);
+  };
   const deleteTagHandler = async () => {
     if (tagForDeletion?.id == undefined) {
       return
     }
-    const existingTag = await tagLocalService.getTagById(tagForDeletion.id)
-    console.log('existingTag===', existingTag);
     const updatedTags = await tagLocalService.updateTag(tagForDeletion.id, { isDeleted: 1 })
-    console.log('updatedTags===', updatedTags);
     const tags = await tagLocalService.getTags()
-    console.log('existing tags===', tags);
     setTagForDeletion({})
     setUserTags(tags)
     setSelectedTags([])
@@ -1323,6 +1322,22 @@ const renderTags = () => {
     setIsShowRenderRenameTagModal(false)
     setIsShowDeleteTagConfirmation(false)
     setTagName('')
+  }
+
+  const deleteMultipleTagsHandler = async () => {
+    if (selectedTags.length === 0) return;
+    try {
+      for (const tag of selectedTags) {
+        await tagLocalService.updateTag(tag.id, { isDeleted: 1 });
+      }
+      const tags = await tagLocalService.getTags();
+      setUserTags(tags);
+      setSelectedTags([]);
+      setIsShowDeleteMultipleTagsConfirmation(false);
+      CustomSuccessToast(`${selectedTags.length} tag(s) deleted`);
+    } catch (error) {
+      CustomErrorToast('Failed to delete tags');
+    }
   }
   const renderAddTagModal = () => {
     return (
@@ -1408,7 +1423,7 @@ const renderTags = () => {
         transparent
         animationType="fade"
         onRequestClose={() =>
-          setIsShowRenderRenameTagModal(false)
+          handleCancelRename()
         }>
 
         <View style={styles.modalOverlay}>
@@ -1441,9 +1456,7 @@ const renderTags = () => {
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.cancelButton}
-                onPress={() =>
-                  setIsShowRenderRenameTagModal(false)
-                }>
+                    onPress={handleCancelRename}>
 
                 <Text style={styles.cancelText}>
                   Cancel
@@ -2430,6 +2443,11 @@ const renderTags = () => {
       <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
         onCancel={() => setIsShowDeleteTagConfirmation(false)}
         onSubmit={() => deleteTagHandler()} />
+      <ConfirmationDialog visible={isShowDeleteMultipleTagsConfirmation} mode='delete'
+        message={`Are you sure you want to delete ${selectedTags.length} selected tag(s)?`}
+        onCancel={() => setIsShowDeleteMultipleTagsConfirmation(false)}
+        onSubmit={deleteMultipleTagsHandler}
+      />
       <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
         onCancel={() => setIsFolderDeleteConfirmation(false)}
         onSubmit={() => deleteTagHandler()} />

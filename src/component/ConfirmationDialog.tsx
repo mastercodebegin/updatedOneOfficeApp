@@ -27,13 +27,14 @@ interface myProps {
   onSubmit?: () => void;
 
   onCancel?: () => void;
-
+  message?:string
   mode?: 'default' | 'delete';
 }
 
 const ConfirmationDialog = (
   props: myProps,
 ) => {
+  const {message}=props
   const { theme } = useTheme();
 
   const styles = createStyles(theme);
@@ -95,7 +96,7 @@ const ConfirmationDialog = (
 
           {/* Message */}
           <Text style={styles.subText}>
-            {isDeleteMode
+            {message?message:isDeleteMode
               ? 'Are you sure you want to delete?'
               : 'Do you want to continue?'}
           </Text>

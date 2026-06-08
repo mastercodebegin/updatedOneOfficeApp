@@ -77,6 +77,17 @@ const getFolderByFileName = (filename: string) => {
   ) {
     return 'Banking';
   }
+    /* Legal */
+
+if (
+  name.includes('notice') ||
+  name.includes('legal') ||
+  name.includes('court') ||
+  name.includes('agreement') ||
+  name.includes('affidavit')
+) {
+  return 'Legal';
+}
 
   /* Finance */
 

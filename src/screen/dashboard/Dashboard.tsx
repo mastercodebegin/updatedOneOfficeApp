@@ -441,7 +441,7 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
