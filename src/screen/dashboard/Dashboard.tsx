@@ -20,6 +20,7 @@ import RNFS from 'react-native-fs';
 import Icon from 'react-native-vector-icons/Feather';
 import CustomMenu from '../../component/Menu'
 import ReadSystemFile from '../../component/ReadSystemFile'
+import CustomProgressBar from '../../component/CustomProgressBar';
 import ImagesToPdfConverter from '../../component/ImagesToPdfConverter'
 import { Searchbar } from 'react-native-paper'
 import Feather from 'react-native-vector-icons/Feather';
@@ -904,17 +905,21 @@ function Dashboard({ navigation, route }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
 
-      <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
-        <CustomSpinner
-          isLoading={isLoading}
-          progress={isScanning ? fileScanProgress : undefined}
-          filesFound={isScanning ? filesFound : undefined}
-          foundFiles={isScanning ? foundFilesList : []}
-          text={isScanning ? 'Scanning files...' : 'Loading...'}
-          onRescan={handleRescan}
-          onContinue={handleContinue}
-        />
-      </View>
+      {isScanning ? (
+        <Modal visible={isLoading} transparent animationType="fade">
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <CustomProgressBar
+              progress={fileScanProgress}
+              filesFound={filesFound}
+              foundFiles={foundFilesList}
+              onRescan={handleRescan}
+              onContinue={handleContinue}
+            />
+          </View>
+        </Modal>
+      ) : (
+        <CustomSpinner isLoading={isLoading} text="Loading..." />
+      )}
       <LinearGradient
         colors={[
           mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
