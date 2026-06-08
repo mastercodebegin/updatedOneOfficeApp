@@ -1,17 +1,17 @@
 import moment from "moment"
-import { asyncStorageKeyName, DateFormat } from "../utilies/Constants"
-import { getLocalData } from "./storageService"
+import { asyncStorageKeyName, DateFormat } from "./Constants"
+import { getLocalData } from "./storageUtility"
 import { Timestamp } from "@react-native-firebase/firestore"
 
-const getDateFromString = (dateStr: string) => {
+export const getDateFromString = (dateStr: string) => {
 
-    const date = new Date(dateStr)
+    const date = dateStr?new Date(dateStr):new Date()
     return date
 
 }
 
 
-const getDateByMomentFormat = (dateStr?: string | null | undefined, format?: string | null | undefined) => {
+export const getDateByMomentFormat = (dateStr?: string | null | undefined, format?: string | null | undefined) => {
     if (dateStr != null && dateStr != undefined) {
         if (format) {
             const date = moment(dateStr).format(format)
@@ -38,7 +38,7 @@ const getDateByMomentFormat = (dateStr?: string | null | undefined, format?: str
     }
 }
 
-function getMillis(ts: any): number {
+export function getMillis(ts: any): number {
 
 
     if (ts.updatedAt.seconds) {
@@ -49,7 +49,7 @@ function getMillis(ts: any): number {
         return ts.updatedAt
     }
 }
-function getFirebaseTimeStampByMillis(): any {
+export function getFirebaseTimeStampByMillis(): any {
     const lastsyncTime = getLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
     console.log(' getFirebaseTimeStampByMillis LastsyncTime get:', lastsyncTime);
     console.log('getFirebaseTimeStampByMillis LastsyncTime get:', typeof lastsyncTime);
@@ -60,9 +60,4 @@ function getFirebaseTimeStampByMillis(): any {
     console.log('time>>>>', time);
     return time;
 }
-export const DateHelper = {
-    getDateFromString,
-    getDateByMomentFormat,
-    getMillis,
-    getFirebaseTimeStampByMillis
-}
+

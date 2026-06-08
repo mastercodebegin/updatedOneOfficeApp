@@ -5,9 +5,9 @@
  * @format
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo,useState } from 'react';
 import type { PropsWithChildren } from 'react';
-import {pick} from '@react-native-documents/picker';
+import { pick } from '@react-native-documents/picker';
 import RNFetchBlob from 'rn-fetch-blob';
 import RNFS from 'react-native-fs';
 import { Platform } from 'react-native';
@@ -18,16 +18,19 @@ import JSZip from 'jszip';
 import { parseStringPromise } from 'xml2js';
 import LinearGradient from 'react-native-linear-gradient';
 import { createShimmerPlaceholder } from 'react-native-shimmer-placeholder'
+import { useTheme } from '../theme/useTheme';
+import { ErrorToast } from '../../component/CustomToast';
+import { Theme } from '../theme/ThemeConfig';
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 
 
-const DocumentPicker =pick
+const DocumentPicker = pick
 
 import {
     Button,
     Image,
     SafeAreaView,
     ScrollView,
-    StatusBar,
     StyleSheet,
     Text,
     useColorScheme,
@@ -42,32 +45,36 @@ import {
     ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 import DocxGenerator from './Docxgenerator';
-import { navigateToBack, scaledSize } from '../../utilies/Utilities';
-import HeaderComponent from '../../component/CustomHeader';
+import { scaledSize, Utility } from '../../utilies/Utilities';
 import CustomSpinner from '../../component/CustomSpinner';
+import CustomHeader from '../../component/CustomHeader';
 
-interface S{
+interface S {
     uri: string,
 }
 
 
 
-const WordReader = (props:S) => {
+const WordReader = (props: S) => {
+    const { theme } = useTheme();
+    const styles = useMemo(() => createStyles(theme), [theme]);
     const ShimmerPlaceHolder = createShimmerPlaceholder(LinearGradient)
 
-    const { uri} = props?.route?.params;
+    const { uri } = props?.route?.params;
     const [htmlData, setHtmlData] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false)
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [modalErrorMessage, setModalErrorMessage] = useState('');
 
     useEffect(() => {
         console.log('URI', uri);
         setIsLoading(true)
         setTimeout(() => {
             readDocxFile(uri)
-            
+
         }, 1000);
 
-    },[])
+    }, [])
 
 
 
@@ -99,7 +106,7 @@ const WordReader = (props:S) => {
                 // type: DocumentPicker.types.pdf
             })
             console.log('response-----', res.uri);
-           // readDocxFile(res.uri)
+            // readDocxFile(res.uri)
         }
         catch (error) {
             console.log('openFile error-----', error);
@@ -114,16 +121,21 @@ const WordReader = (props:S) => {
     }
 
     async function convertDocxToHtml(base64Data: any) {
-        console.log('convertDocxToHtml');
+        try {
+            const arrayBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)).buffer;
 
-        const arrayBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)).buffer;
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            // console.log('result', result);
 
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        // console.log('result', result);
-
-        setHtmlData(result.value)
-        setIsLoading(false)
-        return result.value; // The HTML content
+            setHtmlData(result.value)
+            setIsLoading(false)
+            return result.value; // The HTML content
+        } catch (error) {
+            console.error("Error converting docx:", error);
+            setIsLoading(false);
+            setModalErrorMessage("Something went wrong. Please try again.");
+            setShowErrorModal(true);
+        }
     }
 
     //********************* We will check letter after reading all files  we need just convert XML TO HTML 
@@ -155,10 +167,12 @@ const WordReader = (props:S) => {
 
     const defaultStyles = `
   <style>
-
-          body, ul, li {
-      font-family: 'Arial', sans-serif; /* Apply the font family to body, ul, and li */
-    }
+        body {
+          font-family: 'Arial', sans-serif;
+          color: ${theme.primaryTextColor};
+          background-color: ${theme.bgColor};
+          padding: 8px;
+        }
           table {
       width: 100%;
       border-collapse: collapse;
@@ -234,24 +248,23 @@ const WordReader = (props:S) => {
             return filePath;
         } catch (error) {
             console.error('Error saving file:', error);
-            Alert.alert('Error', 'Failed to save file.');
+            Alert.alert('Error', 'Failed to save file. ');
         }
     };
 
     return (
-        <SafeAreaView style={{ flex: 1,backgroundColor:'white' }}>
-            <View style={{ height: scaledSize(40), flexDirection: 'row',
-            backgroundColor:'white'
-                ,elevation:4 }}>
-               <HeaderComponent title='' onPress={async () => navigateToBack()}/>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <CustomHeader title={props?.route?.params?.name || 'Document'} onPressBack={() => Utility.navigation.navigateToBack()} />
             </View>
-            <View style={{ flex: 1, padding: isLoading?scaledSize(0):scaledSize(14) }}>
+            <View style={styles.content}>
                 {htmlData ? (
                     <WebView
                         ref={webviewRef}
                         showsHorizontalScrollIndicator={false}
                         showsVerticalScrollIndicator={false}
                         originWhitelist={['*']}
+                        style={{ backgroundColor: theme.bgColor }}
                         source={{ html: htmlContent }}
                         onMessage={(event) => {
                             const editedContent = event.nativeEvent.data;
@@ -262,37 +275,55 @@ const WordReader = (props:S) => {
                         scalesPageToFit={true}
                     />
 
-                ) : 
+                ) :
 
-<CustomSpinner isLoading={isLoading}/>
-                 
+                    <CustomSpinner isLoading={isLoading} />
+
                 }
             </View>
             {/* <View style={{flex:1,backgroundColor:'red',}}>
 
       <DocxGenerator htmlContent={htmlString}/>
       </View> */}
+            <CustomErrorMsgModal
+                isVisible={showErrorModal}
+                errorMessage={modalErrorMessage}
+                onPressClose={() => {
+                    setShowErrorModal(false);
+                    Utility.navigation.navigateToBack();
+                }}
+            />
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
-    sectionContainer: {
-        marginTop: 32,
-        paddingHorizontal: 24,
+const createStyles = (theme: Theme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.bgColor,
     },
-    sectionTitle: {
-        fontSize: 24,
-        fontWeight: '600',
+    header: {
+        height: scaledSize(50),
+        backgroundColor: theme.bgColor,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
     },
-    sectionDescription: {
-        marginTop: 8,
-        fontSize: 18,
-        fontWeight: '400',
+    content: {
+        flex: 1,
+        backgroundColor: theme.bgColor,
     },
-    highlight: {
-        fontWeight: '700',
+    webviewContainer: {
+        flex: 1,
+        padding: scaledSize(14),
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });
 
 export default React.memo(WordReader);

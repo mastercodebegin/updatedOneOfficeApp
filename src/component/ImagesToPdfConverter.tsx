@@ -1,6 +1,6 @@
 
-import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, StatusBar, Linking, Modal, TextInput, Platform } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform, SafeAreaView } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import FloatingButton from './FloatingButton'
 import DocumentPicker from 'react-native-document-picker';
 import Share from 'react-native-share';
@@ -8,7 +8,7 @@ import RNFS from 'react-native-fs';
 import { createPdf } from 'react-native-images-to-pdf';
 import ModalViewForPdfName from './ModalViewForPdfName'
 import RNFetchBlob from 'rn-fetch-blob';
-import { capitalizeFirstLetter, createImagesToPdf, deleteFile, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getDate, getFileSize, heightFromPercentage, navigateTo, scaledSize, widthFromPercentage } from '../utilies/Utilities';
+import {  deleteFile,  getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
 import CustomMenu from './Menu';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -16,14 +16,13 @@ import ConfirmationDialog from './ConfirmationDialog';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import CustomBannerAdd from './admob/CustomBannerAdd';
 import { Fonts } from '../assets/fonts/GlobalFonts';
+import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomSpinner from './CustomSpinner';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../utilies/Constants';
 import { useDispatch, useSelector } from 'react-redux'
-import { updateIsLoadingState } from '../screen/dashboard/FileSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Searchbar } from 'react-native-paper'
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
-import { getDateByMomentFormat } from '../utilies/DateHelper';
 import { Button, Overlay } from 'react-native-elements';
 import { useToast } from "react-native-toast-notifications";
 import Toast from 'react-native-toast-message';
@@ -40,8 +39,14 @@ import CustomHeaderGradient from './CustomHeaderGradient';
 import CustomPermissionMessage from './CustomPermissionMessage';
 import { CustomPhotoOrCameraSelectOption } from './CustomPhotoOrCameraSelectOption';
 import CustomInput from './CustomInput';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 import CustomVectorIcon from './CustomVectorIcon';
+import CustomRenameModal from './CustomRenameModal';
+import CustomErrorMsgModal from './CustomErrorMsgModal';
+import CustomSortModal from './CustomSortModal';
 import RNBlobUtil from 'react-native-blob-util';
+import { convertedPdfLocalService } from '../db/convertedPdfLocalService';
 
 // const RNImageToPdf = createPdf
 
@@ -70,44 +75,62 @@ const ImagesToPdfConverter = () => {
   const [quality, setQuality] = useState<Quality>('High')
   const QUALITY_OPTIONS: Quality[] = ['High', 'Medium', 'Low'];
 
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const { theme, mode } = useTheme();
+  const [isShowRenameModal, setIsShowRenameModal] = useState(false);
+  const [fileToRename, setFileToRename] = useState(null);
+  const [newFileName, setNewFileName] = useState('');
+
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+    {
+      id: 'size',
+      name: 'Size',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
 
 
+
+
+
+  const fetchConvertedPdfs = async () => {
+    setIsLoading(true);
+    const files = await convertedPdfLocalService.getAllConvertedPdfs();
+    setPdfData(files);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-
     if (isFocused) {
-
-      console.log('is focused converteer====');
-
-      AsyncStorage.getItem(asyncStorageKeyName.CONVERTED_PDF_FILES).then((check) => {
-        const obj = JSON.parse(check)
-        console.log('convert files obj---', obj);
-        let files = []
-
-
-        if (check && obj.length > 0) {
-          setPdfData(obj);
-          console.log('if=======',);
-        }
-        else {
-          // console.log('else part-----');
-
-          const getFiles = async () => {
-            setIsLoading(true)
-            files = await getConvertedPdfFileFromPhoneStorage()
-            console.log('files========', files);
-
-            setPdfData(files)
-            setIsLoading(false)
-          }
-          getFiles()
-
-        }
-
-      })
+      fetchConvertedPdfs();
     }
-  }, [])
+  }, [isFocused]);
 
 
   const showSelectImagesModal = async () => {
@@ -163,24 +186,33 @@ const ImagesToPdfConverter = () => {
   };
 
   const createImagesToPdfHandler = async () => {
-    if(pdfName.length==0)
+    console.log('images>>>>>>>>',images);
+    if (images.length === 0) {
+      setErrorMessage('Please select at least one image to create a PDF.');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (pdfName.length == 0)
     {
-      alert('Enter pdf name please')
+      setErrorMessage('Please enter a PDF name before proceeding.');
+      setIsShowErrorModal(true);
       return
     }
-   const createdPdfPath = await createImagesToPdf(images)
+    const imagePaths = images.map((image: any) => (
+      Utility.images.getImageUriByOS(image.path)));
+    console.log('imagePaths',imagePaths)
+    
+   const createdPdfPath = await Utility.images.createImagesToPdf(imagePaths, pdfName)
    console.log('createdPdfPath',createdPdfPath);
    saveFileinPhoneStorage(createdPdfPath)
    
   }
 
-const saveFileinPhoneStorage = async (filePath: string) => {
-
-  const id = generateUniqueNumber();
-  const date = getDateByMomentFormat(null, null);
-
-  console.log('filePath====', filePath);
-
+  const saveFileinPhoneStorage = async (filePath: string) => {
+    const date = Date.now();
+  
+    console.log('filePath====', filePath);
+  
   // Android fix (remove file:// if exists)
   const sourcePath =
     Platform.OS === 'android'
@@ -188,56 +220,44 @@ const saveFileinPhoneStorage = async (filePath: string) => {
       : `file://${filePath}`;
 
   try {
-    await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH).catch(() => {});
+    await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH);
   } catch (error) {
-    console.log('Error creating directory:', error.message);
+    // Directory already exists
   }
 
   const destinationPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${pdfName}.pdf`;
 
   try {
     await RNFS.copyFile(sourcePath, destinationPath);
-    console.log('File copied successfully');
-    deleteFileHandler(sourcePath)
+    console.log('File copied successfully to:', destinationPath);
+    await deleteFile(sourcePath); // Clean up temp file
   } catch (err) {
     console.log('Error copying file:', err.message);
+    return;
   }
 
-  // get file info
-  const state = await RNFS.stat(sourcePath);
-
-  // safe AsyncStorage read
-  const existingFiles = await AsyncStorage.getItem(
-    asyncStorageKeyName.CONVERTED_PDF_FILES
-  );
-  
-
-  const parsedFiles = existingFiles ? JSON.parse(existingFiles) : [];
-
-  const files = [
-    ...parsedFiles,
-    {
-      id,
-      path: destinationPath, // ✅ IMPORTANT: save new path
+  try {
+    const state = await RNFS.stat(destinationPath);
+    const newPdf = {
       name: `${pdfName}.pdf`,
+      path: destinationPath,
       size: state.size,
-      date,
-    },
-  ];
+      createdAt: date,
+    };
 
-  await AsyncStorage.setItem(
-    asyncStorageKeyName.CONVERTED_PDF_FILES,
-    JSON.stringify(files)
-  );
+    await convertedPdfLocalService.createConvertedPdf(newPdf);
 
-  setImages([])
-  setPdfName('')
-  
-  setPdfData(files);
-  setIsShowCreatePdfModalWindow(false);
+    // Refresh list
+    fetchConvertedPdfs();
 
-
+    setImages([]);
+    setPdfName('');
+    setIsShowCreatePdfModalWindow(false);
+  } catch (dbError) {
+    console.log('Error saving to DB:', dbError);
+  }
 };
+
 
 
   const onAndroidSharePress = async (url, name) => {
@@ -251,109 +271,92 @@ const saveFileinPhoneStorage = async (filePath: string) => {
       })
       .catch((err) => { });
   }
-  const renderItem = ({ item }) => (
-
-    <>
-      {/* {console.log('item--------',item)} */}
-      <View style={[styles.mainView, {
-        // shadowColor: COLORS.THEME_COLOR,
-        // shadowOffset: {
-        //   width: 0,
-        //   height: 12,
-        // },
-        // shadowOpacity: 0.58,
-        // shadowRadius: 16.00,
-
-        // elevation: 24
-        borderBottomWidth:.5,borderColor:'#d3d3d3'
-        // backgroundColor:'red'
-      }
-      ]}>
-        <View style={{
-          width: widthFromPercentage(14), height: scaledSize(60),
-          justifyContent: 'center', alignItems: 'center',
-        }}>
-          <Image source={PdfIcon} style={styles.icon} />
-        </View>
-
-        <TouchableOpacity onPress={() => { navigation.navigate('PdfViewer', { uri: item.path }) }}
-        >
-
-          <View style={[styles.fileNameParentView, { height: scaledSize(50) }]}>
-            <View style={[styles.fileNameView]}>
-              <Text style={{ fontSize: scaledSize(14), letterSpacing:1 }}>{capitalizeFirstLetter(item?.name)}</Text>
-            </View>
-            <View style={styles.dateAndSizeParentView}>
-              <View style={styles.dateView}>
-                <Text style={[styles.fontStyle, { fontFamily: Fonts.regular,fontSize:scaledSize(12) }]}>{getDate(item.mtime)}</Text>
-              </View>
-              <View style={styles.fileSizeView}>
-                <Text style={[styles.fontStyle,{fontSize:scaledSize(11)}]}>{getFileSize(item?.size)}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-        {/* <View style={styles.favAndUnfavoriteView}>
-          <Text style={styles.fontStyle}>hi</Text>
-        </View> */}
-        {/* <TouchableOpacity> */}
-        <View style={[styles.shareFileView, {
-          padding:scaledSize(10),
-          justifyContent: 'flex-start', alignItems: 'flex-end', width: 64, flexDirection: 'row'
-        }]}>
-
-          {/* <CustomMenu Icon={<Icon style={{}} name={'ellipsis-horizontal'} size={20} ></Icon>}
-            menuOptionstyle={{ padding: scaledSize(13), width: scaledSize(180), height: scaledSize(50) }}
-            menuOption={[
-              { onSelect: () => onAndroidSharePress(item.path, item.name), label: 'Share' },
-              { onSelect: () => { setIsDeleted(true), setFilePath(item) }, label: 'Delete' },
-            ]} /> */}
-          <TouchableOpacity onPress={() => { setIsDeleted(true), setFilePath(item) }}>
-            <MaterialCommunityIcons name={'delete-outline'} size={20} color={'red'} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onAndroidSharePress(item.path, item.name)}>
-            <Ionicons name={'share-outline'} size={20} color={COLORS.THEME_COLOR} style={{ left: scaledSize(6) }} />
-          </TouchableOpacity>
-        </View>
-        {/* </TouchableOpacity> */}
-
-      </View>
-    </>
-
-
+  const renderItem = ({ item, index }) => (
+    <FileCommonRenderItem
+      item={item}
+      icon={PdfIcon}
+      isShowEditBtn={true}
+      onPressEditFile={(file: any) => {
+        setFileToRename(file);
+        setNewFileName(file.name.replace(/\.[^/.]+$/, '')); // Set name without extension
+        setIsShowRenameModal(true);
+      }}
+      onPressDeleteFile={() => { setIsDeleted(true), setFilePath(item) }}
+      screenName='PdfViewer'
+      onPressItem={() => navigation.navigate('PdfViewer', { uri: item.path })}
+      onLongPress={() => {}}
+      // isItemSelected={false}
+      // selectedItems={[]}
+      actionButtonContainerStyle={{left:scaledSize(10)}}
+      leftIconStyle={{width:scaledSize(46),height:scaledSize(46)}}
+      index={index}
+    />
   )
 
-  const onSearchFile = () => {
+  const handleRenameSubmit = async () => {
+    if (!fileToRename || !newFileName.trim()) {
+      setErrorMessage('Please enter a valid file name.');
+      setIsShowErrorModal(true);
+      return;
+    }
+
+    const oldPath = fileToRename.path;
+    const oldName = fileToRename.name;
+    const fileExtension = oldName.split('.').pop() || 'pdf';
+    const newNameWithExt = `${newFileName.trim()}.${fileExtension}`;
+
+    if (newNameWithExt === oldName) {
+      setIsShowRenameModal(false);
+      return; // No change needed
+    }
+
+    const newPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${newNameWithExt}`;
+
+    try {
+      await RNFS.moveFile(oldPath, newPath);
+
+      await convertedPdfLocalService.updateConvertedPdf(fileToRename.id, {
+        name: newNameWithExt,
+        path: newPath,
+      });
+
+      fetchConvertedPdfs(); // Refresh the list
+      setIsShowRenameModal(false);
+      setFileToRename(null);
+      setNewFileName('');
+    } catch (error) {
+      console.error('Rename failed:', error);
+      setErrorMessage('Failed to rename the file. Please try again.');
+      setIsShowErrorModal(true);
+    }
+  };
+
+  const getFiles = () => {
     console.log('searchvalue', searchQuery);
 
     if (searchQuery.length > 0) {
       return pdfData.filter(file =>
         file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      )
     } else {
-      return pdfData;
+      if (selectedSort) {
+        return Utility.sortFiles(selectedSort, pdfData)
+      }
+      else {
+        return pdfData;
+      }
     }
-  };
+  }
 
 
   const deleteFileHandler = async (item) => {
-    console.log('item---', item);
-    console.log('pdfdata---', pdfData);
-
     try {
-      // dispatch(updateIsLoadingState(true))
-      setIsDeleted(false)
-      //@ts-ignore
-      const data = pdfData.filter((citem) => citem.id !== item.id)
-      console.log('data item---', data);
-      console.log('data item 2---');
-      deleteFile(item.path)
-      await AsyncStorage.setItem(asyncStorageKeyName.CONVERTED_PDF_FILES, JSON.stringify(data))
-      console.log('data item 3---',);
-      setPdfData(data)
+      setIsDeleted(false);
+      await deleteFile(item.path);
+      await convertedPdfLocalService.deleteConvertedPdf(item.id);
 
-
-      // getPdfFilesFromPhoneStorage()
+      // Refresh list
+      fetchConvertedPdfs();
     }
     catch (err) {
       console.log('delete error-----', err);
@@ -365,20 +368,19 @@ const saveFileinPhoneStorage = async (filePath: string) => {
     return (<View>
       <Text
         style={{
-          fontSize: 14,
+          fontSize: scaledSize(14),
           fontWeight: '500',
-          marginBottom: 14,
-          left: 10,
+          marginBottom: scaledSize(14),
+          left: scaledSize(10),
           letterSpacing: 1,
-          color: '#111',
+          color: theme.primaryTextColor,
         }}
       >
         File Name
       </Text>
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: 'row', alignItems: 'center',
           // backgroundColor: '#F3F4F6',
           borderRadius: scaledSize(14),
           paddingHorizontal: scaledSize(14),
@@ -391,7 +393,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
         <CustomVectorIcon
           iconLibrary="Feather"
           iconName="file-text"
-          size={18}
+          size={scaledSize(18)}
           style={{ color: '#9CA3AF', marginRight: scaledSize(8) }}
         />
 
@@ -403,7 +405,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
           style={{
             flex: 1,
             fontSize: scaledSize(12),
-            color: '#111',
+            color: theme.primaryTextColor,
           }}
         />
       </View>
@@ -419,7 +421,7 @@ const saveFileinPhoneStorage = async (filePath: string) => {
             letterSpacing: 1,
             marginBottom: scaledSize(12),
             left: scaledSize(8),
-            color: '#111',
+            color: theme.primaryTextColor,
           }}
         >
           PDF Quality
@@ -428,11 +430,11 @@ const saveFileinPhoneStorage = async (filePath: string) => {
         <View
           style={{
             flexDirection: 'row',
-            backgroundColor: '#F8FAFC',
+            backgroundColor: theme.buttonBGColor,
             borderRadius: scaledSize(20),
             padding: scaledSize(3),
             borderWidth: .4,
-            borderColor: '#DCDCDC'
+            borderColor: theme.borderColor,
           }}
         >
           {QUALITY_OPTIONS.map((item) => {
@@ -446,14 +448,14 @@ const saveFileinPhoneStorage = async (filePath: string) => {
                 style={{
                   flex: 1,
                   paddingVertical: 10,
-                  borderRadius: 18,
-                  backgroundColor: isActive ? COLORS.THEME_COLOR : 'transparent',
+                  borderRadius: scaledSize(18),
+                  backgroundColor: isActive ? theme.themeColor : 'transparent',
                   alignItems: 'center',
                 }}
               >
                 <Text
                   style={{
-                    color: isActive ? '#FFF' : '#6B7280',
+                    color: isActive ? theme.buttonTextColor : theme.secondaryTextColor,
                     fontWeight: '500',
                     fontSize: 14,
                   }}
@@ -469,41 +471,34 @@ const saveFileinPhoneStorage = async (filePath: string) => {
   }
 
   return (
-    <LinearGradient
-      colors={['white', 'white']}
-
-      style={{
-        flex: 1, justifyContent: 'center', alignItems: 'center',
-        backgroundColor: '#4c669f'
-      }}>
-      {/* <Text>Hi</Text> */}
-      {/* {isShowPdfModalWindow ? <ModalViewForPdfName
-        onClose={() => setIsShowPdfModalWindow(false)}
-        onSubmit={() => pdfName.length > 0 ? createImagesToPdf() : alert('Please Enter FileName')}
-        onChangeText={(e) => setPdfName(e)}
-        onImageQualityChange={(data) => setPdfQuality(data)}
-
-      /> : null} */}
-
-      <View style={{ flex: 1, }}>
-        <LinearGradient
-          colors={['#0081A7', '#00AFB9']}
-
-
-          style={{
-            flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-            padding: 0, paddingLeft: 0, width: '95%', alignSelf: 'center', marginTop: scaledSize(10),
-            borderRadius: scaledSize(8),
-          }}>
+    <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1, backgroundColor: theme.bgContainor, paddingTop: scaledSize(10) }}>
+        <View style={{
+          width: '95%', alignSelf: 'center',
+          flexDirection: 'row', alignItems: 'center', gap: scaledSize(8)
+        }}>
           <View style={{
-            width: widthFromPercentage(78), height: scaledSize(43), marginTop: scaledSize(0),
+            flex: 1,
+            // width: widthFromPercentage(95), 
+            height: scaledSize(43), marginTop: scaledSize(0),
             justifyContent: 'center', alignItems: 'center', alignSelf: 'center'
           }}>
             <Searchbar
               placeholder="Search"
+              placeholderTextColor={theme.secondaryTextColor}
+              iconColor={theme.iconColor}
+              inputStyle={{
+                fontSize: scaledSize(12),
+                fontFamily: Fonts.regular,
+                color: theme.primaryTextColor,
+              }}
               style={{
-                borderRadius: scaledSize(0), height: scaledSize(43), marginRight: 0,
-                backgroundColor: 'white', textAlign: 'center', borderWidth: 1, borderColor: '#e7ebf3'
+                borderRadius: scaledSize(14),
+                height: scaledSize(44),
+                marginRight: 0,
+                backgroundColor: theme.bgColor,
+                borderWidth: 1,
+                borderColor: theme.borderColor,
               }}
               onChangeText={(value) => setSearchQuery(value)}
               inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center', letterSpacing: 1 }}
@@ -525,28 +520,23 @@ const saveFileinPhoneStorage = async (filePath: string) => {
               value={searchQuery}
             />
           </View>
-          <View style={{
-            width: scaledSize(50), height: scaledSize(40), justifyContent: 'center',
-            alignItems: 'center', marginLeft: scaledSize(0), 
-          }}>
-            <Image source={searchIcon} style={{
-              height: scaledSize(16), width: scaledSize(16), tintColor: 'white'
-
-            }} />
-            {/* <MaterialCommunityIcons name='file-search' size={scaledSize(24)} color={'white'} /> */}
-          </View>
-        </LinearGradient>
+          <TouchableOpacity style={styles.sortButton} onPress={() => setIsShowSortModal(true)}>
+            <MaterialCommunityIcons
+              name="sort"
+              size={scaledSize(22)} color={theme.primaryTextColor} />
+          </TouchableOpacity>
+        </View>
 
 
         {pdfData.length > 0 ? (
           <FlatList
-            data={onSearchFile()}
+            data={getFiles()}
             renderItem={renderItem}
             keyExtractor={(item, index) => 'key' + index}
           />
         ) : (
           <>
-            {isLoading ? null : <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {isLoading ? <CustomSpinner isLoading={isLoading} /> : <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <Text>No files</Text>
 
 
@@ -561,9 +551,13 @@ const saveFileinPhoneStorage = async (filePath: string) => {
       }}>
         <CustomFAB onPress={() => showSelectImagesModal()} />
       </View>
-      <Overlay isVisible={isShowCreatePdfModalWindow} transparent overlayStyle={{borderRadius:scaledSize(16)}} >
-        <View style={{ height: heightFromPercentage(54), width: widthFromPercentage(90), backgroundColor: 'white', alignSelf: 'flex-end' }}>
-          <View style={{ height: heightFromPercentage(20), width: widthFromPercentage(90), backgroundColor: 'white', alignSelf: 'flex-end' }}>
+
+      <Overlay isVisible={isShowCreatePdfModalWindow} transparent 
+      overlayStyle={{borderRadius:scaledSize(26),
+       backgroundColor: theme.bgColor}} >
+        <View style={{ height: heightFromPercentage(54), width: widthFromPercentage(90), backgroundColor: theme.bgColor, alignSelf: 'flex-end' }}>
+          <View style={{ height: heightFromPercentage(20), width: widthFromPercentage(90),
+             alignSelf: 'flex-end' }}>
             <CustomPhotoOrCameraSelectOption
               onPressClose={() => { setIsShowCreatePdfModalWindow(false) }}
               images={images}
@@ -575,9 +569,9 @@ const saveFileinPhoneStorage = async (filePath: string) => {
 
           <TouchableOpacity activeOpacity={0.85} style={{ marginTop: scaledSize(36), alignSelf: 'center' }}
             onPress={() => { createImagesToPdfHandler() }}
-          >
+          > 
             <LinearGradient
-              colors={['#0891B2', COLORS.THEME_COLOR]}
+              colors={[theme.themeColor, theme.themeSecondaryColor]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{
@@ -599,8 +593,8 @@ const saveFileinPhoneStorage = async (filePath: string) => {
                   fontWeight: '500',
                   letterSpacing: 1,
                   // marginBottom: scaledSize(12),
-                  // left: scaledSize(8),
-                  color: 'white',
+                  // left: scaledSize(8), 
+                  color: theme.buttonTextColor,
                 }}
               >
                 Proceed
@@ -614,11 +608,35 @@ const saveFileinPhoneStorage = async (filePath: string) => {
       {isDeleted ? <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
         onSubmit={() => deleteFileHandler(filePath)} visible={isDeleted} /> : null}
       {customPermissionMessageModal()}
-    </LinearGradient>
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
+      <CustomErrorMsgModal
+        isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)}
+        errorMessage={errorMessage}
+      />
+      <CustomRenameModal
+        isVisible={isShowRenameModal}
+        heading="Rename File"
+        subHeading="Enter a new name for your file"
+        value={newFileName}
+        onChangeText={setNewFileName}
+        onCancel={() => setIsShowRenameModal(false)}
+        onSubmit={handleRenameSubmit}
+      />
+    </SafeAreaView>
   )
 }
-const styles = StyleSheet.create({
-  ///
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgContainor },
 
   loading: {
     flex: 1,
@@ -650,24 +668,42 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     letterSpacing: 1
   },
-  mainView: {
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    flexDirection: 'row',
-    borderBottomWidth: .5,
-    borderBottomColor: 'white',
-    backgroundColor: 'white',
-    width: scaledSize(360),
-    height: scaledSize(60),
-    left: 10,
-    borderRadius: scaledSize(6),
-    marginTop: scaledSize(5),
-
+  card: {
+    minHeight: scaledSize(70),
+    marginHorizontal: scaledSize(10),
+    marginBottom: scaledSize(10),
+    padding: scaledSize(10),
+    borderRadius: scaledSize(14),
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.bgColor,
+    borderWidth: mode === 'dark' ? 1 : 0,
+    borderColor: theme.borderColor,
+    elevation: mode === 'light' ? 3 : 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: mode === 'light' ? 0.1 : 0.2,
+    shadowRadius: 4,
+  },
+  iconContainer: {
+    width: scaledSize(40),
+    height: scaledSize(40),
+    borderRadius: scaledSize(12),
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: scaledSize(12),
   },
   icon: {
-    height: scaledSize(30),
-    width: scaledSize(30),
-    marginLeft: scaledSize(6)
+    width: scaledSize(24),
+    height: scaledSize(24),
+    resizeMode: "contain",
+  },
+  fileName: {
+    justifyContent: 'flex-start',
+    color: theme.primaryTextColor,
+    fontSize: scaledSize(14),
+    fontFamily: Fonts.medium,
   },
   fileNameParentView: {
     width: widthFromPercentage(66),
@@ -677,9 +713,6 @@ const styles = StyleSheet.create({
   },
 
   fileNameView: {
-    flex: 1,
-    // backgroundColor:'red',
-    // height:scaledSize(50),
     justifyContent: 'center',
     alignItems: 'flex-start'
   },

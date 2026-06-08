@@ -8,24 +8,52 @@ export const initDB = async () => {
 
     // 📂 FOLDERS TABLE
     await db.executeSql(`
-      CREATE TABLE IF NOT EXISTS folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS folders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        userId TEXT,
+    userId TEXT,
 
-        name TEXT,
-        coverUri TEXT,
+    tagId INTEGER,
 
-        firebaseId TEXT UNIQUE,
-        driveFolderId TEXT,
+    name TEXT,
 
-        isSynced INTEGER DEFAULT 0,
-        isDeleted INTEGER DEFAULT 0,
+    coverUri TEXT,
 
-        updatedAt INTEGER,
-        createdAt INTEGER
-      )
-    `);
+    firebaseId TEXT UNIQUE,
+
+    driveFolderId TEXT,
+
+    isSynced INTEGER DEFAULT 0,
+
+    isDeleted INTEGER DEFAULT 0,
+
+    updatedAt INTEGER,
+
+    createdAt INTEGER,
+
+    FOREIGN KEY(tagId)
+    REFERENCES tags(id)
+)
+`);
+
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS tags (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  userId TEXT,
+
+  name TEXT NOT NULL,
+
+  color TEXT,
+
+  firebaseId TEXT,
+
+  isSynced INTEGER DEFAULT 0,
+  isDeleted INTEGER DEFAULT 0,
+
+  createdAt INTEGER,
+  updatedAt INTEGER
+)`)
 
     // 📄 FILES TABLE
     await db.executeSql(`
@@ -53,6 +81,20 @@ export const initDB = async () => {
         FOREIGN KEY (folderId) REFERENCES folders(id)
       )
     `);
+
+    // 💿 CONVERTED PDFS TABLE
+    await db.executeSql(`
+      CREATE TABLE IF NOT EXISTS converted_pdfs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL,
+        size INTEGER,
+        createdAt INTEGER NOT NULL
+      );
+    `);
+
+
+
 
     // ⚡ Indexes (safe to run multiple times)
     await db.executeSql(`

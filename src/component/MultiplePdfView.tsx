@@ -1,32 +1,28 @@
-import { StackActions } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler, Animated, Linking, ScrollView } from 'react-native'
-import Pdf from 'react-native-pdf';
-import { fileShare, generateUniqueNumber, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
-
-import RNFetchBlob from 'rn-fetch-blob';
-import Share from 'react-native-share';
-import { deviceBasedDynamicDimension } from '../utilies/scale';
-import { COLORS } from "../utilies/GlobalColors";
-import ModalView from './ModalViewForPdfPassword';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, Linking, StyleSheet, View } from 'react-native';
 import { Button } from 'react-native-elements';
-import BannerAddMob from './admob/CustomBannerAdd';
-import CustomMenu from './Menu';
-import Entypo from 'react-native-vector-icons/Entypo';
-import { backIcon, share } from '../assets/GlobalImages';
-import CustomBannerAdd from './admob/CustomBannerAdd';
-import CustomBackIcon from './CustomBackIcon';
-import { FlatList } from 'react-native';
-import CustomVectorIcon from './CustomVectorIcon';
-import CustomLinearGradientView from './CustomLinearGradientView';
+import Pdf from 'react-native-pdf';
 import { useDispatch, useSelector } from 'react-redux';
-import { CustomErrorToast, CustomSuccessToast } from './CustomToast';
-import MaterialCommunityIcons from 'react-native-vector-icons'
+import { clearSelectedFiles, updateFilesPassword } from '../screen/dashboard/FileSlice';
+import { Theme } from '../screen/theme/ThemeConfig';
+import { useTheme } from '../screen/theme/useTheme';
+import { heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
+import CustomHeader from './CustomHeader';
+import CustomMultiplePdfPasswordModal from './CustomMultiplePdfPasswordModal';
+import CustomVectorIcon from './CustomVectorIcon';
 
 interface S {
   pdfArr: Array<any>
 }
 const MultiplePdfView = (props: S) => {
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const headerVisible = useRef(true);
+  const headerHeight = useRef(new Animated.Value(scaledSize(50))).current;
+  const previousPage1 = useRef(1);
+  const previousPage2 = useRef(1);
+
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [text, setText] = useState('')
   const [errorMsg, setErrorMsg] = useState('Please Enter password')
   const [num, setNumber] = useState(0)
@@ -38,18 +34,20 @@ const MultiplePdfView = (props: S) => {
   const [selectedSheet, setSelectedSheet] = useState({})
   const [isMultiView, setIsMultiView] = useState(false)
   const [isAddClosed, setIsAddClosed] = useState(false)
-  const response = useSelector((state) => state.FileSlice);
-
+  const [isShowPasswordModal, setIsShowPasswordModal] = useState(false)
+  const [protectedFiles, setProtectedFiles] = useState([])
+  // const [filePasswords, setFilePasswords] = useState([])
   const pdfArr = props?.route?.params
   const dispatch = useDispatch()
+  const { selectedFiles,filePasswords } = useSelector((state) => state.FileSlice);
   // useEffect(() => {
   //   console.log('pdfArr======', response)
   //   setSelectedSheet(pdfArr[0])
   // }, [pdfArr]);
 
   useEffect(() => {
-    console.log('files======', response.files);
-    setSelectedSheet(response.files[0])
+    console.log('files======', selectedFiles);
+    setSelectedSheet(selectedFiles[0])
   }, [])
 
   const onChangeText = (value: any) => {
@@ -78,152 +76,200 @@ const MultiplePdfView = (props: S) => {
   const onPressCloseHandler = () => {
     setNumber(0), setVisible(false)
     //props.navigation.goBack()
+    dispatch(clearSelectedFiles([]))
     Linking.getInitialURL = async () => null;
-    navigateToBack()
+    Utility.navigation.navigateToBack()
   }
+
+  const toggleHeader = (show: boolean) => {
+    if (show === headerVisible.current) return;
+
+    headerVisible.current = show;
+
+    Animated.parallel([
+      Animated.timing(headerTranslateY, {
+        toValue: show ? 0 : -scaledSize(50),
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerHeight, {
+        toValue: show ? scaledSize(50) : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
   const headerComp = () => {
     return (
-      <View style={{
-        height: scaledSize(40),
-        marginRight: scaledSize(0),
-        justifyContent: 'space-between',
-         zIndex: 99,marginTop:heightFromPercentage(2),
-        flexDirection: 'row',
+      <Animated.View style={{
+        height: headerHeight,
+        width: '100%',
+        zIndex: 99,
+        backgroundColor: theme.bgContainor,
+        overflow: 'hidden'
       }}>
-        
-
-
-          <View style={{ flexDirection: 'row',
-             flex: 1,
-             justifyContent:'center',alignItems:'center' }}>
-            <View style={{ flexDirection: 'row', flex: 1, }}>
-              <TouchableOpacity style={{
-                height: scaledSize(20),
-                width: scaledSize(30),
-                 borderRadius: scaledSize(30),
-                 marginLeft: scaledSize(10)
-              }} onPress={() => onPressCloseHandler()} >
-                <CustomBackIcon onPress={onPressCloseHandler} size={22} color='black' />
-              </TouchableOpacity>
-            </View>
-
-
-                  <CustomVectorIcon 
-                  iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'} 
-                  iconLibrary='MaterialCommunityIcons'
-                    style={{ color: COLORS.THEME_COLOR, fontSize: scaledSize(20),
-                      right:30
-                      }}
-                    onPress={() => { setIsMultiView(!isMultiView) }} />
-
-          </View>
-
-
-      </View>
+        <Animated.View style={{
+          transform: [{ translateY: headerTranslateY }],
+        }}>
+          <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
+            <CustomVectorIcon
+              iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
+              iconLibrary='MaterialCommunityIcons'
+              style={{
+                color: theme.themeColor, fontSize: scaledSize(20),
+                right: 30
+              }}
+              onPress={() => { setIsMultiView(!isMultiView) }} />
+          } />
+        </Animated.View>
+      </Animated.View>
     )
-
-
   }
 
   const renderItem = ({ item, index }) => {
+    const isSelected = selectedSheet.name === item.name;
     return (<Button
       containerStyle={{ justifyContent: 'center', alignItems: 'center', }}
       buttonStyle={{
-        // backgroundColor: 'white',
         backgroundColor: 'transparent',
-        paddingLeft:scaledSize(10),height:40,
+        paddingLeft: scaledSize(10), height: 40,
         marginLeft: index == 0 ? 0 : scaledSize(10),
-        borderBottomWidth: selectedSheet.name === item.name ? 2 : .5,
-        borderColor: selectedSheet.name === item.name ? 'green' : 'gray',
+        borderBottomWidth: isSelected ? 2 : .5,
+        borderColor: isSelected ? theme.themeColor : theme.borderColor,
       }}
-      titleStyle={{ color: 'black', textAlign: 'center' }}
-      key={generateUniqueNumber()}
+      titleStyle={{ color: theme.primaryTextColor, textAlign: 'center' }}
+      key={Utility.generateUniqueNumber()}
       title={item.name.slice(0, 15)}
       onPress={() => {
         console.log('sheetName')
-        setSelectedSheet(item)
-
+        setSelectedSheet(item);
+        previousPage1.current = 1;
       }} />)
   }
-  const onErrorHandler = (val) => {
-    console.log('error=================', val);
 
-    CustomErrorToast('We dont support password protected file')
-    navigateToBack()
+  const handlePageChange1 = (page: number) => {
+    if (page > previousPage1.current) {
+      toggleHeader(false); // Scrolling down
+    } else if (page < previousPage1.current) {
+      toggleHeader(true); // Scrolling up
+    }
+    previousPage1.current = page;
+  };
+  const handlePageChange2 = (page: number) => {
+    if (page > previousPage2.current) {
+      toggleHeader(false); // Scrolling down
+    } else if (page < previousPage2.current) {
+      toggleHeader(true); // Scrolling up
+    }
+    previousPage2.current = page;
+  };
+
+  const onErrorHandler = (item) => {
+
+    const file = protectedFiles.find((file) => file.path == item.path)
+    if (!file) {
+      setProtectedFiles((prev) => [...prev, item])
+    }
+    setIsShowPasswordModal(true);
+  };
+  const getPasswordForSelectedSheet = (currentFile) => {
+    console.log('selectedfile===',selectedFiles);
+    console.log('selectedSheet===',selectedSheet);
+    console.log('filePasswords===',filePasswords);
+    
+    const file = filePasswords.find((file) => file.id == currentFile?.id)
+    const file2 = filePasswords.find((file) => file.id == selectedSheet?.id)
+    console.log('file===', file);
+
+    return file?.pass || file2?.pass||''
   }
-
   const renderMultiPdf = () => {
     return (
       <View style={{ flex: 1 }}>
         {isMultiView ?
           <View style={{ flex: 1 }}>
             <View style={{
-              marginTop: scaledSize(2), justifyContent: 'flex-start', alignItems: 'flex-start', flexDirection: 'row'
+              marginTop: scaledSize(2),
+              justifyContent: 'flex-start',
+              alignItems: 'flex-start',
+              flexDirection: 'row',
+              backgroundColor: theme.bgColor
+
             }}>
               <FlatList
                 horizontal
-                data={response.files}
+                data={selectedFiles}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
               />
 
             </View>
             <Pdf
+              onPageChanged={(page) => {
+                handlePageChange1(page);
+              }}
               onScaleChanged={(v) => console.log('changed================================', v)
               }
               trustAllCerts={false}
               maxScale={100}
               onError={(v) => {
-                onErrorHandler('')
+                onErrorHandler(selectedFiles[1])
               }}
               onPressLink={(uri) => {
                 console.log(`Link pressed: ${uri}`);
-              }}
+              }} password={getPasswordForSelectedSheet(selectedFiles)}
               source={{ uri: selectedSheet?.path }}
               style={styles.pdf} />
           </View>
           :
-          <View style={{   }}>
+          <View style={{}}>
 
             <View style={{
-              backgroundColor: 'yellow',
               height: heightFromPercentage(45),
-              // borderBottomWidth: 2, borderColor: 'green'
             }}>
 
               <Pdf
+                onPageChanged={(page) => {
+                  handlePageChange1(page);
+                }}
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
-                onError={() => onErrorHandler('second')}
+                onError={() => onErrorHandler(selectedFiles[0])}
                 maxScale={100}
 
                 onPressLink={(uri) => {
                   console.log(`Link pressed: ${uri}`);
                 }}
-                source={{ uri: response.files[0].path }}
+                password={getPasswordForSelectedSheet(selectedFiles[0])}
+                source={{ uri: selectedFiles[0].path }}
 
                 style={styles.pdf} />
             </View>
-            <View style={{height:scaledSize(5),backgroundColor:'#d3d3d3'}}></View>
+            <View style={{ height: scaledSize(5), backgroundColor: theme.borderColor }}></View>
 
             <View style={{
-              backgroundColor: 'yellow', 
               height: heightFromPercentage(45),
               borderColor: 'black'
             }}>
 
               <Pdf
+                onPageChanged={(page) => {
+                  handlePageChange2(page);
+                }}
                 onScaleChanged={(v) => console.log('changed================================', v)
                 }
                 trustAllCerts={false}
-                onError={() => onErrorHandler('third')}
+                password={getPasswordForSelectedSheet(selectedFiles[1])}
+
+                onError={() => onErrorHandler(selectedFiles[1])}
                 maxScale={100}
 
                 onPressLink={(uri) => {
                   console.log(`Link pressed: ${uri}`);
                 }}
-                source={{ uri: response.files[1].path }}
+                source={{ uri: selectedFiles[1].path }}
 
                 style={styles.pdf} />
             </View>
@@ -236,9 +282,23 @@ const MultiplePdfView = (props: S) => {
   return (
 
     <View style={[styles.container]}>
-      {headerComp()}
+      {headerComp()} 
 
-      {selectedSheet.path ? renderMultiPdf() : null}
+      {selectedSheet?.path ? renderMultiPdf() : null}
+      {isShowPasswordModal && (
+        <CustomMultiplePdfPasswordModal
+          visible={isShowPasswordModal}
+          files={selectedFiles}
+          onClose={() => setIsShowPasswordModal(false)}
+          onSubmit={(v) => {
+            console.log('v==',v);
+            
+            dispatch(updateFilesPassword(v)),
+            setIsShowPasswordModal(false)}}
+          protectedFiles={protectedFiles}
+        />
+      )}
+
       {/* {!isAddClosed?<View style={{ height: scaledSize(40) }}>
         <CustomBannerAdd onPressAddClose={()=>console.log('closed')
         } />
@@ -248,19 +308,14 @@ const MultiplePdfView = (props: S) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    // justifyContent: 'flex-start',
-    // alignItems: 'center',
-    // marginTop: scaledSize(25),
-    //marginBottom:150
-    // backgroundColor: 'white'
+    backgroundColor: theme.bgContainor,
   },
   pdf: {
     flex: 1,
-    // width: Dimensions.get('window').width,
-    // height: Dimensions.get('window').height,
+    backgroundColor: theme.bgColor,
   }
 });
 

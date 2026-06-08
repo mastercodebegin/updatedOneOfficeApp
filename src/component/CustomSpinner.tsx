@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useMemo } from 'react'
 import Spinner from 'react-native-loading-spinner-overlay';
-import { COLORS } from '../utilies/GlobalColors';
 import { scaledSize } from '../utilies/Utilities';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 
 interface S {
   isLoading: boolean;
@@ -10,61 +11,37 @@ interface S {
 }
 
 export default function CustomSpinner(props: S) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <Spinner
       visible={props.isLoading}
       animation="fade"
-      overlayColor="rgba(0, 0, 0, 0.3)" // dim background
+      overlayColor="rgba(0, 0, 0, 0.7)"
       customIndicator={
-        <View style={styles.container}>
-          <View style={styles.box}>
-            <View style={{marginTop: scaledSize(20)}}>
-              <ActivityIndicator
-                size="large"
-                color={COLORS.THEME_COLOR}
-              />
-
-            </View>
-            <View>
-
-              <Text style={styles.text}>
-                {props.text || 'Loading files...'}
-              </Text>
-            </View>
-          </View>
+        <View style={styles.box}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.text}>{props.text || 'Loading...'}</Text>
         </View>
       }
     />
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+const createStyles = (theme: Theme) => StyleSheet.create({
   box: {
-    width: scaledSize(220),
-    paddingVertical: scaledSize(25),
-    borderRadius: scaledSize(12),
-    backgroundColor: '#fff',
+    width: scaledSize(120),
+    height: scaledSize(120),
+    borderRadius: scaledSize(20),
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     alignItems: 'center',
-    height: scaledSize(150),
-
-    // Android shadow
-    elevation: 5,
-
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+    justifyContent: 'center',
   },
   text: {
-    marginTop: scaledSize(35),
-    fontSize: scaledSize(12),
-    letterSpacing: 1,
-    color: '#000',
+    marginTop: scaledSize(20),
+    fontSize: scaledSize(14),
+    letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
 });

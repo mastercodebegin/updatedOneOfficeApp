@@ -10,6 +10,8 @@ import ImagePicker from "react-native-image-crop-picker";
 import { cameraIcon, gallery } from '../assets/GlobalImages';
 import { Overlay } from 'react-native-elements';
 import { scaledSize } from '../utilies/Utilities';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
 import { Fonts } from '../assets//fonts/GlobalFonts';
 import CustomVectorIcon from './CustomVectorIcon';
 import CustomHeaderGradient from './CustomHeaderGradient';
@@ -51,6 +53,9 @@ export const CustomPhotoOrCameraSelectOption = (props: S) => {
     plusIconColor, hidePlusComponentOnimageCount, maxNumberFile=1000, images=[] } = props;
   // const [images, setImages] = useState([])
   const [isShowPhotoOptionsModal, setIsShowPhotoOptionsModal] = useState(false)
+  const { theme, mode } = useTheme();
+  const styles = createStyles(theme, mode);
+
 
   const width = height + 10
   useEffect(() => {
@@ -95,55 +100,35 @@ export const CustomPhotoOrCameraSelectOption = (props: S) => {
 
 const MediaOption=()=>{
   return(
-        <Overlay isVisible={isShowPhotoOptionsModal} animationType='fade' >
-        <View style={{
-          height: scaledSize(200), width: scaledSize(280),
-          justifyContent: 'center', alignItems: 'center'
-        }}>
-          <View style={{ flex: .4 }}>
-            <Text style={{
-              fontFamily: Fonts.Primary_Text, fontSize: scaledSize(14),
-              letterSpacing: .5
-            }}>Select File</Text>
-          </View>
+    <Overlay isVisible={isShowPhotoOptionsModal} animationType='fade' overlayStyle={{backgroundColor: 'transparent'}}>
+      <View style={styles.mediaOptionContainer}>
+        <View style={{ flex: .4 }}>
+          <Text style={styles.mediaOptionTitle}>Select File</Text>
+        </View>
 
-          <View style={{
-            flexDirection: 'row',
-            flex: 1, justifyContent: "flex-start",
-            alignItems: 'flex-start', width: '80%'
-          }}>
-            <TouchableOpacity style={{
-              flex: 1, justifyContent: "center",
-              alignItems: 'center',
-            }}
-              onPress={() => openCamera()}>
-              <Image source={cameraIcon}
-                style={{ height: scaledSize(50), width: scaledSize(50) }} />
-              <Text>Camera</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}
-              onPress={() => openGallery()}
-            >
-              <Image source={gallery}
-                style={{
-                  height: scaledSize(50), width: scaledSize(50),
-                  // left: scaledSize(10)
-                }} />
-              <Text>Gallery</Text>
+        <View style={styles.mediaOptionRow}>
+          <TouchableOpacity style={styles.mediaOptionButton}
+            onPress={() => openCamera()}>
+            <Image source={cameraIcon}
+              style={styles.mediaOptionIcon} />
+            <Text style={styles.mediaOptionLabel}>Camera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mediaOptionButton}
+            onPress={() => openGallery()}
+          >
+            <Image source={gallery}
+              style={styles.mediaOptionIcon} />
+            <Text style={styles.mediaOptionLabel}>Gallery</Text>
 
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity style={{
-            height: scaledSize(35), justifyContent: "center", borderColor: '#d7d7d7',
-            alignItems: 'center', bottom: scaledSize(10), borderRadius: scaledSize(8),
-            width: scaledSize(260), backgroundColor: '#f5f5f5', borderWidth: 1
-          }} onPress={() => setIsShowPhotoOptionsModal(false)}>
-            <Text>
-              Cancel
-            </Text>
           </TouchableOpacity>
         </View>
-      </Overlay> 
+        <TouchableOpacity style={styles.mediaCancelButton} onPress={() => setIsShowPhotoOptionsModal(false)}>
+          <Text style={styles.mediaCancelLabel}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </Overlay>
   )
 }
 const header=()=>{
@@ -155,39 +140,25 @@ const header=()=>{
     marginBottom: scaledSize(20),
   }}
 >
-  <View style={{justifyContent:'center',alignItems:'center',flex:1}}>
+  <View style={{justifyContent:'center',alignItems:'center',flex:1,top:scaledSize(4)}}>
 
   <Text
-    style={{
-      fontSize: scaledSize(16),
-      letterSpacing:1,
-      fontWeight: '400',
-      color: '#111',
-      alignSelf:'center',
-      // fontFamily:Fonts.italic
-    }}
+    style={styles.headerTitle}
     >
     Select Photos
   </Text>
     </View>
 
   <TouchableOpacity
-    onPress={onPressClose} // or your close function
+    onPress={onPressClose}
     activeOpacity={0.8}
-    style={{
-      height: 36,
-      width: 36,
-      borderRadius: 18,
-      backgroundColor: '#ECECEC',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
+    style={styles.headerCloseButton}
   >
     <CustomVectorIcon
       iconLibrary="MaterialIcons"
       iconName="close"
       size={20}
-      style={{ color: '#333' }}
+      style={{ color: theme.iconColor }}
       onPress={onPressClose}
     />
   </TouchableOpacity>
@@ -196,7 +167,7 @@ const header=()=>{
 
   return (
     <View style={{ flex: 1, }}>
-      {MediaOption()}
+      {MediaOption()} 
       <View style={{ flex: 1,  }}>
         {isLeftViewRender ? isLeftViewRender() : header()
         }
@@ -224,23 +195,15 @@ const header=()=>{
           return (
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => setIsShowPhotoOptionsModal(true)}
-              style={{
-                height: height,
-                width: width,
-                borderRadius: scaledSize(18),
-                backgroundColor: '#EEF2FF',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: scaledSize(12),
-              }}
+              onPress={() => setIsShowPhotoOptionsModal(true)} 
+              style={[styles.addButton, {height: height, width: width}]}
             >
               <CustomVectorIcon
               onPress={() => setIsShowPhotoOptionsModal(true)}
                 iconLibrary="MaterialCommunityIcons"
                 iconName="plus"
                 size={height * 0.4}
-                style={{ color: plusIconColor || '#4F46E5' }}
+                style={{ color: theme.themeColor }}
               />
             </TouchableOpacity>
           );
@@ -248,13 +211,7 @@ const header=()=>{
 
         // 🔵 IMAGE CARD
         return (
-          <View
-            style={{
-              height: height,
-              width: width,
-              marginRight: scaledSize(12),
-            }}
-          >
+          <View style={[styles.imageCard, {height: height, width: width}]}>
             <ImageBackground
               source={{
                 uri:
@@ -263,39 +220,20 @@ const header=()=>{
                     : item?.path,
               }}
               resizeMode="cover"
-              style={{
-                flex: 1,
-                borderRadius: scaledSize(18),
-                overflow: 'hidden',
-              }}
+              style={styles.imageBackground}
             />
 
             {/* Delete Button */}
             <TouchableOpacity
               activeOpacity={0.8}
-              // onPress={() => {
-              //   const imageList = [...images];
-              //   imageList.splice(index - 1, 1);
-              //   onPressGallery(imageList);
-              // }}
-              style={{
-                position: 'absolute',
-                top: scaledSize(6),
-                right: scaledSize(6),
-                height: scaledSize(24),
-                width: scaledSize(24),
-                borderRadius: scaledSize(12),
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
+              style={styles.deleteButton}
             >
               <CustomVectorIcon
               onPress={() => {
                 const imageList = [...images];
                 imageList.splice(index - 1, 1);
                 onSelectImages(imageList);
-              }}
+              }} 
                 iconLibrary="MaterialIcons"
                 iconName="close"
                 size={14}
@@ -312,23 +250,9 @@ const header=()=>{
 {images.length > 0 && isShowSubmitBtn&& (
       <TouchableOpacity
         activeOpacity={0.85}
-        // onPress={onPressConvert}   // make sure you pass this prop
-        style={{
-          marginTop: scaledSize(20),
-          height: scaledSize(48),
-          borderRadius: scaledSize(24),
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#4F46E5',
-        }}
+        style={styles.submitButton}
       >
-        <Text
-          style={{
-            color: '#fff',
-            fontSize: scaledSize(14),
-            fontWeight: '600',
-          }}
-        >
+        <Text style={styles.submitButtonText}>
           Submit
         </Text>
       </TouchableOpacity>
@@ -338,7 +262,7 @@ const header=()=>{
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
     addImage: {
       height: scaledSize(80),
@@ -402,6 +326,110 @@ const styles = StyleSheet.create({
       shadowRadius: 2,
       elevation: 3, // For Android shadow
     },
-  
-  })
+    mediaOptionContainer: {
+      height: scaledSize(200),
+      width: scaledSize(280),
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.bgColor,
+      borderRadius: scaledSize(14),
+    },
+    mediaOptionTitle: {
+      fontFamily: Fonts.regular,
+      fontSize: scaledSize(14),
+      letterSpacing: 0.5,
+      top:scaledSize(4),
+      fontWeight: '500',
+      color: theme.primaryTextColor,
+    },
+    mediaOptionRow: {
+      flexDirection: 'row',
+      flex: 1,
+      justifyContent: 'flex-start',
+      alignItems: 'flex-start',
+      width: '80%',
+    },
+    mediaOptionButton: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    mediaOptionIcon: {
+      height: scaledSize(50),
+      width: scaledSize(50),
+    },
+    mediaOptionLabel: {
+      color: theme.primaryTextColor,
+    },
+    mediaCancelButton: {
+      height: scaledSize(35),
+      justifyContent: 'center',
+      borderColor: theme.borderColor,
+      alignItems: 'center',
+      bottom: scaledSize(10),
+      borderRadius: scaledSize(8),
+      width: scaledSize(260),
+      backgroundColor: theme.buttonBGColor,
+      borderWidth: 1,
+    },
+    mediaCancelLabel: {
+      color: theme.primaryTextColor,
+    },
+    headerTitle: {
+      fontSize: scaledSize(16),
+      letterSpacing: 1,
+      fontWeight: '400',
+      color: theme.primaryTextColor,
+      alignSelf: 'center',
+    },
+    headerCloseButton: {
+      height: scaledSize(36),
+      width: scaledSize(36),
+      borderRadius: scaledSize(18),
+      right:scaledSize(6),
+      top:scaledSize(4),
+      backgroundColor: theme.buttonBGColor,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addButton: {
+      borderRadius: scaledSize(18),
+      backgroundColor: theme.buttonBGColor,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: scaledSize(12),
+    },
+    imageCard: {
+      marginRight: scaledSize(12),
+    },
+    imageBackground: {
+      flex: 1,
+      borderRadius: scaledSize(18),
+      overflow: 'hidden',
+    },
+    deleteButton: {
+      position: 'absolute',
+      top: scaledSize(6),
+      right: scaledSize(6),
+      height: scaledSize(24),
+      width: scaledSize(24),
+      borderRadius: scaledSize(12),
+      backgroundColor: theme.buttonBGColor,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    submitButton: {
+      marginTop: scaledSize(20),
+      height: scaledSize(48),
+      borderRadius: scaledSize(24),
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.themeColor,
+    },
+    submitButtonText: {
+      color: theme.buttonTextColor,
+      fontSize: scaledSize(14),
+      fontWeight: '600',
+    },
+  });
   

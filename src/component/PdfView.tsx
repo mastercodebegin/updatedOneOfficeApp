@@ -1,148 +1,280 @@
-import { StackActions } from '@react-navigation/native';
-import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, Image, TouchableOpacity, BackHandler,Animated, Linking } from 'react-native'
-import Pdf from 'react-native-pdf';
-import { fileShare, heightFromPercentage, navigateToBack, scaledSize } from '../utilies/Utilities';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
-import RNFetchBlob from 'rn-fetch-blob';
-import Share from 'react-native-share';
-import { deviceBasedDynamicDimension } from '../utilies/scale';
-import { COLORS } from "../utilies/GlobalColors";
-import ModalView from './ModalViewForPdfPassword';
-import { Button } from 'react-native-elements';
-import BannerAddMob from './admob/CustomBannerAdd';
-import CustomMenu from './Menu';
+import {
+  View,
+  TouchableOpacity,
+  Animated,
+  Linking,
+  StyleSheet,
+} from 'react-native';
+
+import Pdf from 'react-native-pdf';
 import Entypo from 'react-native-vector-icons/Entypo';
-import { backIcon, share } from '../assets/GlobalImages';
-import CustomBannerAdd from './admob/CustomBannerAdd';
+
+import {
+  scaledSize,
+  Utility,
+  heightFromPercentage,
+} from '../utilies/Utilities';
+
+import ModalView from './ModalViewForPdfPassword';
 import CustomBackIcon from './CustomBackIcon';
+import { useTheme } from '../screen/theme/useTheme';
+import { Theme } from '../screen/theme/ThemeConfig';
+import CustomErrorMsgModal from './CustomErrorMsgModal';
 
 const PdfViewer = (props: any) => {
-  const [text, setText] = useState('')
-  const [errorMsg, setErrorMsg] = useState('Please Enter password')
-  const [num, setNumber] = useState(0)
-  const [visible, setVisible] = useState(false)
-  const [currentPage, setCurrentPage] = useState(0)
-  const [totalPage, setTotalPage] = useState(0)
-  const [source, setSource] = React.useState({ uri: 'http://samples.leanpub.com/thereactnativebook-sample.pdf', cache: true });
-  const opacity = useRef(new Animated.Value( 4)).current;
+  const [text, setText] = useState('');
+  const [errorMsg] = useState(
+    'Please Enter valid password',
+  );
+  const [num, setNumber] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [currentPage, setCurrentPage] =
+    useState(1);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalErrorMessage, setModalErrorMessage] = useState('');
 
-  useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: 1, // Fade in or out
-      duration: 1000, // Adjust duration for slower animation
-      useNativeDriver: true,
-    }).start();
-  }, [visible, currentPage]);
+  const { theme, mode } = useTheme();
 
-  const onAndroidSharePress = async () => {
-    RNFetchBlob.fs
-      .readFile(props?.data, 'base64')
-      .then(async (data) => {
-        Share.open({
-          filename: 'PdfName',
-          url: 'data:application/pdf;base64,' + data
-        })
-      })
-      .catch((err) => { });
-  }
+  const styles = useMemo(
+    () => createStyles(theme),
+    [theme],
+  );
 
-  const onChangeText = (value: any) => {
-  //  console.log('Password is ', value)
+  /* HEADER ANIMATION */
 
-    setText(value)
-  }
+  const headerTranslateY = useRef(
+    new Animated.Value(0),
+  ).current;
 
-  const PdfPasswordErrorHandler = (error) => {
-    setNumber((prev) => prev + 1)
-    setVisible(true)
+  const headerVisible = useRef(true);
+  const previousPage = useRef(1);
 
-  }
+  const headerHeight = useRef(
+    new Animated.Value(scaledSize(65))
+  ).current;
 
-  const onPressOkayHandler = () => {
-    console.log('text-------', text);
+  const toggleHeader = (show: boolean) => {
+    if (show === headerVisible.current) return;
 
-    if (text.length == 0) {
-      alert('Please Enter password')
-      return false
-    }
-    else {
-      text.length > 0 && setVisible(false)
-    }
-  }
-  const onPressCloseHandler = () => {
-    setNumber(0), setVisible(false)
-    //props.navigation.goBack()
-    Linking.getInitialURL = async () => null; 
-    navigateToBack()
-  }
+    headerVisible.current = show;
+
+    Animated.parallel([
+      Animated.timing(headerTranslateY, {
+        toValue: show ? 0 : -80,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+
+      Animated.timing(headerHeight, {
+        toValue: show ? scaledSize(55) : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  /* PASSWORD */
+
+  const onChangeText = (
+    value: string,
+  ) => {
+    setText(value);
+  };
+
+  const PdfPasswordErrorHandler =
+    () => {
+      setNumber(prev => prev + 1);
+      setVisible(true);
+      console.log('error');
+      
+    };
+
+  const onPressOkayHandler =
+    () => {
+      if (!text.length) {
+        setModalErrorMessage('Please enter a valid password');
+        setShowErrorModal(true);
+        return;
+      }
+
+      setVisible(false);
+    };
+
+  const onPressCloseHandler =
+    () => {
+      setNumber(0);
+      setVisible(false);
+
+      Linking.getInitialURL =
+        async () => null;
+
+      Utility.navigation.navigateToBack();
+    };
+
+  /* HEADER */
+
   const headerComp = () => {
     return (
-      <Animated.View style={{
-        height: scaledSize(50),
-        // marginRight: scaledSize(20),
-        justifyContent: 'space-between', zIndex: 99,
-        flexDirection: 'row',
-        marginTop:heightFromPercentage(2),
-      }}>
+      <Animated.View
+        style={{
+          height: headerHeight,
 
-         <>
-        <TouchableOpacity onPress={() => onPressCloseHandler()}>
-          <View style={{
-            height: scaledSize(30),
-            width: scaledSize(30), borderRadius: scaledSize(30),
-            marginTop: scaledSize(6), marginLeft: scaledSize(10)
-          }} >
-            <CustomBackIcon onPress={onPressCloseHandler} size={22} />
-          </View>
-        </TouchableOpacity>
+          overflow: 'hidden',
 
-          <TouchableOpacity onPress={() => fileShare(props?.route?.params?.uri, props?.route?.params?.name)}>
-            <View style={{
-              height: scaledSize(30),
-              width: scaledSize(30),
-              borderRadius: scaledSize(30),
-              marginTop: scaledSize(6)
-            }} >
-              <Entypo name='share' size={scaledSize(24)} color={'black'} />
-            </View>
-          </TouchableOpacity></>
+          backgroundColor: theme.bgContainor,
+
+          opacity: headerHeight.interpolate({
+            inputRange: [0, scaledSize(65)],
+            outputRange: [0, 1],
+          }),
+        }}>
+
+        <Animated.View
+          style={{
+            transform: [
+              { translateY: headerTranslateY }
+            ],
+
+            flexDirection: 'row',
+
+            justifyContent: 'space-between',
+
+            alignItems: 'center',
+
+            paddingHorizontal: scaledSize(14),
+
+            paddingTop: heightFromPercentage(2),
+
+            height: scaledSize(65),
+
+            backgroundColor: theme.bgContainor,
+          }}>
+
+          <TouchableOpacity
+            onPress={onPressCloseHandler} style={{ padding: scaledSize(8), bottom: scaledSize(4) }}>
+            <CustomBackIcon
+              onPress={onPressCloseHandler}
+              size={22}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              Utility.fileShare(
+                props?.route?.params?.uri,
+                props?.route?.params?.name,
+              )
+            } style={{ padding: scaledSize(8), bottom: scaledSize(4) }}>
+            <Entypo
+              name="share"
+              size={24}
+              color={theme.iconColor}
+            />
+          </TouchableOpacity>
+
+        </Animated.View>
+
       </Animated.View>
-        )
-
-    
-  }
+    );
+  };
 
   return (
+    <View style={styles.container}>
 
-    <View style={[styles.container]}>
-        {!visible && currentPage==1 ? headerComp() : <></>}
-      <View style={{ flex: 1 }}>
+      {!visible && (
+        <View
+          style={{
+            zIndex: 999,
+            elevation: 999,
+          }}>
+          {headerComp()}
+        </View>
+      )}
 
-        {!visible ?
-          <Pdf
-            onScaleChanged={(v) => console.log('changed================================', v)
-            }
-            trustAllCerts={false}
-            password={text}
-            maxScale={100}
-            onPressLink={(uri) => {
-              console.log(`Link pressed: ${uri}`);
-            }}
-             source={{ uri: props.route.params.uri }}
-            onError={(error) => {
-              PdfPasswordErrorHandler(error)
-            }}
-            onPageChanged={(page, numberOfPages) => {
-              setTotalPage(numberOfPages)
-              setCurrentPage(page)
-              console.log(`Current page: ${page}${numberOfPages}`);
-            }}
-            style={styles.pdf} />
+      <View
+        style={{
+          flex: 1,
 
-          :
+          backgroundColor:
+            mode === 'dark'
+              ? '#0F1117'
+              : theme.bgContainor,
+
+          marginTop: scaledSize(6),
+        }}>
+
+        {!visible ? (
+          <>
+            <Pdf
+              trustAllCerts={false}
+              password={text}
+              maxScale={100}
+              source={{
+                uri: props.route.params.uri,
+              }}
+
+              onError={() => {
+                PdfPasswordErrorHandler();
+              }}
+
+              onPageChanged={(page) => {
+
+                setCurrentPage(page);
+
+                if (
+                  page >
+                  previousPage.current
+                ) {
+                  toggleHeader(false);
+                } else {
+                  toggleHeader(true);
+                }
+
+                previousPage.current = page;
+              }}
+
+              style={{
+                flex: 1,
+
+                backgroundColor:
+                  mode === 'dark'
+                    ? '#12151D'
+                    : '#FFFFFF',
+              }}
+            />
+
+            {/* Dark mode overlay */}
+
+            {mode === 'dark' && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+
+                  backgroundColor: '#000',
+
+                  opacity: 0.12,
+                }}
+              />
+            )}
+
+          </>
+        ) : (
           <ModalView
-            visible={!visible}
+            visible={visible}
             errorRecognize={text}
             errorMessage={errorMsg}
             onText={onChangeText}
@@ -150,32 +282,34 @@ const PdfViewer = (props: any) => {
             onPressOkay={onPressOkayHandler}
             onPressClose={onPressCloseHandler}
             close={'CLOSE'}
-            open={'OPEN'} />
-        }
+            open={'OPEN'}
+          />
+        )}
+
       </View>
-      {/* <View style={{height:80,width:'100%',top:20}}>
-        <BannerAddMob/>
 
-        </View> */}
-
+      <CustomErrorMsgModal
+        isVisible={showErrorModal}
+        errorMessage={modalErrorMessage}
+        onPressClose={() => setShowErrorModal(false)}
+      />
     </View>
+  );
+};
 
-  )
-}
+const createStyles = (
+  theme: Theme,
+) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        theme.bgContainor,
+    },
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    // justifyContent: 'flex-start',
-    // alignItems: 'center',
-    // marginTop: scaledSize(25),
-    //marginBottom:150
-  },
-  pdf: {
-    flex: 1,
-    // width: Dimensions.get('window').width,
-    // height: Dimensions.get('window').height,
-  }
-});
+    pdf: {
+      flex: 1,
+    },
+  });
 
-export default PdfViewer
+export default PdfViewer;

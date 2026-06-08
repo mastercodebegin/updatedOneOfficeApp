@@ -1,250 +1,286 @@
+import React from 'react';
 
-import React, { useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, TextInput, Text } from "react-native";
-// import {Modal } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 
-// import { Modal } from "react-native-paper";
-import Modal from "react-native-modal";
-import { scaledSize, widthFromPercentage } from "../utilies/Utilities";
-import { ModalWindowColor } from "../utilies/GlobalColors";
-import { Fonts } from "../assets/fonts/GlobalFonts";
-import CustomVectorIcon from "./CustomVectorIcon";
+import Modal from 'react-native-modal';
 
-//local imports
+import {
+  scaledSize,
+  widthFromPercentage,
+} from '../utilies/Utilities';
+
+import { Fonts } from '../assets/fonts/GlobalFonts';
+
+import CustomVectorIcon from './CustomVectorIcon';
+
+import { useTheme } from '../../src/screen/theme/useTheme';
+import { Theme } from 'src/screen/theme/ThemeConfig';
 
 interface myProps {
-    visible?: any;
-    onSubmit?: any;
-    onCancel?: any;
-    mode?: 'default' | 'delete'; // 👈 add this
+  visible: boolean;
 
+  onSubmit?: () => void;
+
+  onCancel?: () => void;
+  message?:string
+  mode?: 'default' | 'delete';
 }
 
-const ConfirmationDialog = (props: myProps) => {
-    const {mode='default'} = props
-    useEffect(() => {
-        // console.log('number>>>>>>',props.num);
+const ConfirmationDialog = (
+  props: myProps,
+) => {
+  const {message}=props
+  const { theme } = useTheme();
 
-    })
+  const styles = createStyles(theme);
 
-    const renderDeleteConfirmation = () => {
-        return (
-            <View style={styles.mainView}>
-                <View style={styles.modalMainView}>
+  const isDeleteMode =
+    props?.mode === 'delete';
 
-                    {/* Icon */}
-                    <View style={{ ...styles.iconWrapper, backgroundColor: 'white' }}>
-                        <CustomVectorIcon iconLibrary="Feather" iconName="trash" style={{ color: '#800020', bottom: scaledSize(10) }} />
-                    </View>
+  return (
+    <Modal
+      isVisible={props.visible}
+      hasBackdrop
+      backdropColor="#000"
+      backdropOpacity={0.45}
+      animationIn="zoomIn"
+      animationOut="zoomOut"
+      animationInTiming={350}
+      animationOutTiming={300}>
+      
+      <View style={styles.mainView}>
+        
+        <View style={styles.modalMainView}>
+          
+          {/* Icon */}
+          <View
+            style={[
+              styles.iconWrapper,
 
-                    {/* Title */}
-                    <Text style={styles.heading}>Delete</Text>
+            //   {
+            //     backgroundColor:
+            //       isDeleteMode
+            //         ? 'rgba(255,59,92,0.12)'
+            //         : `${theme.themeColor}20`,
+            //   },
+            ]}>
+            
+            <CustomVectorIcon
+              iconLibrary="Feather"
+              iconName={
+                isDeleteMode
+                  ? 'trash'
+                  : 'alert-triangle'
+              }
+              style={{
+                color: isDeleteMode
+                  ? '#FF3B5C'
+                  : theme.themeColor,
 
-                    {/* Message */}
-                    <Text style={styles.subText}>
-                        Are you sure you want to delete?
-                    </Text>
+                bottom: scaledSize(0),
+              }}
+            />
+          </View>
 
-                    {/* Buttons */}
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity onPress={props.onCancel} style={styles.cancelButton}>
-                            <Text style={styles.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
+          {/* Heading */}
+          <Text style={styles.heading}>
+            {isDeleteMode
+              ? 'Delete'
+              : 'Alert'}
+          </Text>
 
-                        <TouchableOpacity onPress={props.onSubmit} style={styles.confirmButton}>
-                            <Text style={styles.confirmText}>Confirm</Text>
-                        </TouchableOpacity>
-                    </View>
+          {/* Message */}
+          <Text style={styles.subText}>
+            {message?message:isDeleteMode
+              ? 'Are you sure you want to delete?'
+              : 'Do you want to continue?'}
+          </Text>
 
-                </View>
-            </View>
-        )
-    }
-    const renderSimpleConfirmation = () => {
-        return (
-            <View style={styles.mainView}>
-                <View style={styles.modalMainView}>
-                    <View style={{ ...styles.iconWrapper, backgroundColor: 'white' }}>
-                        <CustomVectorIcon iconLibrary="Feather" iconName="alert-triangle"
-                         style={{ color: '#33257d', bottom: scaledSize(10) }} />
-                    </View>
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={props.onCancel}
+              style={styles.cancelButton}>
+              
+              <Text style={styles.cancelText}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
 
-                    {/* Title */}
-                    <Text style={styles.heading}>Alert</Text>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={props.onSubmit}
+              style={[
+                styles.confirmButton,
 
-
-                    {/* Message */}
-                    <Text style={styles.subText}>
-                        Do you want to continue?
-                    </Text>
-
-                    {/* Buttons */}
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity onPress={props.onCancel} style={styles.cancelButton}>
-                            <Text style={styles.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={props.onSubmit}
-                            style={{...styles.confirmButton,backgroundColor:'#33257d'}}
-                        >
-                            <Text style={styles.confirmText}>Continue</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                </View>
-            </View>
-        );
-    };
-    return (
-
-        <Modal
-            isVisible={props.visible}
-            hasBackdrop={true}
-            backdropColor={'#565656'}
-            animationInTiming={500}
-            animationOutTiming={900}
-        >
-            {mode=='delete'?renderDeleteConfirmation():renderSimpleConfirmation()}
-
-        </Modal>
-
-    );
+                {
+                  backgroundColor:
+                    isDeleteMode
+                      ? '#FF3B5C'
+                      : theme.themeColor,
+                },
+              ]}>
+              
+              <Text style={styles.confirmText}>
+                {isDeleteMode
+                  ? 'Delete'
+                  : 'Continue'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
     mainView: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: scaledSize(10),
+      flex: 1,
+
+      justifyContent: 'center',
+
+      alignItems: 'center',
+
+      paddingHorizontal: scaledSize(18),
     },
 
     modalMainView: {
-        width: '100%',
-        backgroundColor: '#fff',
-        borderRadius: scaledSize(10),
-        paddingVertical: scaledSize(24),
-        paddingHorizontal: scaledSize(20),
-        alignItems: 'center',
+      width: '100%',
 
-        // shadow
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: scaledSize(12),
-        shadowOffset: { width: 0, height: scaledSize(4) },
-        elevation: scaledSize(6),
+      backgroundColor:
+        theme.bgContainor,
 
+      borderRadius: scaledSize(24),
+
+      paddingVertical: scaledSize(28),
+
+      paddingHorizontal: scaledSize(22),
+
+      alignItems: 'center',
+
+      borderWidth: 1,
+
+      borderColor: theme.borderColor,
+
+      shadowColor: '#000',
+
+      shadowOpacity: 0.12,
+
+      shadowRadius: scaledSize(12),
+
+      shadowOffset: {
+        width: 0,
+        height: scaledSize(4),
+      },
+
+      elevation: scaledSize(6),
     },
 
     iconWrapper: {
-        width: widthFromPercentage(80),
-        height: scaledSize(40),
-        borderRadius: scaledSize(16),
-        backgroundColor: '#FDECEC',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: scaledSize(12),
-    },
+      width: widthFromPercentage(20),
 
-    icon: {
-        fontSize: scaledSize(28),
+      height: widthFromPercentage(20),
+
+      borderRadius: scaledSize(22),
+
+      justifyContent: 'center',
+
+      alignItems: 'center',
+
+      marginBottom: scaledSize(16),
     },
 
     heading: {
-        fontSize: scaledSize(16),
-        color: '#111',
-        letterSpacing: 1,
-        bottom: scaledSize(15)
-        // marginBottom: scaledSize(10),
+      fontSize: scaledSize(20),
+
+      color: theme.primaryTextColor,
+
+      fontFamily: Fonts.regular,
+
+      marginBottom: scaledSize(8),
     },
 
     subText: {
-        fontSize: scaledSize(14),
-        color: '#777',
-        textAlign: 'center',
-        letterSpacing: .5,
-        marginBottom: scaledSize(20),
-        lineHeight: scaledSize(20),
-        // fontFamily: Fonts.regular,
+      fontSize: scaledSize(14),
+
+      color: theme.primaryTextColor,
+
+      opacity: 0.7,
+
+      textAlign: 'center',
+
+      lineHeight: scaledSize(22),
+
+      marginBottom: scaledSize(26),
+
+      paddingHorizontal: scaledSize(10),
     },
 
     buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
+      flexDirection: 'row',
+
+      width: '100%',
     },
 
     cancelButton: {
-        flex: 1,
-        backgroundColor: '#F2F2F2',
-        paddingVertical: scaledSize(12),
-        borderRadius: scaledSize(10),
-        alignItems: 'center',
-        marginRight: scaledSize(8),
+      flex: 1,
+
+      height: scaledSize(50),
+
+      backgroundColor:
+        theme.buttonBGColor,
+
+      borderRadius: scaledSize(16),
+
+      justifyContent: 'center',
+
+      alignItems: 'center',
+
+      marginRight: scaledSize(10),
+
+      borderWidth: 1,
+
+      borderColor: theme.borderColor,
     },
 
     cancelText: {
-        fontSize: scaledSize(14),
-        color: '#333',
-        fontFamily: Fonts.medium,
+      fontSize: scaledSize(15),
+
+      color: theme.primaryTextColor,
+
+      fontFamily: Fonts.regular,
     },
 
     confirmButton: {
-        flex: 1,
-        backgroundColor: '#800020',
-        paddingVertical: scaledSize(12),
-        borderRadius: scaledSize(10),
-        alignItems: 'center',
-        marginLeft: scaledSize(8),
+      flex: 1,
+
+      height: scaledSize(50),
+
+      borderRadius: scaledSize(16),
+
+      justifyContent: 'center',
+
+      alignItems: 'center',
+
+      marginLeft: scaledSize(10),
     },
 
     confirmText: {
-        fontSize: scaledSize(14),
-        color: '#fff',
-        fontFamily: Fonts.medium,
+      fontSize: scaledSize(15),
+
+      color: theme.primaryTextColor,
+
+      fontFamily: Fonts.regular,
     },
-
-
-
-
-
-    outlineButton: {
-        width: scaledSize(100),
-        height: scaledSize(36),
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        // paddingVertical: scaledSize(12),
-        borderRadius: scaledSize(25),
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: scaledSize(8),
-    },
-
-    outlineText: {
-        fontSize: scaledSize(14),
-        color: '#333',
-        fontFamily: Fonts.medium,
-    },
-
-    primaryButton: {
-        width: scaledSize(150), height: scaledSize(36),
-        backgroundColor: '#4B2E83', // purple like image
-        // paddingVertical: scaledSize(12),
-        justifyContent: 'center',
-        borderRadius: scaledSize(25),
-        alignItems: 'center',
-        marginLeft: scaledSize(8),
-    },
-
-    primaryText: {
-        fontSize: scaledSize(12),
-        color: '#fff', 
-        letterSpacing: 1,
-        // fontFamily:Fonts.regular
-    },
-});
-
+  });
 
 export default ConfirmationDialog;
-

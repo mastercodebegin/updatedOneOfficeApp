@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useRef, use, useMemo } from 'react'
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button, Overlay } from 'react-native-elements';
+import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, DocumentPicker, fileShare, fileShareMultiple, generateUniqueNumber, getDate, getImageUriByOS, heightFromPercentage, navigateTo, RNImageToPdf, scaledSize, widthFromPercentage } from '../../utilies/Utilities';
+import { ConfirmPopup, deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'
@@ -39,9 +40,8 @@ import RNFetchBlob from 'rn-fetch-blob';
 import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, removeLocalData, setLocalData } from '../../utilies/storageUtility';
 import { FolderLocalService, resetFoldersTable } from '../../db/folderLocalService';
-import { DateHelper } from '../../utilies/DateHelper';
 import { FileLocalService } from '../../db/fileLocalService';
 import { FirebaseService } from '../../service/FirebaseService';
 import { GoogleDriveService } from '../../db/googleDriveService';
@@ -49,9 +49,22 @@ import { AuthService } from '../../service/AuthService';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import { syncAll } from './SyncFolderAndFiles';
 import CustomSpinner from '../../component/CustomSpinner';
-  import firestore from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 import { getDB } from '../../../src/db';
 import useDebounce from '../../component/useDebounce';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleTheme } from '../theme/ThemeSlice';
+import { useTheme } from '../theme/useTheme';
+import { Theme } from '../theme/ThemeConfig';
+import { color } from 'react-native-elements/dist/helpers';
+import { tagLocalService } from '../../../src/db/tagLocalService';
+import CustomVectorIcon from '../../../src/component/CustomVectorIcon';
+import ConfirmationDialog from '../../../src/component/ConfirmationDialog';
+import CustomSortModal from '../../../src/component/CustomSortModal';
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
+import CustomUpdateFolderTagModal from '../../component/CustomUpdateFolderTagModal';
+import CustomGoogleBtn from '../../component/CustomGoogleBtn';
+import AntDesign from 'react-native-vector-icons/AntDesign'
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -61,13 +74,18 @@ export const DocumentScan = () => {
   const [images, setImages] = useState<Array<any>>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isFolderNameChange, setIsFolderNameChange] = React.useState(false);
+  const [isTagModalVisible, setIsTagModalVisible] = React.useState(false);
+  const [isShowRenderRenameTagModal, setIsShowRenderRenameTagModal] = React.useState(false);
   const [folderId, setFolderId] = React.useState(0)
   const [isMultiDelete, setMultidelete] = useState(false);
   const [selectedFoldersId, setSelectedFoldersId] = useState<any>([]);
+  const [selectedFolder, setSelectedFolder] = useState();
   const [isShowConfirmationModal, setIsConfirmationModal] = useState(false);
   const [isShowFolderNameModal, setIsShowFolderNameModal] = useState(false);
   const [data, setData] = useState<any>([])
+  const [userTags, setUserTags] = useState<any>([])
   const [folderName, setFolderName] = useState('')
+  const [tagName, setTagName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isShowbackupMessage, setIsShowbackupMessage] = useState(false)
   const [isBackupStarted, setIsBackupStarted] = useState(false)
@@ -80,77 +98,170 @@ export const DocumentScan = () => {
   const [localFiles, setLocalFiles] = useState([])
   const isFocused = useIsFocused();
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-const [searchText,setSearchText] = useState('')
-const debouncedSearchText = useDebounce({searchText,delay:10000})
+  const [searchText, setSearchText] = useState('')
+  const debouncedSearchText = useDebounce({ searchText, delay: 10000 })
+  const [isShowDeleteTagConfirmation, setIsShowDeleteTagConfirmation] = useState(false)
+  const [isShowFolderDeleteConfirmation, setIsFolderDeleteConfirmation] = useState(false)
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [tagToRename, setTagToRename] = useState(null);
+  const [isShowDeleteMultipleTagsConfirmation, setIsShowDeleteMultipleTagsConfirmation] = useState(false)
+  const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('')
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [folderStats, setFolderStats] = useState<{ [key: number]: { count: number, size: number } }>({});
+  const [maxFolderSize, setMaxFolderSize] = useState(0);
 
-useEffect(() => {
-  // return 
-  let unsubscribeFiles: any;
-  let unsubscribeTriggers: any;
-  let isSyncing = false; // guard
+  const [selectedFolderTag, setSelectedFolderTag] = useState({});
+  const [tagForDeletion, setTagForDeletion] = useState({});
 
-  const init = async () => {
-    const userId = await AuthService.getUserId();
-    console.log('userid',userId);
-    
-    if (!userId) return;
+  // const toggleSwitch = toggleTheme()
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
-    // Listener 1 (normal logs)
-    unsubscribeFiles = firestore()
-      .collection('files')
-      .where('userId', '==', userId)
-      .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          console.log('SYNC TRIGGERED 1');
-          handleSync()
-            // syncAll(); // runs for added + modified + removed
 
-        });
-      });
+  // const theme =useSelector((state:any)=>state.ThemeSlice)
+  const { mode, theme, toggleTheme } = useTheme()
 
-    // Listener 2 (trigger sync)
-    unsubscribeTriggers = firestore()
-      .collection('folders')
-      .where('userId', '==', userId)
-      .onSnapshot(async snapshot => {
-        if (snapshot.empty) return;
+  const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
 
-        // prevent multiple calls
-        if (isSyncing) return;
+  const formatBytes = (bytes, decimals = 2) => {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  };
 
-        isSyncing = true;
-
-        try {
-          console.log('SYNC TRIGGERED 2');
-          await handleSync();
-        } catch (e) {
-          console.log('Sync error', e);
-        } finally {
-          isSyncing = false;
+  useEffect(() => {
+    if (data.length > 0 && localFiles.length > 0) {
+      const stats = {};
+      let max = 0;
+      data.forEach(folder => {
+        const filesInFolder = localFiles.filter(file => file.folderId === folder.id);
+        const count = filesInFolder.length;
+        const size = filesInFolder.reduce((acc, file) => acc + (file.size || 0), 0);
+        stats[folder.id] = { count, size };
+        if (size > max) {
+          max = size;
         }
       });
-  };
+      setFolderStats(stats);
+      setMaxFolderSize(max);
+    } else {
+      // Reset stats if there's no data
+      setFolderStats({});
+      setMaxFolderSize(0);
+    }
+  }, [data, localFiles]);
 
-  init();
+  useEffect(() => {
+    // console.log('ThemeSlice', theme);
+    // console.log('mode', mode);
+   const user = getLocalData(asyncStorageKeyName.USER_DETAILS)
+   console.log('user',user);
+   
+  })
 
-  return () => {
-    if (unsubscribeFiles) unsubscribeFiles();
-    if (unsubscribeTriggers) unsubscribeTriggers();
-  };
-}, []);
-useEffect(()=>{
-  console.log('debouncedSearchText',debouncedSearchText);
-  ApiHandler()
 
-},[debouncedSearchText])
+  useEffect(() => {
+    return
+    let unsubscribeFiles: any;
+    let unsubscribeTriggers: any;
+    let isSyncing = false; // guard
 
-const ApiHandler=()=>{
-    console.log('function callled----',debouncedSearchText)
+    const init = async () => {
+      const userId = await AuthService.getUserId();
+      console.log('userid', userId);
+
+      if (!userId) return;
+
+      // Listener 1 (normal logs)
+      unsubscribeFiles = firestore()
+        .collection('files')
+        .where('userId', '==', userId)
+        .onSnapshot(snapshot => {
+          if (!snapshot) {
+            console.log('snapshot null');
+            return;
+          }
+          // if (snapshot) return;
+          snapshot.docChanges().forEach(change => {
+            console.log('SYNC TRIGGERED 1');
+            handleSync()
+            // syncAll(); // runs for added + modified + removed
+
+          });
+        });
+
+      // Listener 2 (trigger sync)
+      unsubscribeTriggers = firestore()
+        .collection('folders')
+        .where('userId', '==', userId)
+        .onSnapshot(async snapshot => {
+          if (!snapshot) {
+            console.log('snapshot null');
+            return;
+          }
+          // prevent multiple calls
+          if (isSyncing) return;
+
+          isSyncing = true;
+
+          try {
+            console.log('SYNC TRIGGERED 2');
+            await handleSync();
+          } catch (e) {
+            console.log('Sync error', e);
+          } finally {
+            isSyncing = false;
+          }
+        });
+    };
+
+    init();
+
+    return () => {
+      if (unsubscribeFiles) unsubscribeFiles();
+      if (unsubscribeTriggers) unsubscribeTriggers();
+    };
+  }, []);
+  useEffect(() => {
+    console.log('debouncedSearchText', debouncedSearchText);
+    ApiHandler()
+
+  }, [debouncedSearchText])
+
+  const ApiHandler = () => {
+    console.log('function callled----', debouncedSearchText)
   }
 
   const getfiles = async () => {
     const files = await FileLocalService.getAllFiles()
-    console.log('files====', files);
     setLocalFiles(files);
   }
 
@@ -160,10 +271,11 @@ const ApiHandler=()=>{
     const fetchData = async () => {
       try {
         const folders = await FolderLocalService.getActiveFolders();
+        const tags = await tagLocalService.getTags();
 
-        console.log('folders=====1st', folders);
 
         setData(folders);
+        setUserTags(tags);
 
         setIsLocalDataFetch(true);
         getfiles()
@@ -175,45 +287,45 @@ const ApiHandler=()=>{
     fetchData();
   }, []);
 
-const fullReset = async () => {
-  try {
-    console.log("RESET START");
+  const fullReset = async () => {
+    try {
+      console.log("RESET START");
 
-    // 1. clear DB
-    const db = await getDB();
-    await db.executeSql(`DELETE FROM files`);
-    await db.executeSql(`DELETE FROM folders`);
-    
+      // 1. clear DB
+      const db = await getDB();
+      await db.executeSql(`DELETE FROM files`);
+      await db.executeSql(`DELETE FROM folders`);
 
-    // 2. clear files
-    const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
-    const exists = await RNFetchBlob.fs.isDir(dir);
 
-    if (exists) {
-      await RNFetchBlob.fs.unlink(dir);
+      // 2. clear files
+      const dir = CONSTANT.SAVED_DOCUMENTS_PATH;
+      const exists = await RNFetchBlob.fs.isDir(dir);
+
+      if (exists) {
+        await RNFetchBlob.fs.unlink(dir);
+      }
+
+      // 3. clear cache (optional)
+      const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
+      const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
+
+      for (const file of cacheFiles) {
+        await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
+      }
+      await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
+      await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
+
+      // ⛔ wait before fetching
+      const folders = await FolderLocalService.getActiveFolders()
+      const files = await FileLocalService.getAllFiles()
+      setData(folders)
+      setLocalFiles(files)
+
+      console.log("RESET COMPLETE");
+    } catch (e) {
+      console.log("RESET ERROR", e);
     }
-
-    // 3. clear cache (optional)
-    const cacheDir = RNFetchBlob.fs.dirs.CacheDir;
-    const cacheFiles = await RNFetchBlob.fs.ls(cacheDir);
-
-    for (const file of cacheFiles) {
-      await RNFetchBlob.fs.unlink(`${cacheDir}/${file}`);
-    }
-          await removeLocalData(asyncStorageKeyName.LAST_SYNC_TIME)
-          await removeLocalData(asyncStorageKeyName.DRIVE_FOLDER_ID)
-
-          // ⛔ wait before fetching
-          const folders = await FolderLocalService.getActiveFolders()
-          const files = await FileLocalService.getAllFiles()
-          setData(folders)
-          setLocalFiles(files)
-
-    console.log("RESET COMPLETE");
-  } catch (e) {
-    console.log("RESET ERROR", e);
-  }
-};
+  };
 
   const handleLogin = async () => {
     try {
@@ -228,29 +340,29 @@ const fullReset = async () => {
       console.log('Login error:', error);
     }
   };
-const handleSync=async () => {
-        if (isLoading) return; // 🔥 prevent double click
-        try {
-          setIsLoading(true);
-          console.log('Syncing all files... started', accessToken);
+  const handleSync = async () => {
+    if (isLoading) return; // 🔥 prevent double click
+    try {
+      setIsLoading(true);
+      console.log('Syncing all files... started', accessToken);
 
-          await syncAll();
-          // setTimeout(async() => {
-          const folders = await FolderLocalService.getActiveFolders()
-          const files = await FileLocalService.getAllFiles()
-          console.log('folders-------2nd', folders);
+      await syncAll();
+      // setTimeout(async() => {
+      const folders = await FolderLocalService.getActiveFolders()
+      const files = await FileLocalService.getAllFiles()
+      console.log('folders-------2nd', folders);
 
-          setLocalFiles(files);
-            
-            setData(folders);
-          // }, 500);
-        } catch (e) {
-          console.log('Sync error document scanner:', e);
-        } finally {
-          console.log('finally triggered');
-          setIsLoading(false); // 🔥 ALWAYS runs
-        }
-      }
+      setLocalFiles(files);
+
+      setData(folders);
+      // }, 500);
+    } catch (e) {
+      console.log('Sync error document scanner:', e);
+    } finally {
+      console.log('finally triggered');
+      setIsLoading(false); // 🔥 ALWAYS runs
+    }
+  }
   const renderButton = () => {
     return (<><Button title="Login" onPress={handleLogin} />
 
@@ -426,7 +538,7 @@ const handleSync=async () => {
       //   coverUri
       // );
       const folder = await FolderLocalService.createFolder
-        ('', folderDisplayName,
+        ('', selectedFolderTag?.id, folderDisplayName,
           null, '', '', 0, 0)
       console.log('created', folder);
 
@@ -446,10 +558,10 @@ const handleSync=async () => {
         // let finalName = `${folderDisplayName}_${i}.${extension}`;
         // let destinationFilePath = `${destinationPath}/${finalName}`;
 
-       let displayName = `${folderDisplayName}`;
-        console.log('display name',displayName);
-        
-        let finalName = `${folderDisplayName+ "_"+ Date.now()}.${extension}`;
+        let displayName = `${folderDisplayName}`;
+        console.log('display name', displayName);
+
+        let finalName = `${folderDisplayName + "_" + Date.now()}.${extension}`;
         let destinationFilePath = `${destinationPath}/${finalName}`;
 
         // ✅ handle duplicate safely
@@ -467,16 +579,16 @@ const handleSync=async () => {
         // ✅ SAME NAME IN DB
         await FileLocalService.createFile({
           name: finalName, // exact match with FS
-          displayName: folderDisplayName+'_'+[i], // without extension
+          displayName: folderDisplayName + '_' + [i], // without extension
           size: 0,
           lastModified: Date.now(),
           folderId: folderId,
         });
       }
       const files = await FileLocalService.getFilesByFolder(folderId)
-      console.log('files=======',files);
-      
-      const updatedFolder= await FolderLocalService.updateFolderById({id:folderId,coverUri:files[0].name})
+      console.log('files=======', files);
+
+      const updatedFolder = await FolderLocalService.updateFolderById({ id: folderId, coverUri: files[0].name })
 
       console.log('updatedFolder cover uri', updatedFolder);
       console.log('✅ All files saved');
@@ -523,6 +635,10 @@ const handleSync=async () => {
   }
   const renameFolder = async () => {
 
+    if (folderName.length == 0) {
+      alert('Folder name cannot be empty')
+      return
+    }
     await FolderLocalService.updateFolderById({ id: folderId, name: folderName, isDeleted: 0 })
 
     // await FolderLocalService.updateFolder(folderId, folderName, existingFolder.coverUri)
@@ -690,7 +806,9 @@ const handleSync=async () => {
     ConfirmPopup(() => deleteMultipleFolder());
   };
   const deleteFoldersConfirmationForSingleItem = (item: any) => {
-    ConfirmPopup(() => deleteSingleFolder(item));
+    setSelectedFolder(item)
+    setIsFolderDeleteConfirmation(true)
+    //  deleteSingleFolder(item)
   };
   const onPressSelectAll = () => {
     if (selectedFoldersId.length == data.length) {
@@ -710,7 +828,7 @@ const handleSync=async () => {
       // const selectedFolder: any = { id: obj.id, folderName: obj.folderName, files: obj.files }
 
       const files = await FileLocalService.getFilesByFolder(item.id)
-      navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
+      Utility.navigation.navigateTo('DisplayMultipleDocumentImage', { folderName: item.name, folderId: item.id, files: files })
       console.log('files=======', files);
 
     }
@@ -718,19 +836,22 @@ const handleSync=async () => {
 
   const shareFile = async (item: Array<any>) => {
     console.log('item', item);
+    // refForDocShare.current?.present()
 
     let data = []
     // for (let i = 0; i < item.files.length; i++) {
-    const folderFiles = item.files.map(element => ({
-      path: element.path
+    const files = await FileLocalService.getFilesByFolder(item.id)
+    const folderFiles = files.map(element => ({
+      path: CONSTANT.SAVED_DOCUMENTS_PATH + element.name
     }));
 
+    console.log('files', files);
     data = [...data, ...folderFiles]; // Accumulate file paths from all folders
-
-
-
     console.log('data', data);
-    refForDocShare.current?.close()
+
+
+
+    // refForDocShare.current?.close()
     await fileShareMultiple(data)
 
 
@@ -741,144 +862,768 @@ const handleSync=async () => {
     readFilesFromDirectory
 
   }
-  const renderParentItem = ({ item }) => {
 
-    const isSelected = checkisFolderSelected(item.id);
-    const isEditable = checkIsEditable(item.id);
+
+  const getTagColor = (isSelected: boolean) => {
+    if (mode == 'light') {
+      if (isSelected) {
+        return { bgColor: 'red', iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+      else {
+        return { bgColor: 'lightgray', iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+    }
+    else if (mode == 'dark')
+      if (isSelected) {
+        return { bgColor: theme.buttonBGColor, iconColor: theme.secondaryTextColor, textColor: theme.primaryTextColor }
+      }
+      else {
+        return { bgColor: theme.secondaryButtonBGColor, iconColor: theme.primaryTextColor, textColor: theme.primaryTextColor }
+      }
+    else {
+      return { bgColor: '', iconColor: theme.secondaryTextColor, textColor: theme.primaryTextColor }
+    }
+  }
+  const selectTagHandler = (tag: any) => {
+
+    const isTagSelected = selectedTags.find((item) => item.id == tag.id)
+    if (isTagSelected) {
+      const unselectTag = selectedTags.filter((item) => item.id != tag.id)
+      setSelectedTags(unselectTag)
+      return
+    }
+    else {
+      setSelectedTags(arr => [...arr, tag])
+    }
+  }
+const getTagIcon = (tagName: string) => {
+  switch (tagName?.toLowerCase()) {
+    case 'photos':
+      return 'image';
+
+    case 'others':
+      return 'folder';
+
+    case 'documents':
+      return 'description';
+
+    case 'videos':
+      return 'videocam';
+
+    case 'music':
+      return 'music-note';
+
+    default:
+      return 'label';
+  }
+};
+
+const renderTags = () => {
+  return (
+    <View style={styles.tagsWrapper}>
+
+      {/* LEFT ICON */}
+
+      <TouchableOpacity
+        disabled={selectedTags.length === 0}
+        onPress={() => {
+          if (selectedTags.length > 0) {
+            setSelectedTags([]);
+          }
+        }}
+        style={[
+          styles.tagIconContainer,
+          {
+            backgroundColor: theme.bgContainor,
+            // borderColor: selectedTags.length > 0 ? theme.deleteIconColor : theme.borderColor,
+          },
+        ]}
+      >
+        {selectedTags.length > 0 ?
+        <CustomVectorIcon iconLibrary='Fontisto' 
+        iconName='close-a' style={{color:theme.primaryTextColor,fontSize:scaledSize(14)}}/>:
+        <CustomVectorIcon iconLibrary='MaterialIcons' 
+        iconName='local-offer' style={{color:theme.themeColor}}
+        onPress={()=>setSelectedTags([])}
+        />
+        }
+        {/* <AntDesign
+          name={selectedTags.length > 0 ? 'clear' : "local-offer"}
+          size={22}
+          color={selectedTags.length > 0 ? theme.deleteIconColor : theme.themeColor}
+        /> */}
+      </TouchableOpacity>
+
+      {/* TAGS */}
+<FlatList
+  horizontal
+  data={userTags}
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={styles.scrollContent}
+  keyExtractor={item => item.id.toString()}
+  renderItem={({item}) => {
+    const isSelected = selectedTags.some(
+      tag => tag.id === item.id,
+    );
 
     return (
       <TouchableOpacity
         activeOpacity={0.85}
+        onPress={() => selectTagHandler(item)}
+        style={[
+          styles.tagChip,
+          {
+            backgroundColor: theme.bgContainor,
+            borderColor: isSelected
+              ? theme.themeColor
+              : theme.borderColor,
+          },
+        ]}>
+        <MaterialIcons
+          name={getTagIcon(item.name)}
+          size={18}
+          color={
+            isSelected
+              ? theme.themeColor
+              : theme.iconColor
+          }
+        />
+
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={[
+            styles.tagText,
+            {
+              color: theme.primaryTextColor,
+            },
+          ]}>
+          {Utility.string.getFirstLetterCapitalize(
+            item.name,
+          )}
+        </Text>
+
+        <CustomMenu
+          Icon={
+            <MaterialIcons
+              name="more-horiz"
+              size={18}
+              color={theme.secondaryTextColor}
+              style={styles.menuIcon}
+            />
+          }
+          menuOption={[
+            {
+              label: 'Rename',
+              onSelect: () => {
+                setTagToRename(item);
+                setTagName(item.name);
+                setIsShowRenderRenameTagModal(true);
+              },
+            },
+            {
+              label: 'Delete',
+              onSelect: () => {
+                setTagForDeletion(item);
+                setIsShowDeleteTagConfirmation(
+                  true,
+                );
+              },
+            },
+          ]}
+        />
+      </TouchableOpacity>
+    );
+  }}
+  ListEmptyComponent={<Text style={{alignSelf:'center'}}>No Tags</Text>}
+/>
+
+      {/* ACTION */}
+
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => {
+          if (selectedTags.length > 0) {
+            setIsShowDeleteMultipleTagsConfirmation(true);
+          } else {
+            setIsTagModalVisible(true);
+          }
+        }}
+        style={[
+          styles.actionButton,
+          {
+            backgroundColor:
+              theme.bgContainor,
+
+            borderColor:
+              selectedTags.length > 0 ?
+                theme.deleteIconColor :
+                theme.borderColor,
+          },
+        ]}
+      >
+        <MaterialIcons
+          name={
+            selectedTags.length > 0
+              ? 'delete-outline'
+              : 'add'
+          }
+          size={22}
+          color={
+            selectedTags.length > 0 ?
+              theme.deleteIconColor :
+              theme.themeColor}
+        />
+      </TouchableOpacity>
+
+    </View>
+  );
+};
+  const renderGradientButton = (iconName: any, color = 'white', onPress: any) => {
+    return (
+      <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
+        <LinearGradient
+          colors={mode === 'light' ? ['white', 'white'] :
+            [theme.buttonBGColor, theme.buttonBGColor]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.uploadButton}>
+
+          <Ionicons
+            name={iconName}
+            size={scaledSize(18)}
+            color={color}
+          />
+        </LinearGradient>
+      </TouchableOpacity>
+    )
+  }
+
+  const renderHeader = () => {
+    return (
+      <SafeAreaView style={styles.headerContainer}>
+
+        {/* Top Row */}
+        <View style={styles.topRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scaledSize(10) }}>
+            
+            <View>
+              <Text style={styles.heading}>
+                My{' '}
+                <Text style={styles.primaryText}>
+                  Documents
+                </Text>
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
+            <LinearGradient colors={[theme.buttonBGColor, theme.buttonBGColor]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.uploadButton}>
+
+              {/* <Ionicons
+                name={iconName}
+                size={scaledSize(18)}
+                color={mode === 'light' ? 'white' : color}
+              /> */}
+              <Text style={{
+                color: theme.iconColor,
+                letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
+              }}>AK</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search + Filter */}
+        <View style={styles.searchRow}>
+
+          <View style={styles.searchContainer}>
+            <Ionicons
+              name="search-outline"
+              size={26}
+              color="#3E4047"
+            />
+
+            <TextInput
+              placeholder="Search document..."
+              placeholderTextColor={theme.primaryTextColor}
+              onChangeText={setSearchQuery}
+              style={styles.input}
+            />
+            <Ionicons
+              name="close-outline"
+              size={26}
+              color="#3E4047"
+            />
+          </View>
+          {renderGradientButton('filter', theme.iconColor, () => setIsShowSortModal(true))}
+
+        </View>
+      </SafeAreaView>
+    );
+  };
+  const getTagByIdHandler = (id: number) => {
+    console.log('usertags===', userTags);
+
+    const tag: any = userTags.find(
+      (t: any) => t.id === id
+    );
+    return tag ? tag.name : '';
+
+  }
+  const renderParentItem = ({ item }) => {
+    const isSelected = checkisFolderSelected(item.id);
+    const stats = folderStats[item.id] || { count: 0, size: 0 };
+    const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
         onPress={() => onPressItem(item)}
         onLongPress={() => {
           setMultidelete(!isMultiDelete);
           onSelectFolders(item);
         }}
-        style={[
-          styles.card,
-          {
-            backgroundColor: isSelected ? '#E6F7F5' : '#FFFFFF',
-            borderWidth: isSelected ? 1 : 0,
-            borderColor: isSelected ? '#2FB2A2' : 'transparent',
-          },
-        ]}
+        style={[styles.docCard, isSelected && styles.docCardSelected]}
       >
-        {/* Thumbnail */}
-        <View style={styles.thumbnailWrapper}>
+        <View style={styles.docThumbnailContainer}>
           <Image
-            source={{ uri: getImageUriByOS(destinationPath + item?.coverUri) }}
-            style={styles.thumbnail}
+            source={{
+              uri: Utility.images.getImageUriByOS(
+                destinationPath + item?.coverUri,
+              ),
+            }}
+            style={styles.docThumbnail}
             resizeMode="cover"
           />
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {!isEditable ? (
-            <>
-              <Text style={styles.title} numberOfLines={1}>
-                {/* {capitalizeFirstLetter(item?.name || '')} */}
-                <Text style={styles.date}>{item?.coverUri}</Text>
-              </Text>
-              <Text style={styles.date}>{getDate(item?.createdAt)}</Text>
-              {/* <Text style={styles.date}>{item?.driveFolderId}</Text> */}
-            </>
-          ) : (
-            <>
-              <CustomInputBox
-                value={capitalizeFirstLetter(item?.name || '')}
-                onChangeText={setFolderName}
-                isEditable={true}
+        <View style={styles.docContent}>
+          <Text style={styles.docTitle} numberOfLines={1}>
+            {Utility.string.getFirstLetterCapitalize(item?.name || '')}
+          </Text>
+
+          <View style={styles.docMetadata}>
+            <Text style={styles.docMetaText}>{Utility.date.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}</Text>
+            <Text style={styles.docMetaSeparator}>•</Text>
+            <Text style={styles.docMetaText}>{stats.count} files</Text>
+            <Text style={styles.docMetaSeparator}>•</Text>
+            <Text style={styles.docMetaText}>{getTagByIdHandler(item.tagId)}</Text>
+          </View>
+
+          <View style={styles.storageInfo}>
+            <View style={styles.storageBar}>
+              <LinearGradient
+                colors={['#47b16a', '#3CF28A']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.storageBarFill, { width: `${sizePercentage}%` }]}
               />
-              <Text style={styles.date}>{getDate(item?.date)}</Text>
-            </>
-          )}
+            </View>
+            <Text style={styles.storageText}>{formatBytes(stats.size)}</Text>
+          </View>
         </View>
 
-        {/* Actions */}
         {!isMultiDelete && (
-          <View style={styles.actionColumn}>
-            {!isEditable ? (
-              <>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => {
-                    setIsFolderNameChange(true);
-                    setFolderId(item.id);
-                  }}
-                >
-                  <MaterialIcons name="edit" size={18} color="#209DA1" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() =>
-                    deleteFoldersConfirmationForSingleItem(item)
-                  }
-                >
-                  <MaterialIcons name="delete" size={18} color="#E4003A" />
-                </TouchableOpacity>
-
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => shareFile(item)}
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={18}
-                    color="#209DA1"
-                  />
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={renameFolder}
-                >
-                  <Ionicons
-                    name="checkmark-sharp"
-                    size={20}
-                    color="#209DA1"
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => setIsFolderNameChange(false)}
-                >
-                  <MaterialIcons name="close" size={18} color="#999" />
-                </TouchableOpacity>
-              </>
-            )}
+          <View style={styles.docActions}>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => shareFile(item)}>
+              <Ionicons name="share-social-outline" size={scaledSize(18)} color={theme.iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => {
+              setIsFolderNameChange(true);
+              setFolderId(item.id);
+              setFolderName(item.name);
+            }}>
+              <Ionicons name="pencil-outline" size={scaledSize(18)} color={theme.iconColor} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => deleteFoldersConfirmationForSingleItem(item)}>
+              <Ionicons name="trash-outline" size={scaledSize(18)} color={theme.deleteIconColor} />
+            </TouchableOpacity>
           </View>
         )}
       </TouchableOpacity>
     );
   };
 
-  const getFiles = () => {
-    // getting search value from dashboard and filtering it
-    // console.log('data getFiles======', data);
-    if (isLocalDataFetch) {
+  const renderTagBtn = (textStyle?: TextStyle) => {
+    return (<TouchableOpacity
+      activeOpacity={0.85}
+      key={Math.random()}
+      // onPress={()=>onPress()}
+      onPress={() => setIsTagModalVisible(true)}
+      style={styles.addTagButton}
+      onLongPress={() => alert('test')}
+    >
 
-      if (searchQuery.length > 0) {
-        return data.filter(file =>
-          file.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      } else {
-        // return []
-        // console.log('log==', data.folders);
+      <Ionicons
+        name="add"
+        size={18}
+        color={theme.themeColor}
+      />
 
-        return data;
+      <Text style={[styles.addTagText, textStyle]}>
+        Add Tag
+      </Text>
+    </TouchableOpacity>)
+  }
+
+
+  const addTagHandler = async () => {
+    // error
+    console.log('tag', tagName);
+
+    const existingTag = await tagLocalService.getTagByName(tagName)
+    console.log('existingTag', existingTag);
+    if (tagName.length == 0) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag name is invalid')
+      return
+    }
+    if (existingTag != undefined) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag already exist')
+      return
+    }
+
+
+    const createdTags = await tagLocalService.addTag({ userId: '', name: tagName, color: '#3CF28A' })
+    console.log('createdTags===', createdTags);
+    const tags = await tagLocalService.getTags()
+    console.log('existing tags===', tags);
+    setUserTags(tags)
+    setIsTagModalVisible(false)
+    setIsShowRenderRenameTagModal(false)
+    setTagName('')
+  }
+
+  const renameTagHandler = async () => {
+    if (!tagName?.trim()) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Tag name is invalid')
+      return
+    }
+
+    const existingTagWithName = await tagLocalService.getTagByName(tagName.trim());
+    if (existingTagWithName && existingTagWithName.id !== tagToRename?.id) {
+      setIsShowErrorModal(true);
+      setErrorMessage('A tag with this name already exists.');
+      return;
+    }
+
+    await tagLocalService.updateTag(tagToRename.id, { name: tagName })
+    const tags = await tagLocalService.getTags()
+    setUserTags(tags)
+    handleCancelRename();
+  }
+
+  const handleCancelRename = () => {
+    setIsShowRenderRenameTagModal(false);
+    setTagName('');
+    setTagToRename(null);
+  };
+  const deleteTagHandler = async () => {
+    if (tagForDeletion?.id == undefined) {
+      return
+    }
+    const updatedTags = await tagLocalService.updateTag(tagForDeletion.id, { isDeleted: 1 })
+    const tags = await tagLocalService.getTags()
+    setTagForDeletion({})
+    setUserTags(tags)
+    setSelectedTags([])
+    setIsShowDeleteTagConfirmation(false)
+    setIsTagModalVisible(false)
+    setIsShowRenderRenameTagModal(false)
+    setIsShowDeleteTagConfirmation(false)
+    setTagName('')
+  }
+
+  const deleteMultipleTagsHandler = async () => {
+    if (selectedTags.length === 0) return;
+    try {
+      for (const tag of selectedTags) {
+        await tagLocalService.updateTag(tag.id, { isDeleted: 1 });
       }
+      const tags = await tagLocalService.getTags();
+      setUserTags(tags);
+      setSelectedTags([]);
+      setIsShowDeleteMultipleTagsConfirmation(false);
+      CustomSuccessToast(`${selectedTags.length} tag(s) deleted`);
+    } catch (error) {
+      CustomErrorToast('Failed to delete tags');
     }
-    else {
-      console.log('returned------', data);
+  }
+  const renderAddTagModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isTagModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsTagModalVisible(false)
+        }>
 
-      return []
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Add tag
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new tag name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={tagName}
+                onChangeText={setTagName}
+                placeholder="Tag name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={() =>
+                  setIsTagModalVisible(false)
+                }>
+
+                <Text style={styles.cancelText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={addTagHandler}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Create
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+
+  const renderRenameTagModal = () => {
+    return (
+      <Modal
+        visible={isShowRenderRenameTagModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          handleCancelRename()
+        }>
+
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Rename Tag
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new tag name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={tagName}
+                onChangeText={setTagName}
+                placeholder="Tag name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                    onPress={handleCancelRename}>
+
+                <Text style={styles.cancelText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={() => renameTagHandler()}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Rename
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+  const renderRenameModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isFolderNameChange}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsFolderNameChange(false)
+        }>
+
+        <View style={styles.modalOverlay}>
+
+          <View style={styles.modalContainer}>
+
+            {/* Header */}
+            <Text style={styles.modalTitle}>
+              Rename Folder
+            </Text>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new folder name
+            </Text>
+
+            {/* Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={folderName}
+                onChangeText={setFolderName}
+                placeholder="Folder name"
+                placeholderTextColor="#9CA3AF"
+                style={styles.modalInput}
+              />
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.modalButtonRow}>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={() =>
+                  setIsFolderNameChange(false)
+                }>
+
+                <Text style={styles.cancelText}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.renameButton}
+                onPress={renameFolder}>
+
+                <LinearGradient
+                  colors={[
+                    theme.themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gradientButton}>
+
+                  <Text style={styles.renameText}>
+                    Rename
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const getFiles = () => {
+    if (!isLocalDataFetch) {
+      return [];
     }
+
+    let filteredData = [...data];
+
+    // search
+    if (searchQuery?.length > 0) {
+      console.log('in search===');
+
+      filteredData = filteredData.filter(
+        file =>
+          file.name
+            ?.toLowerCase()
+            .includes(
+              searchQuery.toLowerCase(),
+            ),
+      );
+    }
+
+    // tag filter
+    if (selectedTags.length > 0) {
+      console.log('selecteds===', selectedTags);
+
+      filteredData =
+        filteredData.filter(
+          file =>
+            selectedTags.some(tag => tag.id === file.tagId)
+        );
+    }
+
+    if (selectedSort) {
+
+      // sorting
+      filteredData =
+        onApplySortHandler(
+          selectedSort,
+          filteredData,
+        );
+    }
+
+
+
+    return filteredData;
   };
 
 
@@ -889,7 +1634,7 @@ const handleSync=async () => {
   const saveAsyncStorageToFile = async () => {
     try {
       // Fetch data from AsyncStorage
-      const storedData = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS);
+      const storedData = getLocalData(asyncStorageKeyName.DOCUMENTS);
       const jsonData = { imagePaths: JSON.parse(storedData) || [] };
 
       const fileExists = await RNFS.exists(jsonPath);
@@ -914,8 +1659,8 @@ const handleSync=async () => {
     try {
       // Get the image paths from AsyncStorage
 
-      const storedImages = await AsyncStorage.getItem(asyncStorageKeyName.DOCUMENTS);
-      const imagePaths = JSON.parse(storedImages) || [];
+      const storedImages = getLocalData(asyncStorageKeyName.DOCUMENTS);
+      const imagePaths = storedImages?storedImages:[]
       if (imagePaths.length == 0) {
         console.log('imagePaths is zero :', imagePaths);
         setIsBackupStarted(false)
@@ -984,25 +1729,7 @@ const handleSync=async () => {
 
 
   }
-  // const openFile = async () => {
-  //   try {
-  //     const res = await DocumentPicker.pickSingle({
-  //       copyTo: 'cachesDirectory',
-  //       type: [DocumentPicker.types.zip,]
-  //     })
-  //     // console.log('response-----', res);
-  //     // i want a file extension
-  //     const fileExtension = res.name.split('.').pop()
-  //     console.log('fileExtension--------------', res);
-  //     console.log('fileExtension--------------', fileExtension);
-  //     // importBackup(res)
 
-
-  //   }
-  //   catch (error) {
-  //     console.log('openFile error-----', error);
-  //   }
-  // }
 
   const openFile = async () => {
     console.log('open file===');
@@ -1017,8 +1744,8 @@ const handleSync=async () => {
         // console.log('name--------------', res[0].localUri);
         // fileExtension = res[0].localUri.split('.').pop()
         // uri = res[0].localUri
-       const uri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
-        
+        const uri = Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + 'kpo_0.jpg')
+
         console.log('uri', uri);
 
         const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
@@ -1044,122 +1771,535 @@ const handleSync=async () => {
       console.log('openFile error-----', error);
     }
   }
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <View style={{
-        height: scaledSize(50),
-        alignSelf: 'center',
-        marginTop: heightFromPercentage(4)
+  const onApplySortHandler = (sortType: string, sorted: any[]) => {
+
+    switch (sortType) {
+      case 'latest':
+
+        return sorted.sort(
+          (a, b) =>
+            b.createdAt - a.createdAt,
+        );
+
+      case 'oldest':
+        return sorted.sort(
+          (a, b) =>
+            a.createdAt - b.createdAt,
+        );
+
+      case 'name_asc':
+        return sorted.sort((a, b) =>
+          a.name.localeCompare(b.name),
+        );
+
+      case 'name_desc':
+        return sorted.sort((a, b) =>
+          b.name.localeCompare(a.name),
+        );
+
+      case 'size':
+        return sorted.sort(
+          (a, b) => b.size - a.size,
+        );
+
+      case 'modified':
+        return sorted.sort(
+          (a, b) =>
+            b.updatedAt - a.updatedAt,
+        );
+
+      default:
+        return sorted.sort(
+          (a, b) =>
+            b.createdAt - a.createdAt,
+        );;
+    }
+    setIsShowSortModal(false)
+    // implement filter logic here
+  }
+
+  const tags = [
+    'Work',
+    'Personal',
+    'Important',
+    'Study',
+  ];
 
 
-      }}>
-        {isMultiDelete ? <LinearGradient
-          colors={['#1385b5', '#2fb2a2']}
-          style={{ height: scaledSize(50), }}>
-          <View style={{
-            justifyContent: 'space-between', flex: 1, width: '100%',
-            flexDirection: 'row', alignItems: 'flex-start'
-          }}>
-            <View style={{
-              flex: 1, height: '100%',
-              justifyContent: 'center', alignItems: 'flex-start',
-            }}>
-              <TouchableOpacity onPress={() => { setMultidelete(false), setSelectedFoldersId([]) }}>
-                <MaterialIcons name='arrow-back' color={'white'}
-                  size={scaledSize(30)} style={{ marginLeft: scaledSize(10), marginRight: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-            <View style={{
-              justifyContent: 'center', flexDirection: 'row',
-              height: scaledSize(50), alignItems: 'center'
-            }}>
-              <View style={{ width: scaledSize(50) }}>
 
-                <Text style={{
-                  fontSize: scaledSize(16), color: 'white', fontWeight: 'bold',
-                  letterSpacing: 1, fontFamily: FONTS.QuicksandBold,
-                }}>{selectedFoldersId.length}</Text>
-              </View>
-              <TouchableOpacity onPress={onPressSelectAll} style={{ width: scaledSize(100) }}>
-                <Text style={{
-                  fontSize: scaledSize(16), color: 'white',
-                  letterSpacing: 1, fontFamily: FONTS.bold
-                }}>{data.length == selectedFoldersId.length ? 'Unselect All' : 'Select All'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => refForDocShare.current?.present()}>
-                <MaterialIcons name='share' color={'white'} size={scaledSize(24)} style={{ marginLeft: scaledSize(10) }} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { deleteFoldersConfirmationForMultipleItem() }}>
-                <MaterialIcons name='delete' color={'white'}
-                  size={scaledSize(24)} style={{ marginLeft: scaledSize(10), marginRight: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-          </View>
+  // const renderFolderNameModal = () => {
+  //   const tags = [
+  //     'Work',
+  //     'Personal',
+  //     'Important',
+  //     'Study',
+  //   ];
 
-        </LinearGradient> :
+  //   return (
+  //     <Overlay
+  //       isVisible={isShowFolderNameModal}
+  //       onBackdropPress={() =>
+  //         setIsShowFolderNameModal(false)
+  //       }
+  //       overlayStyle={{
+  //         backgroundColor: 'transparent',
+  //         padding: 0,
+  //         elevation: 0,
+  //       }}
+  //     >
+  //       <View
+  //         style={{
+  //           width: scaledSize(330),
+  //           backgroundColor: '#111216',
+  //           borderRadius: scaledSize(30),
+  //           padding: scaledSize(24),
+  //         }}
+  //       >
+  //         {/* Header */}
 
-          <LinearGradient
-            // colors={['white', 'white']}
-            colors={['#0081A7', '#00AFB9']}
-            style={{
-              flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-              width: '95%', alignSelf: 'center',
-              borderRadius: scaledSize(8),
-            }}>
-            <View style={{
-              width: widthFromPercentage(78),
-              height: scaledSize(43),
-              justifyContent: 'center', alignItems: 'center',
-              alignSelf: 'center',
-            }}>
-              <Searchbar
-                placeholder="Search"
-                style={{
-                  borderRadius: scaledSize(0), height: scaledSize(43), marginRight: scaledSize(20),
-                  backgroundColor: 'white', textAlign: 'center', borderWidth: 1, borderColor: '#e7ebf3',
-                  alignSelf: 'center'
-                }}
-                defaultValue={searchText}
-                onChangeText={(value) => setSearchText(value)}
-                // onChangeText={(value) => setSearchQuery(value)}
-                // placeholderTextColor="#d5d5d5"
-                inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center' }}
-                loading={false}
-                icon={() => <Image source={searchIcon} style={{
-                  height: scaledSize(16), width: scaledSize(16),
-                }}
+  //         <View
+  //           style={{
+  //             flexDirection: 'row',
+  //             justifyContent:
+  //               'space-between',
+  //             alignItems: 'center',
+  //           }}
+  //         >
+  //           <Text
+  //             style={{
+  //               color: 'white',
+  //               fontSize: scaledSize(26),
+  //               fontFamily:
+  //                 FONTS.QuicksandBold,
+  //             }}
+  //           >
+  //             Create Folder
+  //           </Text>
 
-                />}
-                clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                  setSearchQuery(''), console.log('press search')
-                }}>
-                  <Image source={clear} style={{
-                    height: scaledSize(16), width: scaledSize(16),
+  //           <TouchableOpacity
+  //             onPress={() =>
+  //               setIsShowFolderNameModal(
+  //                 false
+  //               )
+  //             }
+  //           >
+  //             <MaterialIcons
+  //               name="close"
+  //               color="#8F9196"
+  //               size={30}
+  //             />
+  //           </TouchableOpacity>
+  //         </View>
 
-                  }} />
-                </TouchableOpacity> : <></>
-                }
-                value={searchQuery}
-              />
-              {/* <CustomInput onChangeText={((v)=>setSearchText(v))} placeholder='input'/> */}
-            </View>
-            <View style={{
-              width: scaledSize(45), height: scaledSize(40), justifyContent: 'center',
-              alignItems: 'center', marginLeft: scaledSize(10), right: 14,
-            }}>
-              <MaterialCommunityIcons name='cloud-upload-outline' size={scaledSize(24)}
-                color={'white'} onPress={() => openFile()} />
-              {/* color={'white'} onPress={() => setIsShowbackupMessage(true)} /> */}
-            </View>
-          </LinearGradient>
+  //         {/* Input */}
+
+  //         <View
+  //           style={{
+  //             marginTop: scaledSize(28),
+  //             backgroundColor:
+  //               '#1C1D22',
+  //             borderRadius:
+  //               scaledSize(18),
+  //             paddingHorizontal:
+  //               scaledSize(18),
+  //           }}
+  //         >
+  //           <CustomInputBox
+  //             value={folderName}
+  //             onChangeText={
+  //               setFolderName
+  //             }
+  //             placeholder="Folder name"
+  //             placeholderTextColor="#666"
+  //             inputStyle={{
+  //               color: 'white',
+  //             }}
+  //           />
+  //         </View>
+
+  //         {/* Tags */}
+
+  //         <Text
+  //           style={{
+  //             color: '#A2A2A2',
+  //             marginTop:
+  //               scaledSize(24),
+  //             marginBottom:
+  //               scaledSize(14),
+  //             fontSize:
+  //               scaledSize(15),
+  //           }}
+  //         >
+  //           Choose Tag
+  //         </Text>
+
+  //         <View
+  //           style={{
+  //             flexDirection: 'row',
+  //             flexWrap: 'wrap',
+  //             gap: scaledSize(12),
+  //           }}
+  //         >
+  //           {tags.map(item => (
+  //             <TouchableOpacity
+  //               key={item}
+  //               onPress={() =>
+  //                 setSelectedTag(
+  //                   item
+  //                 )
+  //               }
+  //               style={{
+  //                 paddingHorizontal:
+  //                   scaledSize(18),
+  //                 paddingVertical:
+  //                   scaledSize(12),
+
+  //                 borderRadius:
+  //                   scaledSize(999),
+
+  //                 backgroundColor:
+  //                   selectedTag ===
+  //                   item
+  //                     ? COLORS.THEME_COLOR
+  //                     : '#1D1F24',
+  //               }}
+  //             >
+  //               <Text
+  //                 style={{
+  //                   color:
+  //                     selectedTag ===
+  //                     item
+  //                       ? '#fff'
+  //                       : '#CFCFCF',
+  //                   fontSize:
+  //                     scaledSize(
+  //                       14
+  //                     ),
+  //                 }}
+  //               >
+  //                 {item}
+  //               </Text>
+  //             </TouchableOpacity>
+  //           ))}
+  //         </View>
+
+  //         {/* Save */}
+
+  //         <CustomeButton
+  //           name="Create"
+  //           onPress={() =>
+  //             copyFilesToDirectory()
+  //           }
+  //           buttonStyle={{
+  //             marginTop:
+  //               scaledSize(28),
+  //             height:
+  //               scaledSize(56),
+  //             borderRadius:
+  //               scaledSize(18),
+  //             backgroundColor:
+  //               COLORS.THEME_COLOR,
+  //           }}
+  //           textStyle={{
+  //             fontSize:
+  //               scaledSize(18),
+  //             color: 'white',
+  //             fontFamily:
+  //               FONTS.QuicksandBold,
+  //           }}
+  //         />
+  //       </View>
+  //     </Overlay>
+  //   );
+  // };
+
+
+  const renderFolderNameModal = () => {
+    return (
+      <Modal
+        // visible={true}
+        visible={isShowFolderNameModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setIsShowFolderNameModal(false)
         }
+      >
+        <View
+          style={styles.modalOverlay}
+        >
+          <View
+            style={styles.modalContainer}
+          >
 
+            {/* Header */}
+
+            <Text
+              style={styles.modalTitle}
+            >
+              Create Folder
+            </Text>
+
+            <Text
+              style={
+                styles.modalSubtitle
+              }
+            >
+              Enter folder name
+              and choose tag
+            </Text>
+
+            {/* Folder Input */}
+
+            <View
+              style={
+                styles.inputContainer
+              }
+            >
+              <TextInput
+                value={folderName}
+                onChangeText={
+                  setFolderName
+                }
+                placeholder="Folder name"
+                placeholderTextColor="#9CA3AF"
+                style={
+                  styles.modalInput
+                }
+              />
+            </View>
+
+            {/* Tags */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+
+
+              <Text
+                style={{
+                  color: '#9CA3AF',
+                  marginTop: scaledSize(20),
+                  marginBottom: scaledSize(12),
+                  fontSize: scaledSize(12),
+                }}
+              >
+                Select Tag
+              </Text>
+              <View style={{ marginTop: scaledSize(4) }}>
+
+                {/* {renderTagBtn({ fontSize: scaledSize(12) })} */}
+              </View>
+            </View>
+
+            <View
+              style={{
+                flexDirection:
+                  'row',
+                flexWrap:
+                  'wrap',
+              }}
+            >
+              {userTags.map((item: any) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() =>
+                    setSelectedFolderTag(
+                      item
+                    )
+                  }
+                  style={{
+                    paddingHorizontal:
+                      scaledSize(14),
+                    paddingVertical:
+                      scaledSize(9),
+
+                    marginRight:
+                      scaledSize(9),
+
+                    marginBottom:
+                      scaledSize(8),
+
+                    borderRadius:
+                      999,
+
+                    backgroundColor:
+                      selectedFolderTag.id ===
+                        item.id
+                        ? theme.themeColor
+                        : '#2B2B2B',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        theme.primaryTextColor,
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              {/* <TouchableOpacity
+              onPress={() =>
+                setIsTagModalVisible(
+                  true
+                )
+              }
+              style={{
+                paddingHorizontal:
+                  scaledSize(10),
+
+                paddingVertical:
+                  scaledSize(8),
+
+                borderRadius:
+                  scaledSize(999),
+
+
+              }}
+            >
+              <Text
+                style={{
+                  color:
+                    theme.themeColor,
+                }}
+              >
+                + Add
+              </Text>
+            </TouchableOpacity> */}
+              {/* <View style={{position:'absolute',bottom:scaledSize(40),right:scaledSize(1)}}>
+            {renderTagBtn()}
+            </View> */}
+            </View>
+
+            {/* Buttons */}
+
+            <View
+              style={
+                styles.modalButtonRow
+              }
+            >
+              <TouchableOpacity
+                style={
+                  styles.cancelButton
+                }
+                onPress={() =>
+                  setIsShowFolderNameModal(
+                    false
+                  )
+                }
+              >
+                <Text
+                  style={
+                    styles.cancelText
+                  }
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.cancelButton}
+                onPress={scanDocument}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <MaterialIcons
+                    name="refresh"
+                    size={scaledSize(16)}
+                    color={theme.primaryTextColor}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.cancelText}>Rescan</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={
+                  styles.renameButton
+                }
+                onPress={() =>
+                  copyFilesToDirectory(
+
+                  )
+                }
+              >
+                <LinearGradient
+                  colors={[
+                    theme
+                      .themeSecondaryColor,
+                    theme.themeColor,
+                  ]}
+                  start={{
+                    x: 0,
+                    y: 0,
+                  }}
+                  end={{
+                    x: 1,
+                    y: 1,
+                  }}
+                  style={
+                    styles.gradientButton
+                  }
+                >
+                  <Text
+                    style={
+                      styles.renameText
+                    }
+                  >
+                    Create
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+            </View>
+
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const updateFolderTagHandler = async (tag: any) => {
+    console.log('folder===', selectedFolder);
+    console.log('tag===', tag);
+    if (tag.id == undefined) {
+      setIsShowErrorModal(true)
+      setErrorMessage('Please select tag')
+      return
+    }
+    await FolderLocalService.updateFolderById({ id: selectedFolder.id, tagId: tag.id })
+    const allFolders = await FolderLocalService.getActiveFolders()
+
+    setData(allFolders)
+
+    setIsShowUpdateTagModal(false);
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {renderHeader()}
+      {renderTags()}
+      <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
+        {/* {renderTagBtn()} */}
       </View>
+      <View style={{
+        height: scaledSize(40), width: scaledSize(100), position: 'absolute',
+        top: scaledSize(150), left: scaledSize(10)
+      }}>
+        
+      </View>
+
+
+
       {/* ----------------------------- */}
       <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
         {getFiles().length > 0 ? <FlatList
           showsVerticalScrollIndicator={false}
           data={getFiles()}
+          removeClippedSubviews
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
           keyExtractor={(item) => item.id}
           renderItem={renderParentItem}
         /> :
@@ -1172,28 +2312,26 @@ const handleSync=async () => {
                 </Modal>
               </View>
               :
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => openFile()}>
-                  <Image source={cloud} style={{ height: scaledSize(150), width: scaledSize(200) }} />
-
-                </TouchableOpacity>
-                <Text style={{ fontSize: scaledSize(16), letterSpacing: 1 }} >{'Import backup'}</Text>
-              </View>
+              !user ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+               
+                {<CustomGoogleBtn onPress={handleLogin} isLoading={isLoading}/>}
+                </View>
+              ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaledSize(20) }}>
+                  <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), textAlign: 'center' }}>
+                    No documents found.
+                  </Text>
+                  <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), marginTop: 4, textAlign: 'center' }}>
+                    Use the camera button to scan new documents.
+                  </Text>
+                </View>
+              )
             }
           </>
 
         }
 
-      </View>
-      <View style={{
-        height: scaledSize(50), position: "absolute", left: scaledSize(20),
-        top: heightFromPercentage(72)
-      }}>
-        <Text style={{ color: 'black' }}>{localFiles.length}</Text>
-        {localFiles.map((item) => (
-          <Text key={item?.id} style={{ color: 'black' }}>{'Drive' + item.driveFileId}
-          {'   isSync ' + item?.isSynced}{'  is deleted ' + item?.isDeleted}{'  name ' + item?.name}</Text>
-        ))}
       </View>
 
       <View style={{
@@ -1201,41 +2339,14 @@ const handleSync=async () => {
         top: heightFromPercentage(72)
       }}>
         <CustomFAB
-          icon={<Ionicons name='camera-outline' size={scaledSize(24)} color={'white'} />}
+          style={{ borderWidth: .5, borderColor: theme.iconColor }}
+          icon={<Ionicons name='camera-outline' size={scaledSize(24)}
+            color={mode === 'light' ? 'white' : theme.iconColor} />}
           onPress={() => { requestCameraPermission() }}
-        // onPress={scanDocument}
         />
       </View>
-      <Overlay isVisible={isShowFolderNameModal} overlayStyle={{ borderRadius: scaledSize(10) }}>
-        <View style={{ height: scaledSize(180), width: scaledSize(300), backgroundColor: 'white', }}>
-          <View style={{ height: scaledSize(50), backgroundColor: 'white', flexDirection: 'row' }}>
-            <View style={{ flex: 2, justifyContent: 'flex-start', alignItems: 'center' }}>
-              <Text style={{
-                fontSize: scaledSize(14), fontFamily: FONTS.QuicksandBold,
-                textAlign: 'center', marginTop: scaledSize(4),
-              }}>
-                Enter Folder Name
-              </Text>
-            </View>
-            <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'flex-end' }}>
-              <TouchableOpacity onPress={() => { setIsShowFolderNameModal(false) }}>
-                <MaterialIcons name='close'
-                  size={scaledSize(30)} style={{ bottom: scaledSize(4) }} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(10) }}>
-            <CustomInputBox
-              onChangeText={setFolderName} value={folderName} placeholder='Enter name' />
-          </View>
-          <View style={{ height: scaledSize(40), width: scaledSize(300), marginTop: scaledSize(30) }}>
-            <CustomeButton name='Save' onPress={() => copyFilesToDirectory()}
-              buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, borderRadius: scaledSize(20) }} textStyle={{ color: 'white' }} />
-          </View>
 
-        </View>
-      </Overlay>
-
+      {renderFolderNameModal()}
       <Overlay isVisible={isBackupStarted} >
         <View style={{ height: 300, justifyContent: 'center', alignItems: 'center' }}>
           <View style={{
@@ -1293,58 +2404,6 @@ const handleSync=async () => {
       </Overlay>
       <CustomSpinner isLoading={isLoading} />
 
-      <View style={{
-        height: scaledSize(100), width: '80%', 
-        flexDirection: 'row', justifyContent: "space-between"
-      }}>
-        {/* <Image
-          resizeMode="contain"
-          source={{ uri: getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + '1777791940638Ght.jpg') }}
-          style={{
-            height: '100%', width: '30%', top: scaledSize(0), alignSelf: 'flex-end'
-          }}
-        /> */}
-        {renderButton()}
-        {/* <CustomeButton onPress={() => readFilesFromDirectory()} name={'Read'}
-            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} /> */}
-      </View>
-      {/* 
-      <View style={{ flexDirection: 'row' }}>
-        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
-
-          <CustomeButton onPress={() => getAndCreateFileData(true, 'jolo')} name={'Insert'}
-            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
-          <CustomeButton onPress={() => getAndCreateFileData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
-          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
-          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
-          <CustomeButton onPress={() => FileLocalService.resetFilesTable()} name={'Reset-file'}
-            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
-        </View>
-      </View> */}
-      {/* <View style={{ flexDirection: 'row' }}>
-        <View style={{ height: scaledSize(50), width: 50, flexDirection: 'row', margin: 20 }}>
-
-          <CustomeButton onPress={() => getAndCreateFolderData(true, 'jolo')} name={'Insert'}
-            buttonStyle={{ backgroundColor: 'blue', borderWidth: .3 }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
-          <CustomeButton onPress={() => getAndCreateFolderData(false, '')} name={'Get '} buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 60, margin: 20 }}>
-          <CustomeButton onPress={() => updateFolderNameHandler('ayan',1)} name={'Update '} 
-          buttonStyle={{ backgroundColor: 'green' }} textStyle={{ color: 'white' }} />
-        </View>
-        <View style={{ height: scaledSize(50), width: 50, margin: 20 }}>
-          <CustomeButton onPress={() => resetFoldersTable()} name={'Reset'}
-            buttonStyle={{ backgroundColor: 'red' }} textStyle={{ color: 'white' }} />
-        </View>
-      </View> */}
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
         <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
@@ -1370,75 +2429,787 @@ const handleSync=async () => {
           </View>
         </View>
       </CustomBottomSheet>
+      {renderRenameModal()}
+      {renderAddTagModal()}
+      {renderRenameTagModal()}
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
+
+      <CustomUpdateFolderTagModal
+        data={userTags}
+        isvisible={isShowUpdateTagModal}
+        onPressClear={() => {
+          setIsShowUpdateTagModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(tag) => updateFolderTagHandler(tag)}
+        onPressClose={() => setIsShowUpdateTagModal(false)}
+      />
+      <CustomErrorMsgModal isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
+      <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
+        onCancel={() => setIsShowDeleteTagConfirmation(false)}
+        onSubmit={() => deleteTagHandler()} />
+      <ConfirmationDialog visible={isShowDeleteMultipleTagsConfirmation} mode='delete'
+        message={`Are you sure you want to delete ${selectedTags.length} selected tag(s)?`}
+        onCancel={() => setIsShowDeleteMultipleTagsConfirmation(false)}
+        onSubmit={deleteMultipleTagsHandler}
+      />
+      <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
+        onCancel={() => setIsFolderDeleteConfirmation(false)}
+        onSubmit={() => deleteTagHandler()} />
     </SafeAreaView>
   )
 }
 
+
+
 export default DocumentScan;
 
-const styles = StyleSheet.create({
-  shareOptionS: {
-    height: scaledSize(40), backgroundColor: 'white',
-    width: '100%', flexDirection: 'row', borderRadius: scaledSize(10),
-    justifyContent: 'center', alignItems: 'center',
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor:
+      mode === 'dark' ? '#0E1015' : '#F7F8FA'
   },
-  card: {
+  docCard: {
+    height: scaledSize(120),
     flexDirection: 'row',
-    marginHorizontal: scaledSize(16),
-    marginTop: scaledSize(14),
-    padding: scaledSize(8),
-    borderRadius: scaledSize(16),
     alignItems: 'center',
+    backgroundColor: theme.bgColor,
+    borderRadius: 24,
+    marginHorizontal: scaledSize(16),
+    marginBottom: scaledSize(12),
+    padding: scaledSize(12),
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    shadowColor: mode === 'dark' ? '#000' : '#5A6476',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: mode === 'dark' ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  docCardSelected: {
+    borderColor: '#47b16a',
+    shadowColor: '#47b16a',
+    shadowOpacity: mode === 'dark' ? 0.5 : 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  docThumbnailContainer: {
+    width: scaledSize(70),
+    height: scaledSize(70),
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  docThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  docContent: {
+    flex: 1,
+    marginLeft: scaledSize(14),
+    justifyContent: 'space-between',
+    height: '100%',
+    paddingVertical: scaledSize(2),
+  },
+  docTitle: {
+    fontSize: scaledSize(15),
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+    fontFamily: Fonts.bold,
+  },
+  docMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: scaledSize(4),
+  },
+  docMetaText: {
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+    fontFamily: Fonts.regular,
+  },
+  docMetaSeparator: {
+    marginHorizontal: scaledSize(5),
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+  },
+  storageInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 'auto',
+  },
+  storageBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: theme.buttonBGColor,
+    borderRadius: 3,
+    marginRight: scaledSize(8),
+  },
+  storageBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  storageText: {
+    fontSize: scaledSize(10),
+    color: theme.secondaryTextColor,
+    fontFamily: Fonts.regular,
+  },
+  docActions: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: scaledSize(8),
+    height: '100%',
+    marginLeft: scaledSize(10),
+  },
+  actionBtnSquare: {
+    width: scaledSize(30),
+    height: scaledSize(30),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    borderRadius: 8,
+  },
+
+  headerContainer: {
+    paddingHorizontal: scaledSize(18),
+    paddingTop: scaledSize(18),
+    paddingBottom: scaledSize(10),
+
+    backgroundColor: theme.bgContainor,
+  },
+
+  topRow: {
+    flexDirection: 'row',
+
+    justifyContent: 'space-between',
+
+    alignItems: 'center',
+  },
+
+  heading: {
+    marginTop: scaledSize(5),
+
+    fontSize: scaledSize(20),
+
+    fontWeight: '600',
+
+    color: theme.primaryTextColor,
+  },
+
+  primaryText: {
+    color: theme.themeColor,
+  },
+
+  profileContainer: {
+    width: scaledSize(50),
+    height: scaledSize(50),
+    marginTop: scaledSize(5),
+
+    borderRadius: scaledSize(25),
+
+    backgroundColor: theme.buttonBGColor,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  profileText: {
+    fontSize: scaledSize(16),
+
+    fontWeight: '800',
+
+    color: theme.secondaryTextColor,
+  },
+
+
+
+
+
+  searchRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    marginTop: scaledSize(20),
+  },
+
+  searchContainer: {
+    flex: 1,
+
+    height: scaledSize(45),
+
+    borderRadius: scaledSize(18),
+
+    backgroundColor: mode === 'dark' ? '#1c1c1e' : '#FFFFFF',
+
+    borderWidth: mode === 'dark' ? .2 : .5,
+    borderColor: '#d3d3d3',
+
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    paddingHorizontal: scaledSize(18),
+
+    shadowColor: '#D9DDE8',
+
+    shadowOpacity: 0.18,
+
+    shadowRadius: scaledSize(10),
+
+    shadowOffset: {
+      width: 0,
+      height: scaledSize(4),
+    },
 
     elevation: 4,
   },
 
-  thumbnailWrapper: {
-    width: scaledSize(80),
-    height: scaledSize(80),
-    borderRadius: scaledSize(14),
-    overflow: 'hidden',
-    backgroundColor: '#F3F5F7',
+  input: {
+    flex: 1,
+
+    marginLeft: scaledSize(10),
+
+    color: theme.primaryTextColor,
+
+    fontSize: scaledSize(12),
+    letterSpacing: 1,
+    // fontFamily: FONTS.regular,
+
+    // fontWeight: '500',
+
+    padding: 0,
+
+    backgroundColor: 'transparent',
+  },
+
+
+  uploadButton: {
+    width: scaledSize(36),
+    height: scaledSize(36),
+
+    borderRadius: scaledSize(12),
+
     justifyContent: 'center',
+    alignItems: 'center',
+
+    // shadowColor: theme.themeColor,
+    shadowOpacity: 0.45,
+    marginLeft: scaledSize(6),
+
+    shadowRadius: scaledSize(4),
+
+    shadowOffset: {
+      width: 0,
+      height: scaledSize(4),
+    },
+
+    elevation: 2,
+  },
+  // ****************render tab******************
+  // tagsWrapper: {
+  //   marginTop: scaledSize(20),
+  // },
+
+
+
+
+  // tagName: {
+  //   marginHorizontal: scaledSize(12),
+
+  //   fontSize: scaledSize(16),
+
+  //   fontWeight: '700',
+  // },
+
+  // tagIconContainer: {
+  //   width: scaledSize(32),
+  //   height: scaledSize(32),
+
+  //   borderRadius: scaledSize(12),
+
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+
+
+  // editBtn: {
+  //   marginLeft: scaledSize(16),
+
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+
+  // activeArrow: {
+  //   position: 'absolute',
+
+  //   bottom: scaledSize(-8),
+
+  //   alignSelf: 'center',
+
+  //   left: '50%',
+
+  //   marginLeft: scaledSize(-8),
+
+  //   width: scaledSize(16),
+  //   height: scaledSize(16),
+
+  //   backgroundColor: theme.themeColor,
+
+  //   transform: [{ rotate: '45deg' }],
+  // },
+
+  // addTagButton: {
+  //   height: scaledSize(60),
+
+  //   paddingHorizontal: scaledSize(22),
+
+  //   borderRadius: scaledSize(22),
+
+  //   borderWidth: 1.5,
+
+  //   borderStyle: 'dashed',
+
+  //   borderColor: '#D9E1EC',
+
+  //   flexDirection: 'row',
+
+  //   alignItems: 'center',
+
+  //   justifyContent: 'center',
+
+  //   backgroundColor: '#FFFFFF',
+  // },
+
+  // addTagText: {
+  //   marginLeft: 8,
+
+  //   fontSize: 16,
+
+  //   fontWeight: '700',
+
+  //   color: theme.themeColor,
+  // },
+
+  // ********************* Rename Modal ***********************
+  modalOverlay: {
+    flex: 1,
+
+    backgroundColor: 'rgba(0,0,0,0.45)',
+
+    justifyContent: 'center',
+
+    paddingHorizontal: scaledSize(20),
+  },
+
+  modalContainer: {
+    borderRadius: scaledSize(20),
+
+    padding: scaledSize(20),
+
+    backgroundColor: theme.bgColor,
+
+    borderWidth: 1,
+
+    borderColor: theme.borderColor,
+  },
+
+  modalTitle: {
+    fontSize: scaledSize(20),
+
+    fontWeight: '800',
+
+    color: theme.primaryTextColor,
+  },
+
+  modalSubtitle: {
+    marginTop: scaledSize(6),
+
+    fontSize: scaledSize(12),
+
+    color: '#8B93A7',
+  },
+
+  inputContainer: {
+    height: scaledSize(50),
+
+    borderRadius: scaledSize(14),
+
+    marginTop: scaledSize(20),
+
+    backgroundColor: theme.buttonBGColor,
+
+    borderWidth: 1,
+
+    borderColor: theme.borderColor,
+
+    justifyContent: 'center',
+
+    paddingHorizontal: scaledSize(12),
+  },
+
+  modalInput: {
+    fontSize: scaledSize(12),
+
+    color: theme.primaryTextColor,
+
+    padding: 0,
+  },
+
+  modalButtonRow: {
+    flexDirection: 'row',
+
+    justifyContent: 'flex-end',
+
+    marginTop: scaledSize(24),
+  },
+
+  cancelButton: {
+    height: scaledSize(46),
+
+    paddingHorizontal: scaledSize(18),
+
+    borderRadius: scaledSize(12),
+
+    backgroundColor: theme.buttonBGColor,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    marginRight: scaledSize(10),
+  },
+
+  cancelText: {
+    fontSize: scaledSize(12),
+
+    fontWeight: '700',
+
+    color: theme.primaryTextColor,
+  },
+
+  renameButton: {
+    borderRadius: scaledSize(12),
+
+    overflow: 'hidden',
+  },
+
+  gradientButton: {
+    height: scaledSize(46),
+
+    paddingHorizontal: scaledSize(20),
+
+    justifyContent: 'center',
+
     alignItems: 'center',
   },
 
-  thumbnail: {
-    width: '100%',
-    height: '100%',
+  renameText: {
+    fontSize: scaledSize(12),
+
+    fontWeight: '800',
+
+    color: theme.buttonTextColor,
   },
 
-  content: {
-    flex: 1,
-    marginLeft: scaledSize(16),
+  // ************* tag btn ****************
+  // addTagButton: {
+  //   height: scaledSize(40),
+  //   paddingHorizontal: scaledSize(14),
+
+  //   borderRadius: scaledSize(12),
+
+
+  //   borderColor: theme.themeColor,
+
+  //   flexDirection: 'row',
+
+  //   alignItems: 'center',
+
+  //   justifyContent: 'center',
+
+
+  // },
+  // ******************* Sort Modal ******************
+
+
+  sortModalContainer: {
+    width: '98%',
+
+    backgroundColor:
+      theme.bgContainor,
+
+    borderRadius: scaledSize(6),
+
+    paddingTop: scaledSize(18),
+
+    paddingBottom: scaledSize(18),
+
+    paddingHorizontal: scaledSize(18),
+
+    borderWidth: scaledSize(1),
+
+    borderColor: theme.borderColor,
+  },
+
+  headerRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent:
+      'space-between',
+
+    marginBottom: scaledSize(20),
+  },
+
+  sortTitle: {
+    fontSize: scaledSize(18),
+
+    fontWeight: '700',
+
+    color: theme.primaryTextColor,
+  },
+
+  closeBtn: {
+    width: scaledSize(30),
+
+    height: scaledSize(30),
+
+    borderRadius: scaledSize(16),
+
     justifyContent: 'center',
+
+    alignItems: 'center',
+
+    backgroundColor:
+      theme.buttonBGColor,
   },
 
-  title: {
-    fontSize: scaledSize(14),
-    // fontWeight: '600',
-    color: '#1F1F1F',
-    letterSpacing: 1,
-    // fontFamily:Fonts.regular
+  sortRow: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    marginBottom: scaledSize(20),
+    paddingVertical: scaledSize(6),
   },
 
-  date: {
-    marginTop: scaledSize(6),
-    fontSize: scaledSize(14),
-    color: '#8A8A8A',
+  radioOuter: {
+    width: scaledSize(20),
+
+    height: scaledSize(20),
+
+    borderRadius: scaledSize(12),
+
+    borderWidth: scaledSize(1),
+
+    borderColor: '#B8BDC9',
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
   },
 
-  actionColumn: {
-    justifyContent: 'space-between',
-    height: heightFromPercentage(12),
+  radioInner: {
+    width: scaledSize(10),
+
+    height: scaledSize(10),
+
+    borderRadius: scaledSize(5),
+
+    backgroundColor:
+      theme.themeColor,
+  },
+
+  sortLabel: {
+    marginLeft: scaledSize(14),
+
+    fontSize: scaledSize(12),
+
+    color: theme.primaryTextColor,
+
+    fontWeight: '500',
+  },
+  footerRow: {
+    flexDirection: 'row',
+
+    justifyContent: 'flex-end',
+
+    marginTop: 10,
+
+    paddingTop: 12,
+
+    borderTopWidth: 1,
+
+    borderTopColor: theme.borderColor,
+  },
+
+  // clearButton: {
+  //   height: 44,
+
+  //   paddingHorizontal: 18,
+
+  //   borderRadius: 12,
+
+  //   justifyContent: 'center',
+
+  //   alignItems: 'center',
+
+  //   backgroundColor:
+  //     theme.buttonBGColor,
+
+  //   marginRight: 10,
+  // },
+
+  clearText: {
+    fontSize: 15,
+
+    fontWeight: '600',
+
+    color: theme.primaryTextColor,
+  },
+
+  applyButton: {
+    height: 44,
+
+    paddingHorizontal: 22,
+
+    borderRadius: 12,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    backgroundColor:
+      theme.themeColor,
+  },
+
+  applyText: {
+    fontSize: 15,
+
+    fontWeight: '700',
+
+    color: theme.secondaryTextColor,
+  },
+
+  // *************** render tags**************
+
+
+  tagsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: scaledSize(12),
+    paddingHorizontal: scaledSize(12),
+  },
+
+  tagIconContainer: {
+    width: scaledSize(46),
+    height: scaledSize(46),
+
+    borderRadius: scaledSize(16),
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    marginRight: scaledSize(12),
+
+    borderWidth: 1,
+  },
+
+  scrollContainer: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    alignItems: 'center',
+    paddingRight: scaledSize(10),
+  },
+
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    height: scaledSize(44),
+
+    paddingLeft: scaledSize(14),
+    paddingRight: scaledSize(10),
+
+    borderRadius: scaledSize(20),
+
+    marginRight: scaledSize(10),
+
+    borderWidth: 1,
+  },
+
+  tagText: {
+    marginLeft: scaledSize(8),
+
+    maxWidth: scaledSize(80),
+
+    fontSize: scaledSize(13),
+  },
+
+  menuIcon: {
+    marginLeft: scaledSize(6),
   },
 
   actionButton: {
-    width: scaledSize(28),
-    height: scaledSize(28),
-    borderRadius: scaledSize(18),
-    // backgroundColor: '#F4F6F8',
+    width: scaledSize(46),
+    height: scaledSize(46),
+
+    borderRadius: scaledSize(16),
+
     justifyContent: 'center',
     alignItems: 'center',
+
+    marginLeft: scaledSize(10),
+
+    borderWidth: 1,
   },
-})
+
+  googleSignInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: scaledSize(52),
+    width: '90%',
+    alignSelf: 'center',
+    backgroundColor: theme.themeColor,
+    borderRadius: scaledSize(16),
+    paddingHorizontal: scaledSize(24),
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  googleSignInButtonPressed: {
+    opacity: Platform.OS === 'ios' ? 0.7 : 1,
+  },
+  googleSignInIcon: {
+    width: scaledSize(22),
+    height: scaledSize(22),
+    marginRight: scaledSize(16),
+  },
+  googleSignInButtonText: {
+    color: '#FFFFFF',
+    fontSize: scaledSize(15),
+    fontWeight: '500',
+    fontFamily: Fonts.regular,
+    letterSpacing: 0.5,
+  },
+});

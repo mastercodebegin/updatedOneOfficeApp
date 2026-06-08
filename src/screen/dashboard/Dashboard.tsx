@@ -1,17 +1,17 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
+  Switch,
   Text, StyleSheet,
   View, TouchableOpacity, SafeAreaView
   , useWindowDimensions, Image,
   Platform, BackHandler, AppState,
   Modal,
   Alert, KeyboardAvoidingView,
-  StatusBar,
   ScrollView,
   Button,
 } from 'react-native';
-import { deleteFile, DocumentPicker, generateUniqueNumber, getConvertedPdfFileFromPhoneStorage, getFilesFromPhoneByFileExtention, heightFromPercentage, navigateTo, scaledSize, toastForDeleteFile, widthFromPercentage, } from '../../utilies/Utilities';
+import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile, Utility, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import StaticServer from 'react-native-static-server';
 // const StaticServer = require('react-native-static-server').default;
@@ -20,6 +20,7 @@ import RNFS from 'react-native-fs';
 import Icon from 'react-native-vector-icons/Feather';
 import CustomMenu from '../../component/Menu'
 import ReadSystemFile from '../../component/ReadSystemFile'
+import CustomProgressBar from '../../component/CustomProgressBar';
 import ImagesToPdfConverter from '../../component/ImagesToPdfConverter'
 import { Searchbar } from 'react-native-paper'
 import Feather from 'react-native-vector-icons/Feather';
@@ -48,7 +49,7 @@ import XslxFilesList from '../XlsxFilReader/XslxFilesList';
 import { PermissionsAndroid } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 import LinearGradient from 'react-native-linear-gradient';
-import { checkIsUserViewedPdf, getBankList } from './FileSlice';
+import { checkIsUserViewedPdf, clearSelectedFiles, getBankList } from './FileSlice';
 import { ErrorToast } from '../../component/CustomToast';
 import mobileAds, { BannerAdSize } from 'react-native-google-mobile-ads';
 import { AppOpenAd, InterstitialAd, RewardedAd, BannerAd, TestIds } from 'react-native-google-mobile-ads';
@@ -60,7 +61,7 @@ import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import WebView from 'react-native-webview';
-import { getLocalData, setLocalData } from '../../utilies/storageService';
+import { getLocalData, setLocalData } from '../../utilies/storageUtility';
 import { FileLocalService } from '../../db/fileLocalService';
 import { resetFoldersTable } from '../../db/folderLocalService';
 import { FolderLocalService } from '../../db/folderLocalService';
@@ -68,26 +69,8 @@ import { FirebaseService } from '../../service/FirebaseService';
 import { GoogleDriveService } from '../../db/googleDriveService';
 import { AuthService } from '../../service/AuthService';
 
-const pdfs = [
-  {
-    "ctime": null, "id": 86185, "mtime": "2024-10-17T09:51:47.024Z",
-    "name": "4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
-  },
-  {
-    "ctime": null, "id": 826185, "mtime": "2024-10-17T09:51:47.024Z",
-    "name": "HDFC.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
-  },
-  {
-    "ctime": null, "id": 8262185, "mtime": "2024-10-17T09:51:47.024Z",
-    "name": "Axis.pdf",
-    "path": "/storage/emulated/0/Download/4315XXXXXXXX7005_739857_Retail_Amazon_NORM.pdf",
-    "size": 722729
-  },
-]
+import CustomSortModal from '../../component/CustomSortModal';
+import { useTheme } from '../theme/useTheme';
 
 function Dashboard({ navigation, route }) {
 
@@ -104,13 +87,8 @@ function Dashboard({ navigation, route }) {
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
 
+  // generate sample file data for renderfiles
 
-  const createDoc = () => {
-    const uri = 'file:///data/user/0/com.shopax.pdfviewer/cache/0da5b438-7c50-4674-a437-cf9aaf583dc1/66ed542140d11c5ab60c5cd22efca90b2415a022.jpeg'
-    // user logged in flow new user
-    accessToken
-    const folders = []
-  }
   const syncFilesForFolder = async (folder: any, updatedFiles: []) => {
     try {
 
@@ -195,7 +173,7 @@ function Dashboard({ navigation, route }) {
     // return
     const getAllFolders = await FolderLocalService.getAllFolders();
     console.log('getAllFolders>>>', getAllFolders);
-    getAllFolders.map((v)=>console.log('name>>>',v))
+    getAllFolders.map((v) => console.log('name>>>', v))
     // return
     const gooleDrivefolderName = await GoogleDriveService.getOrCreateGDriveFolder(asyncStorageKeyName.DRIVE_FOLDER_NAME)
     console.log('gooleDrivefolderName', gooleDrivefolderName);
@@ -227,10 +205,10 @@ function Dashboard({ navigation, route }) {
 
       const local = localMap.get(remote.firebaseId); // find matching local folder using firebaseId
       console.log('local', local);
-console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
-console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
-console.log('comparison:', remote.updatedAt > local.updatedAt);
-    const updatedAt = Date.now();
+      console.log('remote.updatedAt:', remote.updatedAt, typeof remote.updatedAt);
+      console.log('local.updatedAt:', local.updatedAt, typeof local.updatedAt);
+      console.log('comparison:', remote.updatedAt > local.updatedAt);
+      const updatedAt = Date.now();
 
       if (!local) { // if folder does NOT exist in local DB
         await FolderLocalService.createFolder(
@@ -239,7 +217,7 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
           remote.firebaseId, // Firebase id → stored as firebaseId locally
           remote.coverUri || '', // cover image (fallback to empty string)
           remote.driveFolderId || '', // Drive folder id (fallback if missing)
-          1 ,// mark as synced (since coming from Firebase)
+          1,// mark as synced (since coming from Firebase)
           updatedAt
         );
 
@@ -248,9 +226,9 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
         console.log('Else if>>>>>:',);
 
         await FolderLocalService.updateFolderById({
-          id:local.id,
+          id: local.id,
           name: remote.name,
-          isDeleted:remote.isDeleted
+          isDeleted: remote.isDeleted
         });
       }
     }
@@ -293,53 +271,53 @@ console.log('comparison:', remote.updatedAt > local.updatedAt);
   }
 
 
-const pushFolders = async () => {
-  console.log('pushFolders started');
+  const pushFolders = async () => {
+    console.log('pushFolders started');
 
-  const userId = await AuthService.getUserId();
-  const unSynced = await FolderLocalService.getUnsynced();
+    const userId = await AuthService.getUserId();
+    const unSynced = await FolderLocalService.getUnsynced();
 
-  console.log('unsyn', unSynced);
+    console.log('unsyn', unSynced);
 
-  for (const folder of unSynced as any) {
+    for (const folder of unSynced as any) {
 
-    try {
-      folder.userId = userId;
+      try {
+        folder.userId = userId;
 
-      if (!folder.firebaseId) {
-        // 🔹 CREATE (new folder)
-        const doc = await FirebaseService.createFolderInFirebase(folder);
+        if (!folder.firebaseId) {
+          // 🔹 CREATE (new folder)
+          const doc = await FirebaseService.createFolderInFirebase(folder);
 
-        await FolderLocalService.updateFirebaseId(
-          folder.id,
-          doc.firebaseId,
-          userId
-        );
+          await FolderLocalService.updateFirebaseId(
+            folder.id,
+            doc.firebaseId,
+            userId
+          );
 
-      } else if (folder.isDeleted === 1) {
-        // 🔹 DELETE (soft delete in Firebase)
-        console.log('else DELETE here',folder);
-        await FirebaseService.updateFolderInFirebase({
-          firebaseId: folder.firebaseId,
-          isDeleted: 1,
-        });
+        } else if (folder.isDeleted === 1) {
+          // 🔹 DELETE (soft delete in Firebase)
+          console.log('else DELETE here', folder);
+          await FirebaseService.updateFolderInFirebase({
+            firebaseId: folder.firebaseId,
+            isDeleted: 1,
+          });
 
-        await FolderLocalService.markAsSynced(folder.id);
+          await FolderLocalService.markAsSynced(folder.id);
 
-      } else {
-        // 🔹 UPDATE (rename or changes)
-        console.log('else update here',folder);
-        
-        await FirebaseService.updateFolderInFirebase(folder);
+        } else {
+          // 🔹 UPDATE (rename or changes)
+          console.log('else update here', folder);
 
-        await FolderLocalService.markAsSynced(folder.id);
+          await FirebaseService.updateFolderInFirebase(folder);
+
+          await FolderLocalService.markAsSynced(folder.id);
+        }
+
+      } catch (e) {
+        console.log('Push failed:', e);
       }
-
-    } catch (e) {
-      console.log('Push failed:', e);
     }
-  }
-};
+  };
 
   const syncAll = async () => {
     console.log('unSyncdata stated',);
@@ -398,6 +376,35 @@ const pushFolders = async () => {
     pptFiles: [],
   });
   const readPdfFileRef = React.useRef(null)
+  const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [selectedSort, setSelectedSort] = useState('latest')
+  const sortOptions = [
+    {
+      id: 'latest',
+      name: 'Latest First',
+      icon: 'time-outline',
+    },
+    {
+      id: 'oldest',
+      name: 'Oldest First',
+      icon: 'calendar-outline',
+    },
+    {
+      id: 'name_asc',
+      name: 'Name A - Z',
+      icon: 'text-outline',
+    },
+    {
+      id: 'name_desc',
+      name: 'Name Z - A',
+      icon: 'swap-vertical-outline',
+    },
+    {
+      id: 'size',
+      name: 'Size',
+      icon: 'swap-vertical-outline',
+    },
+  ];
 
   const [convertedFiles, setConvertedFiles] = useState(
     []);
@@ -406,9 +413,12 @@ const pushFolders = async () => {
   const [randomNumber, setRandomNumber] = useState(1)
   const [count, setCount] = useState('')
   const [isUserBack, setIsUserBack] = useState(false);
-  const [isShowCardModal, setIsShowCardModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isFocused = useIsFocused();
+  const [fileScanProgress, setFileScanProgress] = useState(0);
+  const [filesFound, setFilesFound] = useState(0);
+  const [foundFilesList, setFoundFilesList] = useState([]);
+  const [isScanning, setIsScanning] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
   const [searchQuery, setSearchQuery] = React.useState('');
   const onChangeSearch = query => setSearchQuery(query);
@@ -430,6 +440,8 @@ const pushFolders = async () => {
   const [canGoBack, setCanGoBack] = useState(false);
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+  const { theme, mode, toggleTheme } = useTheme();
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
   const webViewRef = React.useRef(null);
 
   const handleLogin = async () => {
@@ -448,92 +460,85 @@ const pushFolders = async () => {
 
 
 
-
-  const getPermission = async () => {
-    try {
-      const granted = PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      )
-      if (await granted) { console.log("Granted"); }
-      else { console.log("Not Granted"); }
-    }
-    catch (error) { console.log('error---------', error); }
-
-  }
   useEffect(() => {
-    // const res = fetch('https://api.jsonsilo.com/public/fb20cc0e-8ad8-4e0d-971b-a4e7cbba310c').then(res => res.json()).then(res => console.log()).catch(err => console.log('err', err))
-    // console.log('api.jsonsilo=====', res);
-    // (async () => {
-    //   await getAllTables()
+    const obj = getLocalData(asyncStorageKeyName.ALL_FILES);
+    console.log('obj', obj);
+    console.log('obj type of >>>>>>>',typeof obj);
+    if (obj?.pdfFiles?.length > 0) {
 
-    // })()
-    // dispatch(getBankList())
-    getPermission()
+      setDocuments(obj);
+    }
+    else {
+
+      console.log('No  files found, Please allow storage permission and click on refresh button to load files')
+      // readPdfFiles()
+    }
   }, [])
-
-  const DesendingreadPdfFiles = async () => {
-    console.log('Decending order by date-------');
-
-    setIsLoading(true)
-    setDocuments({
-      pdfFiles: [],
-      wordFiles: [],
-      xlsxFiles: [],
-      pptFiles: [],
-    })
-    const files = await getFilesFromPhoneByFileExtention(1)
-    console.log('DesendingreadPdfFiles: ', files);
-
-    setDocuments(files)
-    setIsLoading(false)
-    setUniqueNumber(generateUniqueNumber())
-  }
-
   const readPdfFiles = async () => {
-    console.log('Accending order by date-------');
-
+ 
     setIsLoading(true)
-    const files = await getFilesFromPhoneByFileExtention(1)
+    setIsScanning(true)
+    setFileScanProgress(0);
+    setFilesFound(0);
+    setFoundFilesList([]);
+    const files = await getFilesFromPhoneByFileExtention(
+      1, 
+      (status: {
+        percentage: number,
+        filesFound: number,
+        allFoundFiles: any[]
+      }) => {
+        setFileScanProgress(status.percentage);
+        setFilesFound(status.filesFound);
+        setFoundFilesList(status.allFoundFiles);
+      }
+    );
     console.log('readPdfFiles:', files);
 
     setDocuments(files)
-    setIsLoading(false)
-    setUniqueNumber(generateUniqueNumber())
+    setUniqueNumber(Utility.generateUniqueNumber())
   }
-  useEffect(() => {
-
-    if (isFocused) {
-      console.log('index', screeName)
-
-      AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES).then((check) => {
-        const obj = JSON.parse(check)
 
 
-        if (check && obj.pdfFiles.length > 0) {
-          setDocuments(obj);
-        }
-        else {
-          // console.log('else part-----');
-          setIsLoading(true)
+  //   if (!isFocused) return;
 
-          const getAllFiles = async () => {
-            let files = await getFilesFromPhoneByFileExtention(1)
-            //  console.log('all files function called',files);
-            setDocuments(files)
-            setIsLoading(false)
-            setUniqueNumber(generateUniqueNumber())
+  //   console.log('index', screeName);
 
+  //   const obj = getLocalData(
+  //     asyncStorageKeyName.ALL_FILES
+  //   );
 
-          }
-          getAllFiles()
+  //   if (
+  //     obj?.pdfFiles &&
+  //     obj.pdfFiles.length > 0
+  //   ) {
 
-        }
+  //     setDocuments(obj);
 
-      })
+  //   } else {
 
-    }
-  }, [])
+  //     setIsLoading(true);
 
+  //     const getAllFiles = async () => {
+
+  //       const files =
+  //         await getFilesFromPhoneByFileExtention(
+  //           1
+  //         );
+
+  //       setDocuments(files);
+
+  //       setIsLoading(false);
+
+  //       setUniqueNumber(
+  //         Utility.generateUniqueNumber()
+  //       );
+  //     };
+
+  //     getAllFiles();
+  //   }
+
+  // }, [isFocused]);
 
 
   //Linking 
@@ -584,28 +589,7 @@ const pushFolders = async () => {
 
 
 
-  const deleteFileHandler = async (item: any) => {
-    //@ts-ignore
-    // console.log(item);
 
-    try {
-      setIsLoading(true)
-      let files = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
-      const data = JSON.parse(files).filter((citem: { name: string, mtime: any }) => citem.name !== item.name && citem.mtime !== item.mtime)
-      AsyncStorage.setItem('pdfFiles', JSON.stringify(files))
-      deleteFile(item.path)
-      setPdfData(data)
-      setIsLoading(false)
-      toastForDeleteFile(toast, 'File deleted successfully')
-
-
-      // getPdfFilesFromPhoneStorage()
-    }
-    catch (err) {
-      console.log('error-----', err);
-
-    }
-  }
 
   // will implement later if user add/download file needs to update
 
@@ -639,9 +623,6 @@ const pushFolders = async () => {
 
 
 
-  const addCardDetails = () => {
-    setIsShowCardModal(true)
-  }
 
   const search = (data: any) => {
     // sending search text to readsystemfile screen to filter data
@@ -665,32 +646,6 @@ const pushFolders = async () => {
 
 
 
-  const updateCount = async () => {
-    let number = await AsyncStorage.getItem('number')
-    setRandomNumber(Math.floor(Math.random() * 333))
-
-    // console.log('number updateCount--------------', number);
-
-    if (number == null) {
-      // console.log('number null--------------', number);
-      AsyncStorage.setItem('number', '0')
-
-    }
-    else {
-      if (number == '5') {
-        AsyncStorage.setItem('number', '0')
-      }
-      else {
-        const updatedCount = JSON.parse(number)
-        // console.log('before-------', updatedCount);
-        // console.log('after-------------', updatedCount + 1);
-        setCount(updatedCount + 1)
-        AsyncStorage.setItem('number', JSON.stringify(updatedCount + 1))
-      }
-
-    }
-
-  }
 
 
   const getLinearColors = () => {
@@ -717,10 +672,15 @@ const pushFolders = async () => {
     switch (route.key) {
       case asyncStorageKeyName.PDF_FILES:
         return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
-          ref={readPdfFileRef} pdfFiles={documents.pdfFiles}
+          ref={readPdfFileRef}
+          // pdfFiles={pdfs} 
+          pdfFiles={documents.pdfFiles}
+          selectedSort={selectedSort}
+          viewMode={viewMode}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
       case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
+        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
+          selectedSort={selectedSort} viewMode={viewMode} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -732,10 +692,22 @@ const pushFolders = async () => {
   const renderTabBar = (props: any) => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: COLORS.THEME_COLOR, height: 1 }}
-      style={{ backgroundColor: 'white', color: 'black', }}
-      activeColor={COLORS.THEME_COLOR}
-      inactiveColor='gray'
+      indicatorStyle={{
+        backgroundColor: theme.themeColor,
+        height: scaledSize(2),
+      }}
+      style={{
+        backgroundColor: mode === 'dark' ? theme.bgContainor : '#FFFFFF',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: mode === 'dark' ? theme.borderColor : '#EEF0F4',
+      }}
+      tabStyle={{
+        height: scaledSize(62),
+      }}
+      activeColor={theme.themeColor}
+      inactiveColor={theme.iconColor}
       lazy
       lalazyPreloadDistance={1}
       onTabPress={({
@@ -745,9 +717,12 @@ const pushFolders = async () => {
       }) => {
         setScreenName(route.title);
 
-        setTimeout(() => {
-          StatusBar.setBackgroundColor(getLinearColors()[0]);
-        }, 50);
+
+      }}
+      labelStyle={{
+        textTransform: 'uppercase',
+        fontSize: scaledSize(13),
+        fontFamily: Fonts.bold,
       }}
 
     />
@@ -761,65 +736,89 @@ const pushFolders = async () => {
   }
 
   const onPressMultiPdfViewer = () => {
-    if (response.files.length < 2) {
+    if (response.selectedFiles.length < 2) {
       setErrorMsg('Please select atleast 2 Pdfs to see MultiPle PDFs')
       setIsShowErrorModal(true)
     }
     else {
+      console.log('selectedFiles', response.selectedFiles);
 
-      navigateTo('MultiplePdfView', pdfs)
+      Utility.navigation.navigateTo('MultiplePdfView', response.selectedFiles)
       dispatch(checkIsUserViewedPdf(true))
     }
   }
 
   const renderHeaderIcons = () => {
+    const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
+
     return (
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: scaledSize(24),
-          marginRight: scaledSize(4)
+          justifyContent: 'center',
+          gap: scaledSize(20),
+          paddingHorizontal: scaledSize(16),
+          minHeight: scaledSize(56),
+          alignSelf: 'flex-end'
         }}
       >
-        {response.files.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(checkIsUserViewedPdf(true))} style={{ flexDirection: 'row' }}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off' style={{ color: 'red' }} onPress={() => dispatch(checkIsUserViewedPdf(true))} />
+        {response.selectedFiles.length > 0 && <TouchableOpacity
+          onPress={() => dispatch(clearSelectedFiles(true))}
+          style={{ flexDirection: 'row' }}>
+          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off'
+            style={{ color: 'red' }}
+            onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
 
-        {response.files.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
+        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')}>
+          <MaterialCommunityIcons
+            name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
+            size={scaledSize(24)}
+            color={headerIconColor}
+          />
+        </TouchableOpacity>
+
+
+        {response.selectedFiles.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
           <MaterialIcons
             name="picture-as-pdf"
-            size={scaledSize(20)}
-            color={COLORS.THEME_COLOR}
+            size={scaledSize(22)}
+            color={theme.themeColor}
           />
           {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
         </TouchableOpacity>}
 
 
+        <TouchableOpacity onPress={() => setIsShowSortModal(true)}>
+          <MaterialCommunityIcons
+            name="sort"
+            size={scaledSize(24)} color={headerIconColor} />
+        </TouchableOpacity>
 
-        <TouchableOpacity onPress={addCardDetails}>
-          <Feather name="user" size={scaledSize(20)} color="#555" />
+
+        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')}>
+          <Feather name="user" size={scaledSize(24)} color={headerIconColor} />
         </TouchableOpacity>
 
         <MaterialCommunityIcons
           name="refresh"
-          size={scaledSize(22)}
-          color="#555"
+          size={scaledSize(25)}
+          color={headerIconColor}
           onPress={() => readPdfFiles()}
         />
 
         <TouchableOpacity onPress={openFile}>
 
           {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
-          <Feather name="folder" size={scaledSize(18)} color={COLORS.THEME_COLOR} />
+          <Feather name="folder" size={scaledSize(24)}
+            color={theme.themeColor} />
         </TouchableOpacity>
 
         <CustomMenu
-          Icon={<Feather name="more-vertical" size={18} color="#555" />}
+          Icon={<Feather name="more-vertical" size={scaledSize(22)} color={theme.iconColor} />}
           menuOptionstyle={{
             padding: scaledSize(13),
             width: scaledSize(150),
@@ -849,7 +848,7 @@ const pushFolders = async () => {
 
 
     try {
-      const res: any = await DocumentPicker({ isMultipleSelection: false })
+      const res: any = await Utility.images.DocumentPicker({ isMultipleSelection: false })
       let fileExtension = ''
       let uri = ''
 
@@ -893,84 +892,99 @@ const pushFolders = async () => {
     }
   }
 
+  const handleContinue = () => {
+    setIsLoading(false);
+    setIsScanning(false);
+  };
+
+  const handleRescan = () => {
+    // The spinner is already visible, just restart the scanning process
+    readPdfFiles();
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} >
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
 
-      <View style={{ position: 'relative', marginTop: scaledSize(10) }}>
-        <CustomSpinner isLoading={isLoading} />
-      </View>
+      {isScanning ? (
+        <Modal visible={isLoading} transparent animationType="fade">
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <CustomProgressBar
+              progress={fileScanProgress}
+              filesFound={filesFound}
+              foundFiles={foundFilesList}
+              onRescan={handleRescan}
+              onContinue={handleContinue}
+            />
+          </View>
+        </Modal>
+      ) : (
+        <CustomSpinner isLoading={isLoading} text="Loading..." />
+      )}
       <LinearGradient
-        colors={['white', 'white']}
+        colors={[
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+        ]}
+        style={{
+          paddingTop: scaledSize(8),
+          paddingBottom: scaledSize(22),
+        }}>
+        {renderHeaderIcons()}
 
-        style={{ flex: .2, flexDirection: 'column', backgroundColor: 'red' }}>
-        <ScrollView style={{ flex: 1 }}>
-          <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
-            <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start', }}>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <View style={{ flexDirection: 'row', justifyContent: "space-between" }}>
+        <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: scaledSize(16) }}>
+          <View style={{ width: '92%', height: scaledSize(54), justifyContent: 'center', alignItems: 'center' }}>
 
-                  <Button title="Login" onPress={handleLogin} />
-                  <Button title="Sync" onPress={syncAll} />
-                  <Button title="CREATE" onPress={async () => {
-                    console.log('hi');
-                    
-                    const created = await FolderLocalService.createFolder
-                      ('', 'name-voter-1' + Math.random(),
-                        null, 'coveruri', 'gooleDrivefolderName', 0)
-                    console.log('created', created);
+            <Searchbar
+              placeholder="Search"
+              style={{
+                width: '100%',
+                borderRadius: scaledSize(30),
+                letterSpacing: 1,
+                height: scaledSize(44),
+                // backgroundColor: theme.bgColor,
+                backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: theme.borderColor,
+                elevation: mode === 'dark' ? 0 : 5,
+                shadowColor: '#9CA3AF',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: mode === 'dark' ? 0 : 0.18,
+                shadowRadius: 18,
+              }}
+              onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
+              placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
+              inputStyle={{
+                fontSize: scaledSize(15),
+                letterSpacing: 0,
+                alignSelf: 'center',
+                color: theme.primaryTextColor,
+                minHeight: scaledSize(40),
+              }}
+              loading={false}
+              icon={() => <Image source={searchIcon} style={{
+                height: scaledSize(19), width: scaledSize(19),
+                tintColor: theme.borderColor
+              }}
 
-                  }} />
-                  <Button title="Update" onPress={async () => {  
-                    await FolderLocalService.updateFolderById({id:1,name:Math.random().toString(),isDeleted:0})
-                   }} />
-                  {/* <Button title="Logout" onPress={async () => { await signOut() }} /> */}
-                </View>
-
-                {user && (
-                  <Text>Welcome: {user.user?.name}</Text>
-                )}
-              </View>
-            </View>
-
-            {renderHeaderIcons()}
-          </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', }}>
-            <View style={{ width: '96%', height: scaledSize(50), justifyContent: 'center', alignItems: 'center' }}>
-
-              <Searchbar
-                placeholder="Search"
-                style={{
-                  borderRadius: scaledSize(45), letterSpacing: 1, height: scaledSize(44),
-                  backgroundColor: '#F3F4F6',
-                }}
-                onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
-                placeholderTextColor="#9CA3AF"
-                inputStyle={{ fontSize: scaledSize(14), letterSpacing: 1, alignSelf: 'center' }}
-                loading={false}
-                icon={() => <Image source={searchIcon} style={{
+              />}
+              clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
+                setSearchQuery(''), console.log('press search')
+              }}>
+                <Image source={clear} style={{
                   height: scaledSize(16), width: scaledSize(16),
-                }}
 
-                />}
-                clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                  setSearchQuery(''), console.log('press search')
-                }}>
-                  <Image source={clear} style={{
-                    height: scaledSize(16), width: scaledSize(16),
-
-                  }} />
-                </TouchableOpacity> : <></>
-                }
-                value={searchQuery}
-              />
+                }} />
+              </TouchableOpacity> : <></>
+              }
+              value={searchQuery}
+            />
 
 
-            </View>
           </View>
-        </ScrollView>
+        </View>
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
-      <View style={{ flex: 1, backgroundColor: 'white' }}>
+      <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
 
         <TabView
           renderTabBar={renderTabBar}
@@ -985,9 +999,16 @@ const pushFolders = async () => {
 
       {isShowErrorModal && <CustomErrorMsgModal errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />}
       {count >= 8 ? <VideoAddMob count={randomNumber} /> : null}
-      <Modal visible={isShowCardModal}>
-        <SaveUserCardDetails onPress={() => setIsShowCardModal(false)} />
-      </Modal>
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
     </SafeAreaView>
   );
 }

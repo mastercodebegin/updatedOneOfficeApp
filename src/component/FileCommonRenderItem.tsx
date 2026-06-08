@@ -1,219 +1,591 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, View, Image, TouchableOpacity, Text, Platform } from "react-native";
-import { COLORS, FONTS } from "../utilies/GlobalColors";
-import { ConfirmPopup, fileShare, getDate, getFileSize, navigateTo, scaledSize, widthFromPercentage } from "../utilies/Utilities";
-import CustomMenu from "./Menu";
+import React, { useMemo, useState } from "react";
+import {
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Text,
+  ViewProps,
+  StyleProp,
+  ViewStyle,
+} from "react-native";
+import { View } from "react-native";
 
-import { Fonts } from '../assets/fonts/GlobalFonts';
-import { PdfIcon } from "../assets/GlobalImages";
-import Icon from 'react-native-vector-icons/Ionicons';
-import { Share } from "react-native";
-import RNFS from 'react-native-fs';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import {
+  getFileSize,
+  scaledSize,
+  Utility,
+} from "../utilies/Utilities";
+
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+
+import { Fonts } from "../assets/fonts/GlobalFonts";
+import { useTheme } from "../screen/theme/useTheme";
+import { Theme } from "../screen/theme/ThemeConfig";
+import ConfirmationDialog from "./ConfirmationDialog";
+import FileSlice from "../screen/dashboard/FileSlice";
+import { useSelector } from "react-redux";
 interface S {
-  item: any
-  icon: any
-  onPressDeleteFile: Function
-  screenName: string
-  onPressItem:Function
-  onLongPress:any
-  isItemSelected: boolean
-  selectedItems: Array<any>
+  item: any;
+  icon: any;
+  onPressDeleteFile: Function;
+  screenName: string;
+  onPressItem: Function;
+  onLongPress: any;
+  isShowEditBtn?: boolean;
+  actionButtonContainerStyle?:StyleProp<ViewStyle>
+  leftIconStyle?:StyleProp<ViewStyle>
+  onPressEditFile?: (item: any) => void;
+  index: number;
 }
 
 
 export const FileCommonRenderItem = (props: S) => {
-  const { item, icon, onPressDeleteFile, screenName,onLongPress,isItemSelected,selectedItems,onPressItem } = props;
-  // Uncomment the console.log if you need to debug the item object
+  
+  const {
+    item,
+    icon,
+    onPressDeleteFile,
+    screenName,
+    onLongPress,
+    onPressItem,
+    actionButtonContainerStyle,
+    isShowEditBtn = false,
+    leftIconStyle,
+    onPressEditFile = () => {},
+    index,
+  } = props;
+  
+  const { selectedFiles,selectedItems } = useSelector((state: any) => state.FileSlice,
+  );  const { theme, mode } =useTheme();
 
-  useEffect(() => {
-    // console.log('Updated selectedItem:', selectedItems);
-  }, [selectedItems]);
-
-  const handleDeletePress = (item: any) => {
-    ConfirmPopup(() => onPressDeleteFile(item));
-  };
-  const onPress = (item: any) => {
-    if (screenName === 'PdfViewer') {
-      navigateTo('PdfViewer', { uri: item.path, name: item?.name })
-    }
-    else if (screenName === 'XslxReader') {
-      navigateTo('XslxReader', { uri: item.path, name: item?.name })
-    }
-    else if (screenName === 'WordReader') {
-      navigateTo('WordReader', { uri: item.path, name: item?.name })
-    }
-
-    else if (screenName === 'PPTReader') {
-      navigateTo('PPTReader', { uri: item.path, name: item?.name })
-    }
-  }
+  const styles = useMemo(() => {
+    return createStyles(theme, mode)
+  }, [theme])
 
   const checkisFolderSelected = (id: number) => {
-    // console.log('selectedfolder', selectedFoldersId);
+    return selectedFiles.some(
+      (item: any) => item.id === id,
+    );
+  };
 
-    const isSelected =  selectedItems.find(item => item?.id === id)
-    // console.log('isSelected', isSelected);
-    return isSelected
-    // return selectedFoldersId.find(item => item.id === id)
-  }
+  const [
+    isShowDeleteConfirmation,
+    setIsShowDeleteConfirmation,
+  ] = useState(false);
 
-const onPressItemHandler = () => {
-    console.log('selectedItem after delay:', selectedItems);
-    if (selectedItems?.length > 0) {
-      onPressItem(item)
-    } else {
-      onPress(item);
+ 
+  const openFile = (
+    item: any,
+  ) => {
+
+    if (
+      screenName ===
+      "PdfViewer"
+    ) {
+
+      Utility.navigation.navigateTo(
+        "PdfViewer",
+        {
+          uri: item.path,
+          name: item.name,
+        },
+      );
+
+    } else if (
+      screenName ===
+      "XslxReader"
+    ) {
+
+      Utility.navigation.navigateTo(
+        "XslxReader",
+        {
+          uri: item.path,
+          name: item.name,
+        },
+      );
+
+    } else if (
+      screenName ===
+      "WordReader"
+    ) {
+
+      Utility.navigation.navigateTo(
+        "WordReader",
+        {
+          uri: item.path,
+          name: item.name,
+        },
+      );
+
+    } else if (
+      screenName ===
+      "PPTReader"
+    ) {
+
+      Utility.navigation.navigateTo(
+        "PPTReader",
+        {
+          uri: item.path,
+          name: item.name,
+        },
+      );
     }
-};
+  };
 
-const onLongPressItem=()=>{
-  onLongPress(item)
-}
+  const onPressItemHandler =
+    () => {
+
+      if (
+        selectedFiles?.length >
+        0
+      ) {
+
+        onPressItem(item);
+
+      } else {
+
+        openFile(item);
+      }
+    };
+
   return (
-    <View style={[styles.mainView,{backgroundColor:isItemSelected?'#f5f5f5':'white'}]}>
-      <View style={{ width: widthFromPercentage(18), height: scaledSize(50), justifyContent: 'center', alignItems: 'center' }}>
-        <Image source={icon} style={styles.icon} />
-      </View>
+    <>
+
       <TouchableOpacity
-       onLongPress={onLongPressItem}
-        onPress={onPressItemHandler}
-      >
-        <View style={[styles.fileNameParentView, { height: scaledSize(40) }]}>
-          <View style={styles.fileNameView}>
-            <Text style={{ fontSize: scaledSize(12), fontFamily: Fonts.regular, letterSpacing: 1,color:'black' }}>
-              {item?.name}
-            </Text>
-          </View>
-          <View style={styles.dateAndSizeParentView}>
-            <View style={styles.dateView}>
-              <Text style={[styles.fontStyle, ]}>
-                {getDate(item.mtime)}
-              </Text>
+        style={[
+          styles.card,
+
+          {
+            marginTop:
+              index === 0
+                ? scaledSize(
+                    20,
+                  )
+                : 0,
+          },
+
+          checkisFolderSelected(item.id) &&
+            styles.selectedCard,
+        ]} onLongPress={()=>onLongPress(
+              item,
+            )}
+            onPress={onPressItemHandler}
+            >
+
+        {/* selection ui */}
+
+        {checkisFolderSelected(item.id) && (
+          <>
+
+            <View
+              style={
+                styles.leftAccent
+              }
+            />
+
+            <View
+              style={
+                styles.checkBadge
+              }>
+
+              <MaterialIcons
+                name="check"
+                size={16}
+                color="#FFF"
+              />
+
             </View>
-            <View style={styles.fileSizeView}>
-              <Text style={[styles.fontStyle, ]}>
-                {getFileSize(item?.size)}
-              </Text>
-            </View>
-          </View>
+
+          </>
+        )}
+
+        {/* icon */}
+
+        <View style={[styles.iconContainer,leftIconStyle]}>
+
+          <Image
+            source={icon}
+            style={styles.icon}
+          />
+
         </View>
+
+        {/* content */}
+
+        <TouchableOpacity
+          style={
+            styles.touchable
+          }
+          onPress={
+            onPressItemHandler
+          }
+          // onLongPress={() =>
+          //   onLongPress(
+          //     item,
+          //   )
+          // }
+          >
+
+          <View
+            style={
+              styles.fileNameParentView
+            }>
+
+            <Text
+              numberOfLines={1}
+              style={
+                styles.fileName
+              }>
+
+              {item?.name}
+
+            </Text>
+
+            <View style={styles.dateAndSizeParentView}>
+
+              <View style={styles.metaRow}>
+                <MaterialIcons
+                  name="calendar-today"
+                  size={scaledSize(13)}
+                  color={theme.iconColor}
+                />
+
+                <Text style={styles.metaText}>
+                  {Utility.date.getDateByMomentFormat(
+                    item.mtime,
+                  )}
+                </Text>
+              </View>
+
+              <View style={styles.metaRow}>
+                <MaterialIcons
+                  name="insert-drive-file"
+                  size={scaledSize(14)}
+                  color={theme.iconColor}
+                />
+
+                <Text style={styles.metaText}>
+                  {getFileSize(
+                    item?.size,
+                  )}
+                </Text>
+              </View>
+
+            </View>
+
+          </View>
+
+        </TouchableOpacity>
+
+        {/* actions hidden during selection */}
+
+        {!checkisFolderSelected(item.id) && (
+
+          <View
+            style={
+              [styles.actionContainer,actionButtonContainerStyle]
+            }>
+
+            {isShowEditBtn && (
+
+              <TouchableOpacity
+                style={
+                  styles.actionButton
+                }
+                onPress={() =>
+                  onPressEditFile(
+                    item,
+                  )
+                }>
+
+                <MaterialIcons
+                  name="edit"
+                  size={scaledSize(20)}
+                  color={
+                    theme.iconColor
+                  }
+                />
+
+              </TouchableOpacity>
+
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.deleteButton,
+              ]}
+              onPress={() =>
+                setIsShowDeleteConfirmation(
+                  true,
+                )
+              }>
+
+              <MaterialIcons
+                name="delete"
+                size={scaledSize(20)}
+                color={
+                  theme.deleteIconColor
+                }
+              />
+
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.shareButton,
+              ]}
+              onPress={() =>
+                Utility.fileShare(
+                  item.path,
+                )
+              }>
+
+              <MaterialIcons
+                name="share"
+                size={scaledSize(20)}
+                color={
+                  theme.themeColor
+                }
+              />
+
+            </TouchableOpacity>
+
+          </View>
+
+        )}
+
       </TouchableOpacity>
-      <View style={styles.favAndUnfavoriteView}>
-        {/* You can uncomment and use this Text element if needed */}
-        {/* <Text style={styles.fontStyle}>hi</Text> */}
-      </View>
-      {/* <View style={styles.shareFileView}> */}
-      {/* <CustomMenu
-          Icon={<Icon name={'ellipsis-horizontal'} size={20} />}
-          menuOptionstyle={{ padding: scaledSize(13), width: scaledSize(180), height: scaledSize(50) }}
-          menuOption={[
-            { onSelect: () => fileShare(item.path, item.name), label: 'Share' },
-            { onSelect: () => { handleDeletePress(item) }, label: 'Delete' },
-          ]}
-        /> */}
-      {/* </View> */}
-      <View style={{
-        justifyContent: 'space-between', flexDirection: 'row', alignItems: 'flex-end',
-        height: scaledSize(40),
-        right: scaledSize(50), width: scaledSize(50)
-      }}>
 
+      <ConfirmationDialog
+        visible={
+          isShowDeleteConfirmation
+        }
+        onCancel={() =>
+          setIsShowDeleteConfirmation(
+            false,
+          )
+        }
+        onSubmit={() => {
 
+          onPressDeleteFile(
+            item,
+          );
 
-          <TouchableOpacity onPress={() => { handleDeletePress(item) }}>
-          <MaterialIcons name='delete' color={'#E4003A'}
-            size={scaledSize(20)} style={{ marginLeft: scaledSize(10), }} />
-        </TouchableOpacity>
-        {/* <TouchableOpacity onPress={() => { setSelectedItems([]) }}> */}
-        <TouchableOpacity onPress={() => { fileShare(item.path, item.name) }}>
-          <Ionicons name='share-outline' color={COLORS.THEME_COLOR}
-            size={scaledSize(20)} style={{ marginLeft: scaledSize(10), bottom: 1 }} />
-        </TouchableOpacity>
+          setIsShowDeleteConfirmation(
+            false,
+          );
+        }}
+        mode="delete"
+      />
 
-      </View>
-    </View>
+    </>
   );
 };
 
+const createStyles = (
+  theme: Theme,
+  mode: string,
+) =>
+  StyleSheet.create({
 
-const styles = StyleSheet.create({
-  ///
+    card: {
+      minHeight:
+        scaledSize(100),
 
-  loading: {
-    flex: 1,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  body: {
-    fontSize: scaledSize(18),
-  },
-  mainView: {
-    height: scaledSize(80),
-    width: "100%",
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    flexDirection: 'row',
-    // marginTop: .6,
-    backgroundColor: '#FFFF'
-  },
-  icon: {
-    height: scaledSize(30),
-    width: scaledSize(30),
-    marginLeft: scaledSize(6)
-  },
-  fileNameParentView: {
-    width: widthFromPercentage(66),
-    height: scaledSize(50),
-    // backgroundColor: 'red',
-    flexDirection: "column"
-  },
+      marginHorizontal:
+        scaledSize(16),
 
-  fileNameView: {
-    flex: 1,
-    // backgroundColor:'red',
-    // height:scaledSize(50),
-    justifyContent: 'center',
-    alignItems: 'flex-start'
-  },
-  dateAndSizeParentView: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
-  },
-  dateView: {
-    flex: 1,
-    // backgroundColor: 'purple',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end'
+      marginBottom:
+        scaledSize(16),
 
-  },
-  fileSizeView: {
-    flex: 1,
-    // backgroundColor: 'orange',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  favAndUnfavoriteView: {
-    width: widthFromPercentage(10),
-    height: scaledSize(50),
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  shareFileView: {
-    width: widthFromPercentage(10),
-    height: scaledSize(50),
-    justifyContent: 'center'
-  },
+      paddingVertical:
+        scaledSize(22),
 
-  fontStyle: {
-    fontSize: scaledSize(11),
-    // color: 'black',
-    // fontFamily: FONTS.QuicksandBold,
-  }
-});
+      paddingHorizontal:
+        scaledSize(20),
 
+      borderRadius:
+        scaledSize(14),
+
+      flexDirection:
+        "row",
+
+      alignItems:
+        "center",
+
+      backgroundColor:
+        mode === "dark"
+          ? theme.bgColor
+          : "#FFFFFF",
+
+      borderWidth:
+        mode === "dark"
+          ? 1
+          : 0,
+
+      borderColor:
+        theme.borderColor,
+
+      overflow:
+        "hidden",
+
+      shadowColor:
+        "#9CA3AF",
+
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+
+      shadowOpacity:
+        mode === "dark" ? 0 : 0.16,
+
+      shadowRadius:
+        18,
+
+      elevation:
+        mode === "dark" ? 0 : 4,
+    },
+
+    selectedCard: {
+
+      borderWidth: mode !== "dark" ? 1 : 0.5,
+
+      borderColor:
+        theme.themeColor,
+
+      backgroundColor:
+        mode === "dark"
+          ? "rgba(77,141,255,0.06)"
+          : "rgba(77,141,255,0.04)",
+    },
+
+    leftAccent: {
+      position: "absolute",
+      left: 0,
+      top: scaledSize(18),
+      bottom: scaledSize(18),
+      width: scaledSize(4),
+      backgroundColor:
+        theme.themeColor,
+      borderTopRightRadius: 20,
+      borderBottomRightRadius: 20,
+    },
+
+    checkBadge: {
+      position: "absolute",
+      right: scaledSize(16),
+      top: scaledSize(34),
+      width: scaledSize(26),
+      height: scaledSize(26),
+      borderRadius: 100,
+      backgroundColor:
+        theme.themeColor,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+      zIndex: 10,
+    },
+
+    iconContainer: {
+      width: scaledSize(50),
+      height: scaledSize(50),
+      borderRadius: scaledSize(12),
+      justifyContent: 'center',
+      alignItems: 'center',
+      // backgroundColor:'red',
+      marginRight: scaledSize(20),
+    },
+
+    icon: {
+      width: scaledSize(55),
+      height: scaledSize(55),
+      resizeMode:
+        "contain",
+    },
+
+    touchable: {
+      flex: 1,
+    },
+
+    fileNameParentView: {
+      flex: 1,
+    },
+
+    fileName: {
+      color:
+        theme.primaryTextColor,
+      fontSize:
+        scaledSize(14),
+      fontFamily:
+        Fonts.bold,
+    },
+
+    dateAndSizeParentView: {
+      marginTop:
+        scaledSize(14),
+      gap:
+        scaledSize(10),
+    },
+
+    metaRow: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        scaledSize(10),
+    },
+
+    metaText: {
+      color:
+        theme.primaryTextColor,
+      fontSize:
+        scaledSize(12),
+      fontFamily:
+        Fonts.regular,
+    },
+
+    actionContainer: {
+      flexDirection:
+        "row",
+      alignItems:
+        "center",
+      gap:
+        scaledSize(12),
+    },
+
+    actionButton: {
+      width:
+        scaledSize(34),
+      height:
+        scaledSize(34),
+      borderRadius:
+        scaledSize(8),
+      backgroundColor:
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "#F5F5F5",
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
+
+    deleteButton: {
+      backgroundColor:
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "rgba(255, 59, 92, 0.1)",
+    },
+
+    shareButton: {
+      backgroundColor:
+        mode === "dark"
+          ? theme.buttonBGColor
+          : "rgba(0, 182, 204, 0.1)",
+    },
+  });

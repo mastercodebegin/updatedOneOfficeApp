@@ -1,10 +1,10 @@
 import { useGoogleAuth } from "src/customhooks/useGoogleAuth";
 import { asyncStorageKeyName, CONSTANT } from "../utilies/Constants";
-import { getLocalData, removeLocalData, setLocalData } from "../utilies/storageService";
+import { getLocalData, removeLocalData, setLocalData } from "../utilies/storageUtility";
 import { AuthService } from "../service/AuthService";
 import axios from 'axios'
 import { FolderLocalService } from "./folderLocalService";
-import { getImageUriByOS } from "../../src/utilies/Utilities";
+import { getImageUriByOS, Utility } from "../../src/utilies/Utilities";
 import RNFetchBlob from "rn-fetch-blob";
 
 
@@ -240,7 +240,7 @@ async downloadFile(fileId: string) {
     async uploadImage(file: { name: string }, folderId: string) {
 
         console.log('fileUri>>>>>>>>>>>>>>', file);
-        const fileUri = getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
+        const fileUri = Utility.images.getImageUriByOS(CONSTANT.SAVED_DOCUMENTS_PATH + file.name)
         const accessToken = getLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN) || ''
 
         console.log('fileUri>>>>>>>>>>>>>>', fileUri);

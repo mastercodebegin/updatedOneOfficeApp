@@ -7,7 +7,7 @@ import { file } from "jszip"
 import EventBlock from "react-native-calendars/src/timeline/EventBlock"
 
 
-// File Manager permission
+// File Manager permission implement
 
 // Go to mainapplication.kt file
 // under add package list add below package
@@ -31,3 +31,6 @@ import EventBlock from "react-native-calendars/src/timeline/EventBlock"
 // copy them needs to perform only 2 steps for permission
 
 
+
+Next Release 
+1. Image Edit in multipledocumentimage.tsx has image edit component needs to complete 

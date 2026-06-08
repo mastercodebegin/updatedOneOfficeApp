@@ -6,7 +6,7 @@ import {
   signInWithCredential,
 } from '@react-native-firebase/auth';
 import { AuthService } from '../service/AuthService';
-import { setLocalData } from '../../src/utilies/storageService';
+import { setLocalData } from '../utilies/storageUtility';
 import { asyncStorageKeyName } from '../../src/utilies/Constants';
 
 export const useGoogleAuth = () => {
@@ -45,7 +45,7 @@ export const useGoogleAuth = () => {
       setUser(firebaseUser.user);
       setAccessToken(accessToken);
       setLocalData(asyncStorageKeyName.GOOGLE_ACCESS_TOKEN, accessToken); // Store token in storage
-
+      setLocalData(asyncStorageKeyName.USER_DETAILS, firebaseUser.user); // Store token in storage
       return { user: firebaseUser.user, accessToken };
     } catch (e) {
       console.log('SignIn error:', e);

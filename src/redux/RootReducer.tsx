@@ -1,10 +1,10 @@
 import FileSlice from "../screen/dashboard/FileSlice"
-
+import ThemeSlice from "../screen/theme/ThemeSlice"
 
 const RootReducer = ({
 
     
-    FileSlice
+    FileSlice,ThemeSlice
 })
 
 

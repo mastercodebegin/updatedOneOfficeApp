@@ -5,7 +5,7 @@ import {
   signInWithCredential,
   signOut as firebaseSignOut,
 } from '@react-native-firebase/auth';
-import { setLocalData } from '../../src/utilies/storageService';
+import { setLocalData } from '../utilies/storageUtility';
 import { asyncStorageKeyName } from '../../src/utilies/Constants';
 
 // 🔹 Configure Google Sign-In

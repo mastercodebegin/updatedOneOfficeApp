@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppShare, asyncStorageKeyName, CONSTANT } from './Constants';
 import { CommonActions } from '@react-navigation/native';
 import { createNavigationContainerRef } from '@react-navigation/native';
-import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
+import { Popup } from '@sekizlipenguen/react-native-popup-confirm-toast'
 import Share from 'react-native-share';
 import { createPdf } from 'react-native-images-to-pdf';
 
@@ -32,6 +32,9 @@ import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons';
 import Zocial from 'react-native-vector-icons/Zocial';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import ReactNativeBlobUtil from 'react-native-blob-util';
+import { getFirstLetterCapitalize } from './StringUtilitiy';
+import { getDateByMomentFormat, getDateFromString, getFirebaseTimeStampByMillis, getMillis } from './DateUtility';
+import { getLocalData, removeAllLocalData, removeLocalData, setLocalData } from './storageUtility';
 
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
 const baseWidth = 360;
@@ -40,6 +43,7 @@ const baseHeight = 700;
 const scaleWidth = width / baseWidth;
 const scaleHeight = height / baseHeight;
 const scale = Math.min(scaleWidth, scaleHeight);
+export const scaledSize = (size: any) => Math.ceil(size * scale);
 // const storageProvider = require('./StorageProvider');
 export const navigationRef = createNavigationContainerRef();
 
@@ -47,14 +51,19 @@ export const scaleRatio = deviceScale;
 export const deviceWidth = width;
 export const deviceHeight = height;
 export const deviceAspectRatio = width / height;
-export const scaledSize = (size: any) => Math.ceil(size * scale);
 export const widthFromPercentage = wp;
 export const heightFromPercentage = hp;
 
 
-export const generateUniqueNumber = () => {
+const generateUniqueNumber = () => {
   return Math.floor(Math.random() * (100000 - 1 + 1)) + Math.floor(Math.random() * 100 * 9);
 };
+
+interface S {
+  isMultipleSelection?: boolean,
+  fileTypes?: Array<any>
+  isBase64?: boolean
+}
 
 export const VECTOR_ICON_LIBRARIES = {
   AntDesign,
@@ -76,36 +85,7 @@ export const VECTOR_ICON_LIBRARIES = {
 
 // ✅ Type for autocompletion support
 export type IconLibraryType = keyof typeof VECTOR_ICON_LIBRARIES;
-export const getDate = (item) => {
 
-  // const day=item?.mtime?.getDate()
-  // const month=item?.mtime?.getMonth()
-  // const year=item?.mtime?.getFullYear()
-
-  // return `${day} - ${month} - ${year}`
-
-  const mtimeDate = typeof item == 'object' ? item : item !== undefined ? new Date(item) : new Date();
-
-  // Check if mtimeDate is a valid Date object
-  try {
-
-    if (mtimeDate) {
-      // const date = new Date(item);
-      const day = mtimeDate.getDate();
-      const month = mtimeDate.getMonth() + 1; // Months are 0-based, so add 1 to get the actual month.
-      const year = mtimeDate.getFullYear();
-
-      return `${day} - ${month} - ${year}`;
-    }
-    else {
-      console.log('Invalid date string:', item);
-    }
-  }
-  catch (error) {
-    console.log('Error in getDate:', error);
-    return 'Invalid date string';
-  }
-}
 
 export const getFileSize = (size) => {
   // console.log('getFileSize',size);
@@ -122,9 +102,7 @@ export const getFileSize = (size) => {
 
 }
 
-export const capitalizeFirstLetter = (string) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
+
 
 export const heightToDp = number => {
   let givenHeight = typeof number === 'number' ? number : parseFloat(number)
@@ -147,10 +125,19 @@ export const getPotraitAndLandscapeDimensions = () => {
 
 
 
-export const fileShare = async (url: string, name: string,) => {
+const fileShare = async (url: string) => {
+
+
   console.log('url: ' + url);
   const extension = url.split('.').pop(); // Get the file extension from the URL
   console.log('extension======', extension);
+const name =
+ url
+  .split('/')
+  .pop()
+  ?.split('.')
+  .slice(0,-1)
+  .join('.')
 
   const mimeType = getMimeType(extension); // Get the MIME type based on the extension
 
@@ -248,7 +235,7 @@ export const deleteFile = (path) => {
     });
 }
 
-export const getFilesFromPhoneByFileExtention = async (data?: any) => {
+export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: (progress: { percentage: number, filesFound: number, allFoundFiles: any[] }) => void) => {
   interface File {
     name: string;
     path: string;
@@ -259,38 +246,48 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
   let wordFiles: File[] = [];
   let xlsxFiles: File[] = [];
   let pptFiles: File[] = [];
+  let filesFound = 0;
   console.log(`Reading directory=========`,);
+
+  const scannedPaths = new Set<string>();
 
   const readDirectory = async (path: any) => {
 
     try {
+      if (scannedPaths.has(path)) return;
+      scannedPaths.add(path);
 
       const result = await RNFS.readDir(path);
       // console.log('result:', result);
 
       for (const item of result) {
+// console.log('item of result ',item);
 
         item.id = generateUniqueNumber()
         if (item.name.toLowerCase().endsWith('.pdf')) {
           pdfFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.docx')) {
           wordFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
+        }
+        else if (item.name.toLowerCase().endsWith('.doc')) {
+          wordFiles.push(item);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xlsx')) {
           xlsxFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xls')) {
           xlsxFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
 
         else if (item.name.toLowerCase().endsWith('.pptx')) {
           pptFiles.push(item);
-          // console.log(`Found PDF: ${item.name}`);
+          filesFound++;
         }
         else if (item.isDirectory()) {
           // console.log(`Entering directory: ${item.path}`);
@@ -299,19 +296,54 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
       }
 
     } catch (error) {
-      console.log(`Error reading directory ${path}:`, error);
+      // console.log(`Error reading directory ${path}:`, error);
     }
   };
 
 
-
   try {
-    // Start by reading the root external storage directory
-    await readDirectory(RNFS.ExternalStorageDirectoryPath);
+    const rootItems = await RNFS.readDir(RNFS.ExternalStorageDirectoryPath);
+    const rootDirs = rootItems.filter(item => item.isDirectory() && !item.name.startsWith('.'));
+    const totalDirs = rootDirs.length;
+    let processedDirs = 0;
 
-    //Explicitly include WhatsApp directory if it exists
+    // Scan files in the root directory first
+    for (const item of rootItems) {
+      // console.log('item===',item);
+      
+      if (item.isFile()) {
+              // console.log('is file item===',item);
 
-    //console.log('List finished:', pdfFiles);
+        item.id = generateUniqueNumber();
+        if (item.name.toLowerCase().endsWith('.pdf')) {
+          pdfFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.docx')) {
+          wordFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.doc')) {
+          wordFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.xlsx') || item.name.toLowerCase().endsWith('.xls')) {
+          xlsxFiles.push(item);
+          filesFound++;
+        } else if (item.name.toLowerCase().endsWith('.pptx')) {
+          pptFiles.push(item);
+          filesFound++;
+        }
+      }
+    }
+
+    // Then scan each top-level directory recursively
+    for (const dir of rootDirs) {
+      await readDirectory(dir.path);
+      processedDirs++;
+      if (onProgress) {
+        const percentage = Math.round((processedDirs / totalDirs) * 100);
+        const allFoundFiles = [...pdfFiles, ...wordFiles, ...xlsxFiles, ...pptFiles];
+        onProgress({ percentage: percentage > 100 ? 100 : percentage, filesFound, allFoundFiles });
+      }
+    }
   } catch (error) {
     console.log('Error:', error);
   } finally {
@@ -330,16 +362,10 @@ export const getFilesFromPhoneByFileExtention = async (data?: any) => {
     }
     // console.log('stoaring files in asyncstorage start=======', sorted);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.PDF_FILES, JSON.stringify(pdfFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.WORD_FILES, JSON.stringify(wordFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.XLSX_FILES, JSON.stringify(xlsxFiles));
-    // await AsyncStorage.setItem(asyncStorageKeyName.PPT_FILES, JSON.stringify(pptFiles));
+    setLocalData(asyncStorageKeyName.PDF_FILES, pdfFiles);
     console.log('pptFiles------', pptFiles);
 
-    await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify({ pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles }));
-    // console.log('stoaring files in asyncstorage end=======');
-    // console.log('returning files as per extension=======');
-    // console.log('logs object=======', { pdfFiles, wordFiles, xlsxFiles, pptFiles });
+    setLocalData(asyncStorageKeyName.ALL_FILES, { pdfFiles: sorted, wordFiles, xlsxFiles, pptFiles });
 
     return { pdfFiles, wordFiles, xlsxFiles, pptFiles };
 
@@ -383,30 +409,30 @@ export const getConvertedPdfFileFromPhoneStorage = async () => {
   return arr;
 };
 
-export const convertImagesToPdf = async (imagesPath: Array<string>, name: string) => {
+// export const createImagesToPdf = async (imagesPath: Array<string>, name: string) => {
 
-  try {
-    const options = {
-      imagePaths: imagesPath,
-      name: name,
-      maxSize: { // optional maximum image dimension - larger images will be resized
-        width: 900,
-        height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
-      },
-      quality: 1,
-    };
-    console.log('options', options);
+//   try {
+//     const options = {
+//       imagePaths: imagesPath,
+//       name: name,
+//       maxSize: { // optional maximum image dimension - larger images will be resized
+//         width: 900,
+//         height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
+//       },
+//       quality: 1,
+//     };
+//     console.log('options', options);
 
-    const pdf = await RNImageToPdf.createPDFbyImages(options);
+//     const pdf = await RNImageToPdf.createPDFbyImages(options);
 
-    console.log('typeof>>>>>>>>>>', pdf.filePath);
-    return pdf.filePath
+//     console.log('typeof>>>>>>>>>>', pdf.filePath);
+//     return pdf.filePath
 
-  } catch (e) {
-    console.log('error-----', e);
-  }
-}
-export const shareApp = () => {
+//   } catch (e) {
+//     console.log('error-----', e);
+//   }
+// }
+const shareApp = () => {
   Platform.OS == 'android' ?
     Share.open({ url: AppShare.ANDROID_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', }) :
     Share.open({ url: AppShare.IOS_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', })
@@ -416,7 +442,7 @@ export const setNavigator = (nav) => {
   navigator = nav;
 };
 
-export const navigateTo = (routeName, params?, resetStack = false) => {
+const navigateTo = (routeName, params?, resetStack = false) => {
   if (resetStack) {
     navigationRef.dispatch(
       CommonActions.reset({
@@ -433,7 +459,7 @@ export const navigateTo = (routeName, params?, resetStack = false) => {
     );
   }
 };
-export function navigateToBack() {
+function navigateToBack() {
   if (navigationRef.isReady()) {
     navigationRef.goBack();
   }
@@ -473,19 +499,14 @@ export const toastForDeleteFile = (toast: any, message: string) => {
   });
 }
 
-export const getImageUriByOS = (uri: string) => {
+const getImageUriByOS = (uri: string) => {
   if (!uri) return '';
 
   return uri.startsWith('file://') ? uri : `file://${uri}`;
 };
-export { RNImageToPdf }
 
-interface S {
-  isMultipleSelection?: boolean,
-  fileTypes?: Array<any>
-  isBase64?: boolean
-}
-export const DocumentPicker = async (props: S) => {
+
+const DocumentPicker = async (props: S) => {
   const { isMultipleSelection = false, fileTypes = [], isBase64 = false } = props
 
   try {
@@ -523,7 +544,7 @@ export const DocumentPicker = async (props: S) => {
   }
 }
 
-export const createImagesToPdf = async (images: Array<any>) => {
+const createImagesToPdf = async (images: Array<{path:string}>,name:string) => {
   console.log('images to convert in pdf>>>>>>', images);
 
   try {
@@ -533,21 +554,21 @@ export const createImagesToPdf = async (images: Array<any>) => {
       return;
     }
 
-    const imagePaths: string[] = images.map((item: any) =>
-      Platform.OS === 'ios'
-        ? (typeof item === 'string' ? item : item.path)
-        : (typeof item === 'string'
-          ? item.replace('file://', '')
-          : item.path.replace('file://', ''))
-    );
+    // const imagePaths: string[] = images.map((item: any) =>
+    //   Platform.OS === 'ios'
+    //     ? (typeof item === 'string' ? item : item.path)
+    //     : (typeof item === 'string'
+    //       ? item.replace('file://', '')
+    //       : item.path.replace('file://', ''))
+    // );
 
-    const pages = imagePaths.map(path => ({
-      imagePath: path,
+    const pages = images.map(path => ({
+      imagePath:  path
     }));
 
     const options = {
       pages: pages,
-      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/file.pdf`,
+      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${name}.pdf`,
     };
     console.log('options', options);
 
@@ -560,4 +581,77 @@ export const createImagesToPdf = async (images: Array<any>) => {
   } catch (e) {
     console.log('error-----', e);
   }
+}
+
+export const sortFiles = (sortType: string, files: any[]) => {
+  // Create a shallow copy to avoid mutating the original array
+  const sortedFiles = [...files];
+
+  switch (sortType) {
+    case 'latest':
+      return sortedFiles.sort((a, b) => new Date(b.mtime).getTime() - new Date(a.mtime).getTime());
+
+    case 'oldest':
+      return sortedFiles.sort((a, b) => new Date(a.mtime).getTime() - new Date(b.mtime).getTime());
+
+    case 'name_asc':
+      return sortedFiles.sort((a, b) => {
+        const aIsNumeric = /^\d/.test(a.name);
+        const bIsNumeric = /^\d/.test(b.name);
+
+        if (aIsNumeric && !bIsNumeric) return 1; // a (numeric) comes after b (alphabetic)
+        if (!aIsNumeric && bIsNumeric) return -1; // a (alphabetic) comes before b (numeric)
+
+        return a.name.localeCompare(b.name); // both are same type
+      });
+
+    case 'name_desc':
+      return sortedFiles.sort((a, b) => {
+        const aIsNumeric = /^\d/.test(a.name);
+        const bIsNumeric = /^\d/.test(b.name);
+
+        if (aIsNumeric && !bIsNumeric) return 1; // a (numeric) comes after b (alphabetic)
+        if (!aIsNumeric && bIsNumeric) return -1; // a (alphabetic) comes before b (numeric)
+
+        return b.name.localeCompare(a.name); // both are same type, reverse order
+      });
+
+    case 'size':
+      return sortedFiles.sort((a, b) => b.size - a.size);
+    default:
+      return files; // Return original if no valid sortType
+  }
+};
+
+export const Utility = {
+  string: {
+    getFirstLetterCapitalize
+  },
+  date: {
+    getDateFromString,
+    getDateByMomentFormat,
+    getMillis,
+    getFirebaseTimeStampByMillis
+  },
+  storage: {
+    setLocalData,
+    getLocalData,
+    removeLocalData,
+    removeAllLocalData
+  },
+  navigation:{
+    navigateToBack,
+    navigateTo,
+  },
+  images:{
+    createImagesToPdf,
+    DocumentPicker,
+    getImageUriByOS,
+  },
+  fileShare,
+  shareApp,
+  generateUniqueNumber,
+  getFileSize,
+  sortFiles,
+
 }

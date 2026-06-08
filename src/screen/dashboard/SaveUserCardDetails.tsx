@@ -1,13 +1,13 @@
 import {
   View, Text, ScrollView,
   TouchableOpacity, StyleSheet, Image, Modal,
+  TextInput,
   SafeAreaView,
   FlatList, Alert,
-  StatusBar
 } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import CustomCloseIcon from '../../component/CustomCloseIcon'
-import { capitalizeFirstLetter, generateUniqueNumber, navigateToBack, scaledSize, widthFromPercentage } from '../../utilies/Utilities'
+import {  scaledSize, Utility, widthFromPercentage } from '../../utilies/Utilities'
 import { COLORS, FONTS } from '../../utilies/GlobalColors'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import AntDesign from 'react-native-vector-icons/AntDesign'
@@ -35,7 +35,12 @@ import CustomFAB from '../../component/CustomFAB'
 import CustomLinearButton from '../../component/CustomLinearButton'
 import CustomBackIcon from '../../component/CustomBackIcon'
 import CustomVectorIcon from '../../component/CustomVectorIcon'
-import { Dropdown } from 'react-native-element-dropdown'
+import { useTheme } from '../theme/useTheme'
+import CustomHeader from '../../component/CustomHeader'
+import ConfirmationDialog from '../../component/ConfirmationDialog'
+import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
+import { Theme } from '../theme/ThemeConfig'
+import { getLocalData,setLocalData } from '../../../src/utilies/storageUtility'
 
 
 const data = [
@@ -66,10 +71,12 @@ const data = [
 ];
 
 interface S {
-  onPress: Function
+  onPressBack: Function
 }
 export default function SaveUserCardDetails(props: S) {
-  const { onPress } = props
+  const { onPressBack =()=>Utility.navigation.navigateToBack()} = props
+  const { theme, mode } = useTheme()
+
   const [isShowAddCardModal, setIsShowAddCardModal] = useState(false)
   const [isEditUserShowModal, setIsEditUserShowModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<{ id: string, firstName: string, lastName: string, mobileNumber: string }>()
@@ -95,21 +102,19 @@ export default function SaveUserCardDetails(props: S) {
   const [updatedCardNumber, setUpdatedCardNumber] = React.useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // const [cardI, setDropDownCard] = useState<any>();
+  const [isShowDeleteConfirmation, setIsShowDeleteConfirmation] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState(null);
+  const [isUserDeleteConfirmationVisible, setIsUserDeleteConfirmationVisible] = useState(false);
+  const [userToDeleteIndex, setUserToDeleteIndex] = useState<number | null>(null);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const styles = React.useMemo(() => createStyles(theme, mode), [theme, mode]);
+
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
     if (isCap == undefined) {
-      Alert.alert(
-        'Sorry ',
-        'we could not generate the password please check user details again',
-        [
-          {
-            text: '',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          { text: 'Ok', onPress: () => console.log('Yes Pressed') },
-        ],
-        { cancelable: false }
-      )
+      setErrorMessage('Sorry, we could not generate the password. Please check user details again.');
+      setIsShowErrorModal(true);
       return true
     }
     if (isCap) {
@@ -377,14 +382,13 @@ export default function SaveUserCardDetails(props: S) {
     ]
 
   useEffect(() => {
-    const data = async () => {
-      const savedUsers = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
-      // console.log('savedcards----', savedUsers);
+    const data =  () => {
+      const savedUsers =  getLocalData(asyncStorageKeyName.SAVED_USERS) 
+      console.log('savedcards----', savedUsers);
       // console.log('isStateUpdated----', isStateUpdated);
-      const parseObj = JSON.parse(savedUsers)
+      const parseObj = savedUsers?JSON.parse(savedUsers):[]
       if (parseObj && !isStateUpdated) {
         console.log('typeof--', parseObj);
-
         setUserDetails(parseObj)
         setIsStateUpdated(true)
       }
@@ -392,10 +396,10 @@ export default function SaveUserCardDetails(props: S) {
     }
     data()
   }, [userDetails])
-  const deleteCardHandler = async (childIndex,) => {
+  const deleteCardHandler = async (childIndex, parentIdx) => {
     // Create a deep copy of the userDetails object at the given parent index
-    let arrStr = JSON.stringify(userDetails[parentIndex]);
-
+    let arrStr = JSON.stringify(userDetails[parentIdx]);
+ 
     console.log('arrStr==========', arrStr);
 
     let arr = JSON.parse(arrStr);
@@ -414,37 +418,57 @@ export default function SaveUserCardDetails(props: S) {
     setSelectedUser(tempUser);
     // Update the userDetails state
     let updatedUserCardDetails = [...userDetails];
-    updatedUserCardDetails[parentIndex] = arr;
+    updatedUserCardDetails[parentIdx] = arr;
 
     // Set the new state
     setUserDetails(updatedUserCardDetails);
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
   };
 
   const addUserDetail = async () => {
     console.log('selectedbank', selectedBank);
-    console.log('last', lastName);
-    console.log('mobileNumber', mobileNumber);
-    console.log('date', selectedDate);
-    console.log('bankName', bankName);
-    console.log('last4', lastFourDigit);
-    if (firstName.length == 0) { alert('please enter first name') }
-    else if (lastName.length == 0) { alert('please enter last name') }
-    else if (mobileNumber.length < 10) { alert('please enter valid mobile number') }
-    else if (selectedDate == null) { alert('please select date') }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (isCustomerIdRequired) {
-      if (customerId.length == 0) { alert('please enter customer id') }
+    if (firstName.length == 0) {
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (bankName.length == 0) { alert('please select bank') }
-    else if (lastFourDigit.length != 4) { alert('please enter card last 4 digit') }
-    else {
+    if (lastName.length == 0) {
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (mobileNumber.length < 10) {
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (selectedDate == null) {
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (bankName.length == 0) {
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (isCustomerIdRequired && customerId.length == 0) {
+      setErrorMessage('Please enter customer id');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (lastFourDigit.length != 4) {
+      setErrorMessage('Please enter the last 4 digits of the card');
+      setIsShowErrorModal(true);
+      return;
+    }
+
       const cardDetails = {
-        id: generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
+        id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
         customerId: customerId, ...selectedBank
       };
-      const obj = { id: generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
-      const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+      const obj = { id: Utility.generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
+      const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
       console.log('first', !!data);
 
       if (!!data) {
@@ -452,7 +476,7 @@ export default function SaveUserCardDetails(props: S) {
         console.log('second1 data', data);
         let arr = JSON.parse(data)
         arr.push(obj)
-        await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
         setUserDetails(arr)
         setIsShowAddUserDetailsModal(false)
       }
@@ -462,14 +486,14 @@ export default function SaveUserCardDetails(props: S) {
         console.log('key', asyncStorageKeyName.SAVED_USERS);
         let arr = []
         arr.push(obj)
-        await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
 
         setUserDetails(arr)
         setIsShowAddUserDetailsModal(false)
 
 
       }
-    }
+    
 
 
   }
@@ -480,10 +504,10 @@ export default function SaveUserCardDetails(props: S) {
   }
   const deleteUser = async (index: number) => {
     console.log('index', index);
-    const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+    const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
     const userDeatilsObj = JSON.parse(data)
     userDeatilsObj.splice(index, 1)
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDeatilsObj))
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDeatilsObj))
     setUserDetails(userDeatilsObj)
 
   }
@@ -497,7 +521,7 @@ export default function SaveUserCardDetails(props: S) {
       }
       console.log('Updating user with ID:', updatedDetails);
 
-      const data = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS);
+      const data = getLocalData(asyncStorageKeyName.SAVED_USERS);
       if (data !== null) {
         const userDetailsObj = JSON.parse(data);
 
@@ -510,7 +534,7 @@ export default function SaveUserCardDetails(props: S) {
           userDetailsObj[userIndex] = { ...userDetailsObj[userIndex], ...updatedDetails };
 
           // Save the updated object back to AsyncStorage
-          await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetailsObj));
+          setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetailsObj));
 
           // Update the state to reflect the changes
           setUserDetails(userDetailsObj);
@@ -527,20 +551,24 @@ export default function SaveUserCardDetails(props: S) {
 
   const checkValidation = () => {
     if (firstName.length == 0) {
-      alert('please enter first name')
+      setErrorMessage('Please enter first name');
+      setIsShowErrorModal(true);
       return false
     }
     if (lastName.length == 0) {
-      alert('please enter last name')
+      setErrorMessage('Please enter last name');
+      setIsShowErrorModal(true);
       return false
     }
     if (mobileNumber.length < 10) {
-      alert('please enter valid mobile number')
+      setErrorMessage('Please enter a valid mobile number');
+      setIsShowErrorModal(true);
       return false
 
     }
     if (selectedDate == null) {
-      alert('please select date')
+      setErrorMessage('Please select a date');
+      setIsShowErrorModal(true);
       return false
     }
 
@@ -565,7 +593,7 @@ export default function SaveUserCardDetails(props: S) {
       setSelectedUser(item)
 
   }
-  const renderCards = (item, childIndex) => {
+  const renderCards = (item, childIndex, parentIndex) => {
     console.log('renderCards---', item);
 
     return (
@@ -573,34 +601,36 @@ export default function SaveUserCardDetails(props: S) {
       <View style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#fff",
-        paddingVertical: 10,
-        borderBottomWidth: 0.5,
-        borderColor: "#eee"
+        // backgroundColor: theme.bgColor,
+        borderWidth:.5,
+        paddingHorizontal:scaledSize(12),
+        height:scaledSize(74),
+        // width:400,
+        borderRadius:scaledSize(10),
+        paddingVertical: scaledSize(10),
+        borderColor: theme.borderColor,
+        marginBottom: scaledSize(10)
       }}>
 
-        <Image
-          source={BANK_LOGOS[item.value.bankName]}
-          style={{
-            height: scaledSize(24),
-            width: scaledSize(24),
-            borderRadius: scaledSize(8),
-            marginRight: scaledSize(8)
-          }}
-          resizeMode="contain"
-        />
+        <View style={styles.bankLogoContainer}>
+          <Image
+            source={BANK_LOGOS[item.value.bankName]}
+            style={styles.bankLogo}
+            resizeMode="contain" />
+        </View>
 
-        <View style={{ flex: 1, left: 10 }}>
+        <View style={{ flex: 1, left: scaledSize(10) }}>
 
           <Text style={{
             fontSize: scaledSize(12),
-            fontWeight: "500"
+            fontWeight: "500",
+            color: theme.primaryTextColor
           }}>
             {item.bankName}
           </Text>
 
           <Text style={{
-            color: "#777",
+            color: theme.secondaryTextColor,
             marginTop: 2
           }}>
             Card ending •••• {item.lastFourDigit}
@@ -608,29 +638,25 @@ export default function SaveUserCardDetails(props: S) {
 
         </View>
 
-        <TouchableOpacity
-          onPress={() => editCard(item)}
-          style={{ marginRight: 12 }}
-        >
-
+        <TouchableOpacity onPress={() => editCard(item)} 
+        style={[styles.actionButton, 
+        { backgroundColor: theme.buttonBGColor,marginRight:scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="pencil"
-            size={20}
-            color={COLORS.THEME_COLOR}
+            size={22}
+            color={theme.iconColor}
           />
-
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => deleteCardHandler(childIndex)}
-        >
-
+        <TouchableOpacity onPress={() => {
+          setCardToDelete({ parentIndex: parentIndex, childIndex: childIndex });
+          setIsShowDeleteConfirmation(true);
+        }} style={[styles.actionButton, { backgroundColor: theme.buttonBGColor,right:scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="delete"
-            size={20}
-            color="red"
+            size={22}
+            color={theme.deleteIconColor}
           />
-
         </TouchableOpacity>
 
       </View>
@@ -642,171 +668,98 @@ export default function SaveUserCardDetails(props: S) {
     return (
       <View
         style={{
-          width: "94%",
-          alignSelf: "center",
-          backgroundColor: "#FFFFFF",
-          borderRadius: 14,
-          padding: 16,
-          marginVertical: 10,
+          backgroundColor: theme.bgContainor,
+          borderRadius: scaledSize(20),
+          padding: scaledSize(18),
+          marginVertical: scaledSize(14),
+          marginHorizontal: scaledSize(16),
           borderWidth: 1,
-          borderColor: "#E5E7EB"
+          borderColor: theme.borderColor,
+          elevation: 5,
+          shadowColor: '#d3d3d3',
+          shadowOffset: { width: 0, height: scaledSize(2) },
+          shadowOpacity: mode === 'dark' ? 0.2 : 0.08,
+          shadowRadius: 6,
         }}
       >
 
         {/* USER HEADER */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12
-          }}
-        >
-          <Text
-            style={{
-              fontSize: scaledSize(14),
-              fontWeight: "600",
-              letterSpacing: .5,
-              color: "#111"
-            }}
-          >
-            {capitalizeFirstLetter(item.firstName)} {item.lastName}
-          </Text>
-
-          <View style={{ flexDirection: "row" }}>
+        <View style={styles.topSection}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{`${item.firstName?.charAt(0) || ''}${item.lastName?.charAt(0) || ''}`.toUpperCase()}</Text>
+          </View>
+          <View style={styles.nameContainer}>
+            <Text style={styles.userNameText}>
+              {Utility.string.getFirstLetterCapitalize(item.firstName)} {item.lastName}
+            </Text>
+            <Text style={styles.userSubtitle}>Personal Information</Text>
+          </View>
+          <View style={styles.topActions}>
             <TouchableOpacity
               onPress={() => showEditUserModal(item)}
-              style={{ marginRight: 12 }}
+              style={[styles.actionButton, { backgroundColor: theme.buttonBGColor }]}
             >
-              <MaterialCommunityIcons
-                name="pencil"
-                size={20}
-                color={COLORS.THEME_COLOR}
-              />
+              <MaterialCommunityIcons name="pencil" size={22} color={theme.iconColor} />
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => deleteUser(index)}>
-              <MaterialCommunityIcons
-                name="delete"
-                size={20}
-                color="red"
-              />
+            <TouchableOpacity
+              onPress={() => {
+                setUserToDeleteIndex(index);
+                setIsUserDeleteConfirmationVisible(true);
+              }}
+              style={[styles.actionButton, { backgroundColor: theme.buttonBGColor }]}
+            >
+              <MaterialCommunityIcons name="delete" size={22} color={theme.deleteIconColor} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* USER INFO BOX */}
-        <View
-          style={{
-            // backgroundColor: "#F8F9FB",
-            borderRadius: 16,
-            paddingVertical: 16,
-            paddingHorizontal: 18,
-            marginBottom: 18,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            borderWidth: 1,
-            borderColor: "#EFEFEF",
-          }}
-        >
-          {/* LEFT LABELS */}
-          <View>
-            <Text
-              style={{
-                color: "#7A7A7A",
-                fontSize: 14,
-                marginBottom: 10,
-              }}
-            >
-              DOB:
-            </Text>
-
-            <Text
-              style={{
-                color: "#7A7A7A",
-                fontSize: 14,
-              }}
-            >
-              Mobile
-            </Text>
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="calendar-month-outline" size={20} color={theme.secondaryTextColor} style={styles.infoIcon} />
+            <Text style={styles.infoLabel}>DOB:</Text>
+            <Text style={styles.infoValue}>{item.dob}</Text>
           </View>
-
-          {/* RIGHT VALUES */}
-          <View style={{ alignItems: "flex-end" }}>
-            <Text
-              style={{
-                fontSize: 15,
-                // fontWeight: "500",
-                marginBottom: 10,
-                color: "#333",
-                letterSpacing: .5
-              }}
-            >
-              {item.dob}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 15,
-                // fontWeight: "500",
-                color: "#333",
-                letterSpacing: .5
-              }}
-            >
-              {'+91 - ' + item.mobileNumber}
-            </Text>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={20} color={theme.secondaryTextColor} style={styles.infoIcon} />
+            <Text style={styles.infoLabel}>Mobile</Text>
+            <Text style={styles.infoValue}>{'+91 - ' + item.mobileNumber}</Text>
           </View>
         </View>
 
-        {/* CARDS TITLE */}
-        <Text
-          style={{
-            fontSize: scaledSize(12),
-            fontWeight: "600",
-            marginBottom: scaledSize(10),
-            letterSpacing: .5
-          }}
-        >
-          Cards
-        </Text>
+        {/* DIVIDER & CARDS TITLE */}
+        <View style={styles.sectionDivider} />
+        <View style={styles.cardsHeader}>
+          <MaterialCommunityIcons name="credit-card-multiple-outline" size={20} color={theme.themeColor} />
+          <Text style={styles.cardsHeaderText}>Linked Cards</Text>
+        </View>
 
         {/* CARDS LIST */}
         <FlatList
           data={item.cards}
-          renderItem={({ item, index }) => renderCards(item, index)}
+          renderItem={({ item, index: childIndex }) => renderCards(item, childIndex, index)}
           keyExtractor={(item) => item.id.toString()}
           scrollEnabled={false}
         />
 
         {/* ADD CARD BUTTON */}
         <TouchableOpacity
-          style={{
-            alignItems: "center",
-            marginTop: 12,
-            flexDirection: "row",
-            justifyContent: "center"
-          }}
           onPress={() => {
             // setIsShowCardsModal(true)
             setIsShowAddCardModal(true)
             setSelectedUser(item)
             setParentIndex(index)
           }}
+          style={styles.addCardButton}
         >
           <MaterialCommunityIcons
             name="plus"
-            size={20}
-            color={COLORS.THEME_COLOR}
+            size={24}
+            color={theme.themeColor}
           />
 
-          <Text
-            style={{
-              color: COLORS.THEME_COLOR,
-              fontSize: 15,
-              marginLeft: 4,
-              fontWeight: "500"
-            }}
-          >
+          <Text style={styles.addCardButtonText}>
             Add Card
           </Text>
         </TouchableOpacity>
@@ -863,7 +816,7 @@ export default function SaveUserCardDetails(props: S) {
     // Step 7: Update userDetails with the renamed card for the parentIndex
     let updatedUserCardDetails = [...userDetails];
     updatedUserCardDetails[parentIndex] = arr;
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(updatedUserCardDetails));
 
     // Step 8: Set the updated state
     setCardId(0)
@@ -889,27 +842,31 @@ export default function SaveUserCardDetails(props: S) {
     const filteredCard = user.cards.find((card: any) => card.bankName == bankName && card.lastFourDigit == lastFourDigit)
     console.log('filtered card', filteredCard);
     if (bankName.length == 0) {
-      alert('Please select a bank');
-      return true
+      setErrorMessage('Please select a bank');
+      setIsShowErrorModal(true);
+      return;
     }
     if (filteredCard != undefined) {
-      alert('card is already added');
-      return true
+      setErrorMessage('Card is already added');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (lastFourDigit.length != 4) {
-      alert('Please enter card Last 4 digit ');
-      return true
+    if (lastFourDigit.length != 4) {
+      setErrorMessage('Please enter card Last 4 digit');
+      setIsShowErrorModal(true);
+      return;
     }
-    else if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
-      alert('Please enter customer-id');
-      return true
+    if (selectedBank.value.isCustomerIdRequired && customerId.length == 0) {
+      setErrorMessage('Please enter customer-id');
+      setIsShowErrorModal(true);
+      return;
     }
     // if(selectedBank)
     const obj = {
       bankName: bankName,
       lastFourDigit: lastFourDigit,
       customerId: customerId,
-      id: generateUniqueNumber(),
+      id: Utility.generateUniqueNumber(),
       ...selectedBank
     };
 
@@ -931,7 +888,7 @@ export default function SaveUserCardDetails(props: S) {
 
     // Update the AsyncStorage with the new card details
     userDetails[parentIndex] = arr;
-    await AsyncStorage.setItem(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetails));
+    setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(userDetails));
 
     // Update the state
     setUserDetails([...userDetails]); // Spread operator to create a new reference
@@ -1005,150 +962,99 @@ export default function SaveUserCardDetails(props: S) {
   }
 const renderAddCardDetails = () => {
   return (
-    <Modal visible={isShowAddCardModal} transparent animationType="fade">
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.3)",
-        }}
-      >
-        <View
-          style={{
-            width: scaledSize(340),
-            backgroundColor: "white",
-            borderRadius: 14,
-            paddingVertical: 20,
-            paddingHorizontal: 18,
-            elevation: 6,
-          }}
-        >
-
+    <Modal visible={isShowAddCardModal} transparent animationType='fade' >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContainer}>
           {/* Header */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 20,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: FONTS.QuicksandBold,
-                fontSize: scaledSize(16),
-                letterSpacing: 1,
-              }}
-            >
-              Add Card Details
-            </Text>
-
-            <CustomCloseIcon onPress={() => clearState()} />
+          <View style={styles.modalHeader}>
+            <View style={styles.headerIconContainer}>
+              <MaterialCommunityIcons name='credit-card-plus-outline' size={scaledSize(28)} color={theme.themeColor} />
+            </View>
+            <View>
+              <Text style={styles.modalTitle}>Add New Card</Text>
+              <Text style={styles.modalSubtitle}>Link a new card to this user</Text>
+            </View>
           </View>
 
-          {/* Bank Dropdown */}
-          <View style={{ marginBottom: 15 }}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => clearState()}>
+            <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => clearState()} />
+          </TouchableOpacity>
+
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {/* Bank Dropdown */}
             <CustomDropdown
               data={bankList}
-              onSelect={(v: any) => onSelectBank(v)}
+              placeholder="Select bank"
+              onSelect={(item) => onSelectBank(item)}
               value={selectedBank.id}
-              placeholder="Select Bank"
-              containerStyle={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 8,
-                height: 48,
-                paddingHorizontal: 10,
-              }}
-              LeftIcon={() =>
-                selectedBank.value ? (
-                  <Image
-                    source={BANK_LOGOS[selectedBank.value.bankName]}
-                    style={{ height: 20, width: 20 }}
-                  />
-                ) : (
-                  <CustomVectorIcon
-                    iconLibrary="MaterialDesignIcons"
-                    iconName="bank"
-                    style={{ fontSize: 18, marginRight: 6 }}
-                  />
-                )
-              }
+              onFocuse={() => setFocusedField('addCardBank')}
+              onBlur={() => setFocusedField(null)}
+              LeftIcon={() => (
+                selectedBank.value ?
+                  <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
+                  : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+              )}
             />
-          </View>
 
-          {/* Card Number */}
-          <View style={{ marginBottom: scaledSize(15),height:scaledSize(40) }}>
-            <CustomInput
-              onChangeText={(v) => setLastFourDigit(v)}
-              maxLength={4}
-              isPhoneKeyBoard
-              placeholder="Enter Last 4 Digit Card Number"
-            />
-          </View>
-
-          {/* Customer Id */}
-          {isCustomerIdRequired && (
-            <View style={{ marginBottom: 20,height:scaledSize(40)}}>
-              <CustomInput
-                onChangeText={(v) => setCustomerId(v)}
-                placeholder="Enter Customer Id"
+            {/* Card Number */}
+            <View style={[styles.inputContainer, focusedField === 'addCardLast4' && styles.focusedInput]}>
+              <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+              <TextInput
+                placeholder='Last 4 Digits of Card'
+                onChangeText={(v) => setLastFourDigit(v)}
+                maxLength={4}
+                keyboardType="number-pad"
+                style={styles.textInput}
+                placeholderTextColor={theme.secondaryTextColor}
+                onFocus={() => setFocusedField('addCardLast4')}
+                onBlur={() => setFocusedField(null)}
               />
             </View>
-          )}
+
+            {/* Customer Id */}
+            {isCustomerIdRequired && (
+              <View style={[styles.inputContainer, focusedField === 'addCardCustomerId' && styles.focusedInput]}>
+                <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                <TextInput
+                  placeholder='Enter Customer ID'
+                  onChangeText={(v) => setCustomerId(v)}
+                  style={styles.textInput}
+                  placeholderTextColor={theme.secondaryTextColor}
+                  onFocus={() => setFocusedField('addCardCustomerId')}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </View>
+            )}
+          </ScrollView>
 
           {/* Button */}
-          <View style={{height:40,marginTop:scaledSize(10)}}>
-
-          <CustomeButton
-            name="Add"
-            onPress={() => addCard()}
-            buttonStyle={{
-              backgroundColor: COLORS.THEME_COLOR,
-              height: 48,
-              borderRadius: 8,
-            }}
+          <View style={styles.footer}>
+            <CustomeButton
+              name="Add Card"
+              onPress={() => addCard()}
+              buttonStyle={styles.saveButton}
+              textStyle={styles.saveButtonText}
             />
-            </View>
+          </View>
         </View>
       </View>
     </Modal>
   );
 };
   return (
-    <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
-      <StatusBar backgroundColor={COLORS.THEME_COLOR} />
-      <View style={{ height: scaledSize(50), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
-        <View style={{ flex: 1 }}>
-
-          <View style={{ height: scaledSize(60), flexDirection: 'row', }}>
-            <View style={{
-              flex: .1, justifyContent: 'center', alignItems: 'center',
-              left: scaledSize(10),
-            }}>
-              {/* <TouchableOpacity onPress={props?.onPress ? () => props.onPress : () => navigateToBack()}> */}
-              {/* <Ionicons name='arrow-back-circle-outline' color={'white'} size={scaledSize(30)} onPress={ props.onPress}/> */}
-              <CustomBackIcon onPress={onPress} color='black' size={18} />
-              {/* </TouchableOpacity> */}
-            </View>
-            <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{
-                fontFamily: Fonts.regular,
-                fontSize: scaledSize(12),
-                letterSpacing: 1,
-              }}>
-                Users
-              </Text>
-            </View>
-
-          </View>
-        </View>
-
+    <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
+      <View style={{ height: scaledSize(50), backgroundColor: theme.bgColor }}>
+        <CustomHeader
+          title="Card holders"
+          leftSide={
+            <TouchableOpacity onPress={() => onPressBack()} style={{ paddingHorizontal: scaledSize(16), height: '100%', justifyContent: 'center' }}>
+              <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.primaryTextColor} />
+            </TouchableOpacity>
+          } />
       </View>
 
 
-      <View style={{ flex: 1, backgroundColor: '#F4F6F8' }}>
+      <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
 
         {userDetails.length > 0 ? (
           <FlatList
@@ -1170,7 +1076,7 @@ const renderAddCardDetails = () => {
 
             <View style={{
               width: '100%',
-              backgroundColor: '#fff',
+              backgroundColor: theme.bgColor,
               borderRadius: 16,
               padding: 25,
               alignItems: 'center',
@@ -1181,7 +1087,7 @@ const renderAddCardDetails = () => {
               <MaterialCommunityIcons
                 name="credit-card-lock-outline"
                 size={60}
-                color="#0F9D9A"
+                color={theme.themeColor}
                 style={{ marginBottom: 15 }}
               />
 
@@ -1190,6 +1096,7 @@ const renderAddCardDetails = () => {
                 fontSize: scaledSize(18),
                 fontFamily: Fonts.bold,
                 marginBottom: 10,
+                color: theme.primaryTextColor,
                 textAlign: 'center'
               }}>
                 Credit Card Statement Password
@@ -1200,7 +1107,7 @@ const renderAddCardDetails = () => {
                 fontSize: scaledSize(12),
                 fontFamily: Fonts.regular,
                 textAlign: 'flex-start',
-                color: '#555',
+                color: theme.secondaryTextColor,
                 left: scaledSize(10),
                 lineHeight: scaledSize(20)
               }}>
@@ -1231,172 +1138,225 @@ const renderAddCardDetails = () => {
       </View>
 {renderAddCardDetails()}
       <Modal visible={isShowAddUserDetailsModal} transparent animationType='fade' >
-        <View style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}>
-          <View style={{
-            height: scaledSize(650),
-            width: scaledSize(350), backgroundColor: 'white', borderWidth: .5, borderColor: '#d3d3d3',
-            alignItems: 'center', borderRadius: scaledSize(10), padding: scaledSize(20)
-          }}>
-
-            <View style={{ flexDirection: 'row', height: scaledSize(80) }}>
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Feather name='user' size={scaledSize(40)} color={COLORS.THEME_COLOR} style={{ bottom: scaledSize(20) }} />
-                <Text style={{
-                  fontFamily: FONTS.QuicksandBold,
-                  fontSize: scaledSize(14), letterSpacing: 1,
-                }}>
-                  Add User Details</Text>
-
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <View style={styles.headerIconContainer}>
+                <Feather name='user-plus' size={scaledSize(28)} color={theme.themeColor} />
               </View>
-              <View style={{ flex: .14, justifyContent: 'center', marginBottom: scaledSize(30) }}>
-                <CustomCloseIcon onPress={() => { setIsShowAddUserDetailsModal(false), setBankName('') }} color='black' />
+              <View>
+                <Text style={styles.modalTitle}>Add User Details</Text>
+                <Text style={styles.modalSubtitle}>Store user and card information securely</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.closeButton} onPress={() => { setIsShowAddUserDetailsModal(false), setBankName('') }}>
+              <CustomCloseIcon color={theme.iconColor} style={{fontSize:scaledSize(16),
+              bottom:1}}
+               iconSize={scaledSize(14)}
+              onPress={()=>setIsShowAddUserDetailsModal(false)} />
+            </TouchableOpacity>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+              {/* Personal Info Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="account-circle-outline" size={22} color={theme.themeColor} />
+                  <Text style={styles.sectionTitle}>Personal Information</Text>
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'firstName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter First Name'
+                    onChangeText={setFirstName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('firstName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'lastName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Last Name'
+                    onChangeText={setLastName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('lastName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'mobile' && styles.focusedInput]}>
+                  <FontAwesome5 name='mobile-alt' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Mobile Number'
+                    onChangeText={setMobileNumber}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('mobile')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={styles.sectionDivider} />
               </View>
 
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox placeholder='Enter First Name' onChangeText={setFirstName}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox placeholder='Enter Last Name' onChangeText={setLastName}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={[styles.inputView,]}>
-              <CustomInputBox placeholder='Enter Mobile Number' onChangeText={setMobileNumber}
-                isNumberKeyboard={true} maxLength={10}
-                CustomIcon={<FontAwesome5 name='mobile' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-
-            <View style={[styles.inputView, {
-              borderBottomWidth: scaledSize(0),
-              height: scaledSize(40), borderBottomColor: COLORS.inActiveBorderColor
-            }]}>
-              <TouchableOpacity style={[{
-                bottom: scaledSize(0), borderWidth: .5, borderRadius: scaledSize(10), borderColor: COLORS.THEME_COLOR,
-                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-                height: scaledSize(36)
-              }]} onPress={() => setIsShowCalendar(true)}>
-                <View style={{ flexDirection: 'row', }}>
-                  <TouchableOpacity style={{ marginLeft: scaledSize(6), }} onPress={() => setIsShowCalendar(true)}>
-
-                    <AntDesign name='calendar' color={COLORS.THEME_COLOR} size={20} />
-                  </TouchableOpacity>
-
-                  <Text style={{ color: COLORS.textColor, marginLeft: scaledSize(16), }}>
-                    {selectedDate ? selectedDate : 'Select date'}</Text>
+              {/* Card Info Section */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="credit-card-outline" size={22} color={theme.themeColor} />
+                  <Text style={styles.sectionTitle}>Card Information</Text>
                 </View>
 
-                <View>
-                  {/* <Text style={{ color:selectedDate?'black': 'gray', marginRight: scaledSize(30), fontWeight: '600' }}>
-                    { selectedDate ? selectedDate :'DD-MM-YYYY'}</Text> */}
-                </View>
+                <CustomDropdown
+                  data={bankList}
+                  placeholder="Select bank"
+                  onSelect={(item) => {
+                    selectBankOnAddUser(item);
+                  }}
+                  value={selectedBank.id}
+                  onFocuse={() => setFocusedField('bank')}
+                  onBlur={() => setFocusedField(null)}
+                  LeftIcon={() => (
+                    selectedBank.value ?
+                      <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
+                      : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+                  )}
+                />
 
-
-              </TouchableOpacity>
-
-            </View>
-
-            <View style={{
-              justifyContent: 'center', alignItems: 'center', height: scaledSize(30),
-              marginTop: scaledSize(10), width: widthFromPercentage(84)
-            }}>
-              <CustomDropdown data={bankList} placeholder='Select bank'
-                onSelect={(v) => selectBankOnAddUser(v)}
-                value={selectedBank.id}
-                LeftIcon={() => selectedBank.value ?
-                  <Image source={BANK_LOGOS[selectedBank.value.bankName]} style={{ height: 20, width: 20 }} />
-                  :
-                  <CustomVectorIcon iconLibrary="MaterialDesignIcons" iconName="bank"
-                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8) }} />
-                }
-              />
-            </View>
-
-            {isCustomerIdRequired && <View style={{ height: scaledSize(50), width: scaledSize(326), marginTop: scaledSize(18) }}>
-              <CustomInputBox placeholder='Enter Customer ID'
-                onChangeText={setCustomerId}
-                CustomIcon={<Entypo name='user' color={COLORS.THEME_COLOR} size={28} />}
-              />
-            </View>}
-            <View style={[styles.inputView, { marginTop: scaledSize(20) }]}>
-              <CustomInputBox placeholder=' Last 4 Digit Card Number'
-                onChangeText={setLastFourDigit} isNumberKeyboard maxLength={4}
-                CustomIcon={<Entypo name='credit-card' color={COLORS.THEME_COLOR} size={28} />}
-              />
-            </View>
-            <View style={{ height: scaledSize(40), width: scaledSize(326), marginTop: scaledSize(30) }}>
-              <CustomeButton name='Save' buttonStyle={{ backgroundColor: COLORS.THEME_COLOR, borderRadius: 10 }}
-                textStyle={{ color: 'white' }} onPress={() => addUserDetail()} />
-            </View>
-
-          </View>
-        </View>
-
-      </Modal>
-      <Modal visible={isEditUserShowModal} transparent animationType='fade' >
-
-        <View style={{ flex: 1, justifyContent: "center", alignItems: 'center', }}>
-          <View style={{
-            height: scaledSize(400),
-            width: scaledSize(350), backgroundColor: 'white', borderWidth: .2,
-            alignItems: 'center', borderRadius: scaledSize(10), padding: 20, paddingTop: 10
-          }}>
-
-            <View style={{ flexDirection: 'row', height: scaledSize(80) }}>
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{
-                  fontFamily: FONTS.QuicksandBold,
-                  fontSize: scaledSize(14), letterSpacing: 1,
-                }}>
-                  Update User Details</Text>
-              </View>
-              <View style={{ flex: .14, justifyContent: 'center', marginBottom: scaledSize(30) }}>
-                <CustomCloseIcon onPress={() => setIsEditUserShowModal(false)} color='black' />
-              </View>
-
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.firstName} onChangeText={(v) => setFirstName(v)}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.lastName} onChangeText={(v) => setLastName(v)}
-                CustomIcon={<AntDesign name='user' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-            <View style={styles.inputView}>
-              <CustomInputBox value={selectedUser?.mobileNumber} onChangeText={(v) => setMobileNumber(v)}
-                isNumberKeyboard={true} maxLength={10}
-                CustomIcon={<FontAwesome5 name='mobile' color={COLORS.THEME_COLOR} size={scaledSize(20)} />}
-              />
-            </View>
-
-            <View style={[styles.inputView, { borderBottomWidth: scaledSize(.2), height: scaledSize(40), borderBottomColor: COLORS.inActiveBorderColor }]}>
-              <TouchableOpacity style={[{ marginTop: scaledSize(10), flexDirection: 'row', }]} onPress={() => setIsShowCalendar(true)}>
-
-                <TouchableOpacity style={{ marginLeft: scaledSize(6) }} onPress={() => setIsShowCalendar(true)}>
-
-                  <AntDesign name='calendar' color={COLORS.THEME_COLOR} size={20} />
+                <TouchableOpacity style={[styles.inputContainer, focusedField === 'dob' && styles.focusedInput]} onPress={() => { setIsShowCalendar(true); setFocusedField('dob') }}>
+                  <AntDesign name='calendar' color={theme.secondaryTextColor} size={20} style={styles.inputIcon} />
+                  <Text style={[styles.textInput, { color: selectedDate ? theme.primaryTextColor : theme.secondaryTextColor, marginLeft: 0, top: 2 }]}>
+                    {selectedDate ? selectedDate : 'Select Expiry Date'}
+                  </Text>
                 </TouchableOpacity>
 
-                <Text style={{ color: COLORS.textColor, marginLeft: scaledSize(16), fontWeight: '600' }}>
-                  {selectedDate ? selectedDate : selectedUser?.dob}</Text>
-              </TouchableOpacity>
+                {isCustomerIdRequired && (
+                  <View style={[styles.inputContainer, focusedField === 'customerId' && styles.focusedInput]}>
+                    <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                    <TextInput
+                      placeholder='Enter Customer ID'
+                      onChangeText={setCustomerId}
+                      style={styles.textInput}
+                      placeholderTextColor={theme.secondaryTextColor}
+                      onFocus={() => setFocusedField('customerId')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                )}
 
+                <View style={[styles.inputContainer, focusedField === 'last4' && styles.focusedInput]}>
+                  <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Last 4 Digit Card Number'
+                    onChangeText={setLastFourDigit}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('last4')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+              </View>
+
+              {/* <View style={styles.secureInfoCard}>
+                <MaterialCommunityIcons name="shield-check-outline" size={20} color={theme.themeColor} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.secureInfoText}>Your information is secure</Text>
+                  <Text style={styles.secureInfoSubText}>We never store full card details</Text>
+                </View>
+              </View> */}
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <CustomeButton
+                name='Save Details'
+                buttonStyle={styles.saveButton}
+                textStyle={styles.saveButtonText}
+                onPress={() => addUserDetail()}
+              />
             </View>
-
-
-            <View style={{ height: scaledSize(40), width: '100%', marginTop: scaledSize(10) }}>
-              <CustomeButton name='Update' onPress={() => updateUser({ firstName: firstName, lastName: lastName, dob: selectedDate ? selectedDate : dateOfBirth, mobileNumber: mobileNumber })} />
-            </View>
-
           </View>
         </View>
+      </Modal>
+      <Modal visible={isEditUserShowModal} transparent animationType='fade' >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalContainer, { maxHeight: 'none' }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.headerIconContainer}>
+                <Feather name='user-check' size={scaledSize(28)} color={theme.themeColor} />
+              </View>
+              <View>
+                <Text style={styles.modalTitle}>Update User Details</Text>
+                <Text style={styles.modalSubtitle}>Edit personal information</Text>
+              </View>
+            </View>
 
+            <TouchableOpacity style={styles.closeButton} onPress={() => setIsEditUserShowModal(false)}>
+              <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => setIsEditUserShowModal(false)} />
+            </TouchableOpacity>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+              <View style={styles.section}>
+                <View style={[styles.inputContainer, focusedField === 'editFirstName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter First Name'
+                    defaultValue={selectedUser?.firstName}
+                    onChangeText={setFirstName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editFirstName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'editLastName' && styles.focusedInput]}>
+                  <AntDesign name='user' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Last Name'
+                    defaultValue={selectedUser?.lastName}
+                    onChangeText={setLastName}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editLastName')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <View style={[styles.inputContainer, focusedField === 'editMobile' && styles.focusedInput]}>
+                  <FontAwesome5 name='mobile-alt' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Mobile Number'
+                    defaultValue={selectedUser?.mobileNumber}
+                    onChangeText={setMobileNumber}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('editMobile')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <TouchableOpacity style={[styles.inputContainer, focusedField === 'editDob' && styles.focusedInput]} onPress={() => { setIsShowCalendar(true); setFocusedField('editDob') }}>
+                  <AntDesign name='calendar' color={theme.secondaryTextColor} size={20} style={styles.inputIcon} />
+                  <Text style={[styles.textInput, { color: selectedDate || selectedUser?.dob ? theme.primaryTextColor : theme.secondaryTextColor, marginLeft: 0, top: 2 }]}>
+                    {selectedDate || selectedUser?.dob || 'Select Date of Birth'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <CustomeButton
+                name='Update Details'
+                buttonStyle={styles.saveButton}
+                textStyle={styles.saveButtonText}
+                onPress={() => updateUser({ firstName: firstName, lastName: lastName, dob: selectedDate ? selectedDate : selectedUser?.dob, mobileNumber: mobileNumber })}
+              />
+            </View>
+          </View>
+        </View>
       </Modal>
 
       <Modal visible={isShowCalendar} transparent animationType='fade'  >
@@ -1425,11 +1385,48 @@ const renderAddCardDetails = () => {
         </View>
       {/* </View> */}
       {isShowCardsModal ? displayAllCards() : null}
+      <ConfirmationDialog
+        visible={isShowDeleteConfirmation}
+        onCancel={() => {
+          setIsShowDeleteConfirmation(false);
+          setCardToDelete(null);
+        }}
+        onSubmit={() => {
+          if (cardToDelete) {
+            deleteCardHandler(cardToDelete.childIndex, cardToDelete.parentIndex);
+            setIsShowDeleteConfirmation(false);
+            setCardToDelete(null);
+          }
+        }}
+        mode="delete"
+        message="Are you sure you want to delete this card?" />
+
+      <ConfirmationDialog
+        visible={isUserDeleteConfirmationVisible}
+        onCancel={() => {
+          setIsUserDeleteConfirmationVisible(false);
+          setUserToDeleteIndex(null);
+        }}
+        onSubmit={() => {
+          if (userToDeleteIndex !== null) {
+            deleteUser(userToDeleteIndex);
+            setIsUserDeleteConfirmationVisible(false);
+            setUserToDeleteIndex(null);
+          }
+        }}
+        mode="delete"
+        message="Are you sure you want to delete this user?" />
+
+      <CustomErrorMsgModal
+        isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)}
+        errorMessage={errorMessage}
+      />
 
     </View>
   )
 }
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
   labelView: {
     width: '50%', alignItems: 'flex-start',
@@ -1444,11 +1441,13 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
     letterSpacing: 1
   },
   text: {
     fontFamily: FONTS.QuicksandBold,
     fontSize: scaledSize(12),
+    color: theme.primaryTextColor,
     letterSpacing: .5
   },
   seperator: {
@@ -1457,14 +1456,374 @@ const styles = StyleSheet.create({
   },
   userCard: {
     width: "94%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginVertical: 10,
+    backgroundColor: theme.bgColor,
+    borderRadius: scaledSize(14),
+    padding: scaledSize(14),
+    marginVertical: scaledSize(8),
     alignSelf: "center",
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: scaledSize(7),
     elevation: 5
+  },
+  parentCard: {
+    backgroundColor: theme.bgContainor,
+    borderRadius: scaledSize(24),
+    padding: scaledSize(18),
+    marginHorizontal: scaledSize(14),
+    marginTop: scaledSize(14),
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+    elevation: scaledSize(6),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: mode === 'dark' ? 0.3 : 0.1,
+    shadowRadius: scaledSize(6),
+  },
+  topSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    width: scaledSize(55),
+    height: scaledSize(55),
+    borderRadius: scaledSize(27.5),
+    backgroundColor: theme.bgColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scaledSize(10),
+    // shadowColor: theme.themeColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth:.5,
+    borderColor: theme.borderColor
+  },
+  avatarText: {
+    fontSize: scaledSize(20),
+    fontWeight: 'bold',
+    letterSpacing:1,
+    color: theme.themeColor,
+  },
+  nameContainer: {
+    flex: 1,
+  },
+  userNameText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+  },
+  userSubtitle: {
+    fontSize: 13,
+    color: theme.secondaryTextColor,
+    marginTop: 4,
+  },
+  topActions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    width: scaledSize(46),
+    height: scaledSize(46),
+    borderRadius: scaledSize(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: scaledSize(6),
+  },
+  editButton: {
+    backgroundColor: 'rgba(0,255,150,0.08)',
+  },
+  deleteButton: {
+    backgroundColor: 'rgba(255,0,80,0.08)',
+  },
+  infoCard: {
+    backgroundColor: theme.bgColor,
+    borderRadius: scaledSize(18),
+    padding: scaledSize(14),
+    marginBottom: scaledSize(16),
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: scaledSize(10),
+  },
+  infoIcon: {
+    marginRight: scaledSize(10),
+  },
+  infoLabel: {
+    fontSize: scaledSize(12),
+    color: theme.secondaryTextColor,
+    width: scaledSize(70),
+  },
+  infoValue: {
+    fontSize: scaledSize(12),
+    fontWeight: '600',
+    color: theme.primaryTextColor,
+    flex: 1,
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.borderColor,
+    marginVertical: 4,
+  },
+  cardsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaledSize(12),
+  },
+  cardsHeaderText: {
+    fontSize: scaledSize(14),
+    fontWeight: '600',
+    color: theme.primaryTextColor,
+    marginLeft: scaledSize(8),
+    letterSpacing: .5,
+  },
+
+  sectionDivider: {
+    height: 1,
+    backgroundColor: theme.borderColor,
+    marginVertical: scaledSize(20),
+  },
+  cardItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.bgColor,
+    borderRadius: scaledSize(18),
+    padding: scaledSize(12),
+    marginBottom: scaledSize(10),
+  },
+  cardItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bankLogoContainer: {
+    width: scaledSize(40),
+    height: scaledSize(40),
+    borderRadius: scaledSize(20),
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: scaledSize(4),
+  },
+  bankLogo: {
+    width: scaledSize(24),
+    height: scaledSize(24),
+  },
+  cardTextContainer: {
+    flex: 1,
+  },
+  bankName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.primaryTextColor,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: theme.secondaryTextColor,
+    marginTop: 2,
+  },
+  cardActions: {
+    flexDirection: 'row',
+  },
+  cardActionButton: {
+    width: scaledSize(36),
+    height: scaledSize(36),
+    borderRadius: scaledSize(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: scaledSize(6),
+  },
+  addCardButton: {
+    height: scaledSize(60),
+    borderRadius: scaledSize(16),
+    // borderWidth: .5,
+    borderColor: theme.themeColor,
+    // borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: scaledSize(6),
+  },
+  addCardButtonText: {
+    fontSize: scaledSize(14),
+    fontWeight: '600',
+    color: theme.themeColor,
+    marginLeft: scaledSize(6),
+  },
+  focusedInput: {
+    borderColor: theme.themeColor,
+    borderWidth: .7,
+    elevation: 4
+  },
+  // New Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: theme.bgColor,
+    borderRadius: scaledSize(24),
+    paddingHorizontal: scaledSize(22),
+    paddingTop: scaledSize(22),
+    width: '92%',
+    maxHeight: '85%',
+    elevation: scaledSize(10),
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: scaledSize(10),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaledSize(24),
+  },
+  headerIconContainer: {
+    width: scaledSize(48),
+    height: scaledSize(48),
+    borderRadius: scaledSize(14),
+    backgroundColor: theme.bgContainor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scaledSize(12),
+  },
+  modalSubtitle: {
+    fontSize: scaledSize(11),
+    color: theme.secondaryTextColor,
+    marginTop: 4,
+  },
+  modalTitle: {
+    fontSize: scaledSize(16),
+    fontWeight: '700',
+    color: theme.primaryTextColor,
+  },
+  closeButton: {
+    position: 'absolute',
+    right:scaledSize(18),
+    top: scaledSize(18),
+    width: scaledSize(28),
+    height: scaledSize(28),
+    borderRadius: scaledSize(14),
+    backgroundColor: theme.buttonBGColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: .5,
+    borderColor: theme.borderColor,
+  },
+  section: {
+    marginBottom: scaledSize(22),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaledSize(12),
+    gap:scaledSize(8),
+  },
+
+  sectionTitle: {
+    fontSize: scaledSize(14),
+    fontWeight: '500',
+    color: theme.themeColor,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgContainor,
+    height: scaledSize(44),
+    borderRadius: scaledSize(14),
+    paddingHorizontal: scaledSize(14),
+    marginTop: scaledSize(10),
+    borderWidth: .5,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: mode === 'dark' ? 0.1 : 0.05,
+    shadowRadius: scaledSize(2),
+    elevation: scaledSize(2),
+  },
+  inputIcon: {
+    marginRight: scaledSize(10),
+    opacity: 0.9,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+    padding: 0, // to remove default padding
+  },
+  dropdownPlaceholder: {
+    fontSize: scaledSize(14),
+    color: theme.secondaryTextColor,
+  },
+  dropdownSelectedText: {
+    fontSize: scaledSize(14),
+    color: theme.primaryTextColor,
+  },
+  dropdownInputSearch: {
+    height: 40,
+    fontSize: 16,
+    backgroundColor: theme.bgContainor,
+    color: theme.primaryTextColor
+  },
+  dropdownIcon: {
+    width: scaledSize(18),
+    height: scaledSize(18),
+  },
+  bankIcon: {
+    width:scaledSize(24),
+    height: scaledSize(24),
+    marginRight: scaledSize(8),
+  },
+  secureInfoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bgContainor,
+    padding: scaledSize(12),
+    borderRadius: scaledSize(14),
+    marginTop: scaledSize(16),
+    borderWidth: .5,
+    borderColor: theme.borderColor,
+  },
+  secureInfoText: {
+    fontSize: scaledSize(13),
+    fontWeight: '500',
+    color: theme.primaryTextColor,
+  },
+  secureInfoSubText: {
+    fontSize: scaledSize(12),
+    color: theme.secondaryTextColor,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: scaledSize(20),
+    paddingTop: scaledSize(10),
+    paddingBottom: scaledSize(24),
+    backgroundColor: theme.bgColor,
+    borderBottomLeftRadius: scaledSize(24),
+    borderBottomRightRadius: scaledSize(24),
+  },
+  saveButton: {
+    // backgroundColor: theme.themeColor,
+    borderWidth:.5,
+    borderColor: theme.themeColor,
+    height: scaledSize(44),
+    borderRadius: scaledSize(14),
+    width:'50%',
+    alignSelf:'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: theme.themeColor,
+    fontSize: scaledSize(14),
+    fontWeight: '600',
   }
 })

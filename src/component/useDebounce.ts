@@ -13,7 +13,7 @@ useEffect(()=>{
 setDebouncedText(searchText) 
   },delay)
   return()=>{
-    console.log('component unmount')
+    // console.log('component unmount')
     clearTimeout(time)
   }
 

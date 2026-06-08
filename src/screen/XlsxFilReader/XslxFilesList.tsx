@@ -10,6 +10,7 @@ import { Image } from 'react-native'
 import { asyncStorageKeyName } from '../../utilies/Constants'
 import { useIsFocused } from '@react-navigation/native'
 import CustomeButton from '../../component/CustomButton'
+import { getLocalData } from '../../../src/utilies/storageUtility'
 
 
 // import { FileType, getAllFilesFromPhoneStorage } from '../../utilies/Utilities'
@@ -50,7 +51,7 @@ export default function XslxFilesList(props: S) {
 
     try {
 
-      let allfilesStr = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
+      let allfilesStr = getLocalData(asyncStorageKeyName.ALL_FILES)
       console.log('AllFiles:', allfilesStr);
       const allfilesobj = JSON.parse(allfilesStr)
       const xlsxFile = allfilesobj.xlsxFiles

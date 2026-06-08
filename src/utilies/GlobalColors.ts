@@ -1,8 +1,11 @@
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
   TRANSPARENT: 'transparent',
   white: 'rgb(255,255,255)',
   THEME_COLOR:'#0081A7',
+  THEME_SECONDARY_COLOR:'#00B4D8',
   BUTTON_SECONDARY_COLOR:'white',
   BG_COLOR:'#f5f5f5',
   grey:'#ccc',
@@ -44,7 +47,7 @@ export const FONTS = {
   'QuicksandBold': 'Quicksand-Bold',
   'bold': 'CrimsonText-Bold',
   'PTSerifBold': 'PTSerif-Bold',
-  'regular': 'PTSerif-Regular',
+  'regular': Platform.select({ android: 'sans-serif', ios: undefined, default: undefined }),
   'italic': 'PTSerif-Italic'
 };
 export const ModalWindowColor={

@@ -1,69 +1,91 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image } from "react-native";
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewProps, ViewStyle, StyleProp, TextProps, TextStyle } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useTheme } from '../screen/theme/useTheme';
+import { scaledSize, Utility } from '../utilies/Utilities';
+import { Fonts } from '../assets/fonts/GlobalFonts';
+import { Theme } from '../screen/theme/ThemeConfig';
 
-// import Icon from "react-native-vector-icons/EvilIcons";
-import Icon from "react-native-vector-icons/FontAwesome5";
-import CustomVectorIcon from "./CustomVectorIcon";
-import CustomCloseIcon from "./CustomCloseIcon";
-import { navigateToBack, scaledSize } from "../utilies/Utilities";
-import { COLORS } from "../utilies/GlobalColors";
-import { Fonts } from "../assets/fonts/GlobalFonts";
+interface CustomHeaderProps {
+  title: string;
+  onPressBack?: Function
+  leftSide?: React.ReactNode;
+  rightSide?: React.ReactNode;
+  isShowShareBtn?: boolean;
+  onSharePress?: () => void;
+  containerStyle?: StyleProp<ViewStyle>;
+titleStyle?: StyleProp<TextStyle>;}
 
-interface myProps {
-  title: any;
-  isBackIconHide?: boolean;
-  isCloseIconShow?: boolean;
-  onPressBack?: () => any;
-  onPressCloseIcon?: () => any;
-}
+const CustomHeader: React.FC<CustomHeaderProps> = ({
+  title,
+  leftSide,
+  rightSide,
+  isShowShareBtn = false, // Default to false to not show share button unless specified
+  onSharePress,
+  containerStyle,
+  titleStyle,
+  onPressBack = () => { }
+}) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
-const window = Dimensions.get("window");
+  const DefaultLeft = () => (
+    <TouchableOpacity
+      style={styles.defaultIconContainer}
+      onPress={() => onPressBack()}
+    >
+      <MaterialIcons name="arrow-back" size={scaledSize(24)} color={theme.iconColor} />
+    </TouchableOpacity>
+  );
 
-const CustomHeader = (props: myProps) => {
-  const { title, isBackIconHide = false, onPressBack, onPressCloseIcon, isCloseIconShow = false } = props
+  const DefaultRight = () =>
+    isShowShareBtn ? (
+      <TouchableOpacity
+        style={styles.defaultIconContainer}
+        onPress={onSharePress}
+      >
+        <MaterialIcons name="share" size={scaledSize(22)} color={theme.primaryTextColor} />
+      </TouchableOpacity>
+    ) : <></>;
+
   return (
-    <>
-      <View style={{
-        flex: 1, flexDirection: 'row',marginLeft: isBackIconHide ? 0 : scaledSize(10)
-      }}>
-        {isBackIconHide ? <></> : <TouchableOpacity style={{
-          flex: .3,
-          top:scaledSize(1),
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-        }}
-          onPress={() => onPressBack ? onPressBack() : navigateToBack()}
-        >
-          <Icon
-            name="arrow-left"
-            color={COLORS.THEME_COLOR}
-            size={24}
-            style={{ marginLeft: scaledSize(10), }}
-          />
-        </TouchableOpacity>}
-        <View style={{
-          flex: 1, justifyContent: 'flex-start', 
-          alignItems: isBackIconHide ? 'center' : 'flex-start'
-        }}>
-          <Text style={styles.titleInput}>{props.title}</Text>
-        </View>
-        {isCloseIconShow ? <View style={{ flex: .2, justifyContent: 'flex-start', alignItems: 'center' }}>
-          <CustomVectorIcon iconLibrary="Ionicons" iconName="close-sharp"/>
-          {/* <CustomCloseIcon iconSize={24} onPress={() => onPressCloseIcon ? onPressCloseIcon() : console.log('undefined close function')} /> */}
-        </View> : <></>}
+    <View style={[styles.headerContainer, containerStyle]}>
+      <View style={styles.sideContainer}>
+        {leftSide !== undefined ? leftSide : <DefaultLeft />}
       </View>
-    </>
+      <Text style={[styles.titleText, titleStyle]} numberOfLines={1}>
+        {title}
+      </Text>
+      <View style={[styles.sideContainer, { alignItems: 'flex-end' }]}>
+        {rightSide !== undefined ? rightSide : <DefaultRight />}
+      </View>
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
-
-  titleInput: {
-    color: COLORS.black,
-    letterSpacing: 1,
-    fontSize: scaledSize(18),
-    fontFamily: Fonts.regular
-  }
+const createStyles = (theme: Theme) => StyleSheet.create({
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+    backgroundColor: theme.bgColor,
+    paddingHorizontal: scaledSize(8),
+  },
+  sideContainer: {
+    minWidth: scaledSize(50),
+    justifyContent: 'center',
+  },
+  titleText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: scaledSize(14),
+    fontWeight: '500',
+    fontFamily: Fonts.regular,
+    color: theme.primaryTextColor,
+  },
+  defaultIconContainer: {
+    padding: scaledSize(8),
+  },
 });
 
 export default CustomHeader;

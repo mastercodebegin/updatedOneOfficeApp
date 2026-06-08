@@ -27,7 +27,6 @@ import {
     Image,
     SafeAreaView,
     ScrollView,
-    StatusBar,
     StyleSheet,
     Text,
     useColorScheme,
@@ -42,7 +41,7 @@ import {
     ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 import DocxGenerator from './PPTgenerator';
-import { navigateToBack, scaledSize } from '../../utilies/Utilities';
+import { navigateToBack, scaledSize, Utility } from '../../utilies/Utilities';
 import HeaderComponent from '../../component/CustomHeader';
 import { Button } from 'react-native-elements';
 import { ErrorToast } from '../../component/CustomToast';
@@ -122,8 +121,7 @@ const PPTReader = (props: S) => {
             }
         } catch (error) {
             ErrorToast('Unsupported file ')
-            navigateToBack()
-            // console.error('Error converting XLSX to HTML:', error);
+Utility.navigation.navigateToBack()            // console.error('Error converting XLSX to HTML:', error);
         }
     }
 

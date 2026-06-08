@@ -1,14 +1,13 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View, StyleSheet, TouchableOpacity, Modal,
   TextInput, Text, Image, FlatList, ScrollView,
   KeyboardAvoidingView, SafeAreaView, LogBox, Keyboard,
   Alert,
-  StatusBar
 } from "react-native";
 import { COLORS } from "../utilies/GlobalColors";
-import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, } from "../utilies/Utilities";
+import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, Utility, } from "../utilies/Utilities";
 import { deviceBasedDynamicDimension } from "../utilies/scale";
 import { Fonts } from "../assets/fonts/GlobalFonts";
 import { Axis, BOB, calendarIcon, clear, eye, eyeClosed, info, } from "../assets/GlobalImages";
@@ -30,6 +29,9 @@ import { useToast } from "react-native-toast-notifications";
 import CustomLinearGradientView from "./CustomLinearGradientView";
 import CustomErrorMsgModal from "./CustomErrorMsgModal";
 import CustomVectorIcon from "./CustomVectorIcon";
+import { useTheme } from "../screen/theme/useTheme";
+import { Theme } from "../screen/theme/ThemeConfig";
+import { getLocalData } from "../utilies/storageUtility";
 
 
 //local imports
@@ -50,6 +52,8 @@ interface myProps {
 
 
 const ModalView = (props: myProps) => {
+  const { theme,mode } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [visible, setIsvisible] = useState(false)
   const [open, setOpen] = useState(false)
   const [calendar, setCalendar] = useState(false)
@@ -97,14 +101,15 @@ const ModalView = (props: myProps) => {
 
   }
   const getSavedUsers = async () => {
-    const savedUser = await AsyncStorage.getItem(asyncStorageKeyName.SAVED_USERS)
+    const savedUser =getLocalData(asyncStorageKeyName.SAVED_USERS)
     console.log('getSavedUsers----', savedUser);
-    let users = JSON.parse(savedUser)
+    console.log('getSavedUsers----',typeof savedUser);
+    let users = savedUser?JSON.parse(savedUser):[]
     let savedCardsArray = users.reduce((acc, obj) => {
 
       const tempObj =
       {
-        label: capitalizeFirstLetter(obj.firstName) + ' ' + capitalizeFirstLetter(obj.lastName),
+        label: Utility.string.getFirstLetterCapitalize(obj.firstName) + ' ' + Utility.string.getFirstLetterCapitalize(obj.lastName),
         id:obj.id,
         value: obj
       }
@@ -122,20 +127,9 @@ const ModalView = (props: myProps) => {
 
   const getPasswordByIsCap = (isCap: boolean, value: string) => {
     if (isCap == undefined) {
-      Alert.alert(
-        'Sorry ',
-        'we could not generate the password please check user details again',
-        [
-          {
-            text: '',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          { text: 'Ok', onPress: () => console.log('Yes Pressed') },
-        ],
-        { cancelable: false }
-      )
-      return true
+      setErrorMsg('Could not generate password. Please check user details again.');
+      setIsShowErrorModal(true);
+      return;
     }
     if (isCap) {
       props.onText(value.toUpperCase())
@@ -162,8 +156,9 @@ const ModalView = (props: myProps) => {
 
 
     if (selectedUser.id == undefined) {
-      alert('Please select user first! ');
-      return true
+      setErrorMsg('Please select a user first!');
+      setIsShowErrorModal(true);
+      return;
     }
     const { isFirstName4CharAndDobDDMM, isFirstName4CharAndCardLast4Digit,
       isFirstName4CharAndDobDDMMYYYY, isFirstName4CharAndDobYYYY,
@@ -177,8 +172,9 @@ const ModalView = (props: myProps) => {
     console.log('selectedCard ', selectedUser.cards);
     console.log('selectedCard ', selectedCard);
     if (selectedCard == undefined) {
-      alert('No card found for this bank please add card first! ');
-      return true
+      setErrorMsg('No card found for this bank. Please add the card first!');
+      setIsShowErrorModal(true);
+      return;
     }
     const { lastFourDigit } = selectedCard
     // console.log(v);
@@ -303,11 +299,10 @@ const ModalView = (props: myProps) => {
     }
   }
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgColor }}>
       <View style={{ flex: .9 }}>
 
 
-        <StatusBar backgroundColor={COLORS.THEME_COLOR} />
 
         <Modal visible={props.visible} animationType="fade" transparent>
           <View style={styles.overlay}>
@@ -340,9 +335,10 @@ const ModalView = (props: myProps) => {
                     // setBankLabel('')
                     setSelectedBank({})
                     props.onText('')
-                  }}
-                >
-                  <Icon name="credit-card-plus" size={22} color={COLORS.THEME_COLOR} />
+                  }} style={{borderWidth:1,borderColor:theme.themeColor,
+                  padding:scaledSize(4),borderRadius:scaledSize(16)}}>
+                
+                  <Icon name="plus" size={22} color={theme.themeColor} />
                 </TouchableOpacity>
               </View>
 
@@ -357,9 +353,10 @@ const ModalView = (props: myProps) => {
               <View style={{ marginTop: 15 }}>
                 <CustomDropdown
                   placeholder="Select user"
-                  // value={selectedUser ? selectedUser.firstName : ''}
+                  isShowSearch={false}
+                  value={selectedUser ? selectedUser.firstName : ''}
                   LeftIcon={() => <CustomVectorIcon iconLibrary="Feather" iconName="user"
-                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8) }} />}
+                    style={{ fontSize: scaledSize(14), marginRight: scaledSize(8), color: theme.secondaryTextColor }} />}
                   data={savedUser}
                   // onFocuse={() => onFocusSelectBank()}
                   onSelect={(item) => selectUser(item)}
@@ -370,6 +367,7 @@ const ModalView = (props: myProps) => {
               {/* BANK DROPDOWN */}
               <View style={{ marginTop: 15 }}>
                 <CustomDropdown
+                isShowSearch={false}
                   placeholder="Select Bank"
                   // value={se}
                   LeftIcon={() => selectedBank.value ?
@@ -381,7 +379,7 @@ const ModalView = (props: myProps) => {
                     :
                      <View style={{width:scaledSize(24)}}>
                     <CustomVectorIcon iconLibrary="MaterialDesignIcons" iconName="bank"
-                      style={{ fontSize: scaledSize(14),  }} />
+                      style={{ fontSize: scaledSize(14), color: theme.secondaryTextColor }} />
                       </View>
                   }
 
@@ -400,7 +398,7 @@ const ModalView = (props: myProps) => {
                     secureTextEntry={!visible}
                     defaultValue={props.errorRecognize}
                     placeholder="Password"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.secondaryTextColor}
                     autoCapitalize="none"
                     keyboardType="ascii-capable"
                     onChangeText={(value) => props.onText(value)}
@@ -411,7 +409,7 @@ const ModalView = (props: myProps) => {
                     <Icon
                       name={visible ? "eye-outline" : "eye-off-outline"}
                       size={20}
-                      color="#666"
+                      color={theme.secondaryTextColor}
                     />
                   </TouchableOpacity>
                 </View>
@@ -445,7 +443,7 @@ const ModalView = (props: myProps) => {
         </Modal>
 
         <Modal visible={isAddUserDetails}>
-          <SaveUserCardDetails onPress={() => setIsAddUserDetails(false)} />
+          <SaveUserCardDetails onPressBack={() => setIsAddUserDetails(false)} />
         </Modal>
 
         <CustomErrorMsgModal
@@ -465,7 +463,7 @@ const ModalView = (props: myProps) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: Theme) => StyleSheet.create({
 
   overlay: {
     flex: 1,
@@ -476,33 +474,33 @@ const styles = StyleSheet.create({
 
   modalCard: {
     width: "92%",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 20
+    backgroundColor: theme.bgColor,
+    borderRadius: scaledSize(6),
+    padding: scaledSize(18)
   },
 
   header: {
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: scaledSize(10)
   },
 
   headerTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#222"
+    color: theme.primaryTextColor
   },
 
   descriptionContainer: {
     flexDirection: "row",
-    marginBottom: 20
+    marginBottom: scaledSize(20)
   },
 
   descriptionText: {
-    marginLeft: 8,
+    marginLeft: scaledSize(8),
     fontSize: scaledSize(12),
-    // color: "#555",
+    color: theme.secondaryTextColor,
     flex: 1,
-    letterSpacing: 1,
+    letterSpacing: scaledSize(1),
     left: scaledSize(4),
     // fontFamily:Fonts.regular,
     lineHeight: scaledSize(16)
@@ -515,16 +513,16 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 15,
-    letterSpacing: .5
-    // fontWeight: "600"
+    fontSize: scaledSize(15),
+    letterSpacing: .5,
+    color: theme.primaryTextColor,
   },
 
   label: {
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#333"
+    color: theme.primaryTextColor,
   },
 
   inputContainer: {
@@ -535,51 +533,53 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderColor: theme.borderColor,
     borderRadius: scaledSize(8),
     paddingHorizontal: scaledSize(10),
     height: scaledSize(40),
-    backgroundColor: "#FAFAFA"
+    backgroundColor: theme.bgContainor
   },
 
   passwordInput: {
     flex: 1,
-    fontSize: 15,
-    color: "#000"
+    fontSize: scaledSize(12),
+    letterSpacing: .5,
+    fontFamily: Fonts.regular,
+    color: theme.primaryTextColor
   },
 
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 25
+    marginTop: scaledSize(25)
   },
 
   primaryBtn: {
     // backgroundColor: COLORS.THEME_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 8
+    paddingVertical: scaledSize(12),
+    paddingHorizontal: scaledSize(25),
+    borderRadius: scaledSize(8)
   },
 
   primaryText: {
-    color: COLORS.THEME_COLOR,
+    color: theme.themeColor,
     letterSpacing: .5
     // fontWeight: "600"
   },
 
   cancelBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20
+    paddingVertical: scaledSize(12),
+    paddingHorizontal: scaledSize(20)
   },
 
   cancelText: {
-    color: "#555",
+    color: theme.secondaryTextColor,
     fontWeight: "500"
   },
 
   errorMessageStyle: {
-    color: "red",
-    marginTop: 5
+    color: theme.deleteIconColor,
+    marginTop: scaledSize(5)
   },
 
 
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     borderRadius: scaledSize(8),
     // opacity: 0.9,
     height: scaledSize(460),
-    // backgroundColor: 'yellow',
+    backgroundColor: theme.bgColor,
     top: 20
   },
   enterPasswordText: {
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     letterSpacing: .5
   },
   enterPasswordView: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.bgColor,
     width: '83%',
     alignSelf: 'center',
     margin: scaledSize(10),
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     paddingLeft: scaledSize(10),
     borderBottomColor: 'gray',
     borderBottomWidth: 1,
-    color: 'black',
+    color: theme.primaryTextColor,
   },
   okAndCancelButtonView: {
     flexDirection: 'row',
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: Fonts.PTSerifBold,
     letterSpacing: .5,
-    color: "black"
+    color: theme.primaryTextColor
   },
   okButton: {
     // backgroundColor: "#e31d93",
@@ -705,11 +705,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.PTSerifBold,
     textAlign: 'center',
   },
-  errorMessageStyle: {
-    textAlign: 'center',
-    color: 'red',
-    fontFamily: Fonts.regular
-  },
+
   stepText: {
     marginLeft: scaledSize(10),
     fontFamily: Fonts.regular, fontSize:

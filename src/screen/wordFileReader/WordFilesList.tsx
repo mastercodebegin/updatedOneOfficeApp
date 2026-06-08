@@ -1,6 +1,6 @@
-import { View, Text, FlatList, StatusBar } from 'react-native'
+import { View, Text, FlatList } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile } from '../../utilies/Utilities'
+import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, sortFiles, toastForDeleteFile, Utility } from '../../utilies/Utilities'
 import CustomMenu from '../../component/Menu'
 import { FileCommonRenderItem } from '../../component/FileCommonRenderItem'
 import { MSOffice, PdfIcon } from '../../assets/GlobalImages'
@@ -10,7 +10,11 @@ import { Image } from 'react-native'
 import { asyncStorageKeyName } from '../../utilies/Constants'
 import { useIsFocused } from '@react-navigation/native'
 import CustomeButton from '../../component/CustomButton'
-
+import CustomEmptyState from '../../component/CustomEmptyState'
+import { getLocalData, setLocalData } from '../../utilies/storageUtility'
+import CommonFolderView from '../../component/CommonFolderView'
+import { useDispatch } from 'react-redux'
+import { updateSelectedFiles } from '../dashboard/FileSlice'
 
 // import { FileType, getAllFilesFromPhoneStorage } from '../../utilies/Utilities'
 
@@ -19,18 +23,23 @@ interface S {
   onReLoad: Function
   isLoading: boolean
   wordFiles: Array<{ name: string }>,
+  selectedSort: string
+    viewMode: 'list' | 'folder';
+
 }
 interface File {
   name: string;
   path: string;
   size: number;
+  id: number;
 }
 
 export default function WordFilesList(props: S) {
-  const { searchValue, wordFiles, isLoading ,onReLoad} = props
+  const { searchValue, wordFiles, isLoading, onReLoad, selectedSort, viewMode } = props
   const [files, setFiles] = useState<File[]>([]);
   const toast = useToast();
   const isFocused = useIsFocused();
+  const dispatch = useDispatch();
 
   useEffect(() => {
 
@@ -46,7 +55,7 @@ export default function WordFilesList(props: S) {
 
   // needs to keep this in seperate to refresh files
   const deleteFileHandler = async (item: any) => {
-    let allfilesStr = await AsyncStorage.getItem(asyncStorageKeyName.ALL_FILES)
+    let allfilesStr =  getLocalData(asyncStorageKeyName.ALL_FILES)
     console.log('AllFiles:', allfilesStr);
     const allfilesobj = JSON.parse(allfilesStr)
     const wordsFile = allfilesobj.wordFiles
@@ -56,49 +65,82 @@ export default function WordFilesList(props: S) {
     const v = { ...allfilesobj, wordFiles }
     deleteFile(item.path)
 
-    await AsyncStorage.setItem(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
+   setLocalData(asyncStorageKeyName.ALL_FILES, JSON.stringify(v))
 
     setFiles(data)
   }
 
-  const getFiles = () => {
-    // getting search value from dashboard and filtering it
-    if (searchValue.length > 0) {
-      return files.filter(file =>
-        file.name.toLowerCase().includes(searchValue.toLowerCase())
+
+    const sanitizeFilesForRedux = file => {
+      return {
+        id: file.id,
+        name: file.name,
+        path: file.path,
+        size: file.size,
+  
+        mtime: file.mtime
+          ? new Date(
+              file.mtime,
+            ).toISOString()
+          : null,
+      };
+    };
+    const onPressItem = item => {
+      dispatch(
+        updateSelectedFiles(
+          sanitizeFilesForRedux(
+            item,
+          ),
+        ),
       );
-    } else {
-      return files;
-    }
-  };
+    };
+    const onLongPress = item => {
+      dispatch(
+        updateSelectedFiles(
+          sanitizeFilesForRedux(
+            item,
+          ),
+        ),
+      );
+    };
+
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {wordFiles.length > 0 ? (
-          <FlatList data={getFiles()}
-            //   renderItem={({ item }) => <Text>Hi</Text>}
-            renderItem={({ item }) => <FileCommonRenderItem
-              item={item} icon={MSOffice} onPressDeleteFile={deleteFileHandler} screenName='WordReader' />}
-          // keyExtractor={(item) => item}
-          // refreshControl={<RefreshControl
-          //   colors={["red", "red"]}
-          //   refreshing={refreshing}
-          //   onRefresh={() => readFiles(false)} />
-          //}
-          />
+          // <FlatList data={getFiles()}
+          //   renderItem={({ item, index }) => 
+          //   <FileCommonRenderItem
+          //     index={index}
+          //     item={item}
+          //     icon={MSOffice} 
+          //     onPressDeleteFile={deleteFileHandler}
+          //      screenName='WordReader' />}
+ 
+          // />
+          <CommonFolderView
+          files={wordFiles}
+          viewMode={viewMode}
+          searchValue={searchValue}
+          selectedSort={selectedSort}
+          icon={MSOffice}
+          screenName="WordReader"
+          onPressItem={
+            onPressItem
+          }
+
+          onLongPress={
+            onLongPress
+          }
+
+          onPressDeleteFile={
+            deleteFileHandler
+          }
+
+        />
         ) :
-          <View style={{ flex: 1, justifyContent: "center", alignItems: 'center' }}>
-            {!isLoading ? <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-              <Text>No files found</Text>
-              <View style={{ height: scaledSize(40), width: scaledSize(300) }}>
-                <CustomeButton onPress={() => onReLoad()} name='Reload'
-                 textStyle={{color:'blue'}}></CustomeButton>
-              </View>
-              <View style={{ height: scaledSize(30), width: scaledSize(130) }}>
-              </View>
-            </View> : <></>}
-          </View>
+          <CustomEmptyState onPressReload={() => onReLoad()} />
         }
 
       </View>
