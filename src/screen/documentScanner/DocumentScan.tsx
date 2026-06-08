@@ -64,6 +64,7 @@ import CustomSortModal from '../../../src/component/CustomSortModal';
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomUpdateFolderTagModal from '../../component/CustomUpdateFolderTagModal';
 import CustomGoogleBtn from '../../component/CustomGoogleBtn';
+import AntDesign from 'react-native-vector-icons/AntDesign'
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -923,21 +924,35 @@ const renderTags = () => {
 
       {/* LEFT ICON */}
 
-      <View
+      <TouchableOpacity
+        disabled={selectedTags.length === 0}
+        onPress={() => {
+          if (selectedTags.length > 0) {
+            setSelectedTags([]);
+          }
+        }}
         style={[
           styles.tagIconContainer,
           {
             backgroundColor: theme.bgContainor,
-            borderColor: theme.borderColor,
+            // borderColor: selectedTags.length > 0 ? theme.deleteIconColor : theme.borderColor,
           },
         ]}
       >
-        <MaterialIcons
-          name="local-offer"
-          size={22}
-          color={theme.themeColor}
+        {selectedTags.length > 0 ?
+        <CustomVectorIcon iconLibrary='Fontisto' 
+        iconName='close-a' style={{color:theme.primaryTextColor,fontSize:scaledSize(14)}}/>:
+        <CustomVectorIcon iconLibrary='MaterialIcons' 
+        iconName='local-offer' style={{color:theme.themeColor}}
+        onPress={()=>setSelectedTags([])}
         />
-      </View>
+        }
+        {/* <AntDesign
+          name={selectedTags.length > 0 ? 'clear' : "local-offer"}
+          size={22}
+          color={selectedTags.length > 0 ? theme.deleteIconColor : theme.themeColor}
+        /> */}
+      </TouchableOpacity>
 
       {/* TAGS */}
 <FlatList
