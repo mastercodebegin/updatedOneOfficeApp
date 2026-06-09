@@ -8,32 +8,44 @@ export default function Splashscreen({ navigation, route }) {
   const isFocused = useIsFocused();
   //Linking 
 
-  useEffect(() => {
+//  useEffect(() => {
 
-    console.log('test----');
-    Linking.addEventListener('url', (url) => {
-      console.log('url----', url,);
-      navigation.navigate('PdfViewer', { uri: url.url })
-    });
-    
-    
-    if (!isUserBack) {
-      
-      Linking.getInitialURL()
-      .then((url) => {
-        if (url && route?.params?.pdf==undefined)  {
-            console.log('first----', url,);
-            navigation.navigate('PdfViewer', { uri: url })
-          }
-        })
-        .catch((err) => {
-          console.error('Error getting initial URL:', err)
-        })
-        ;
-    }
+//   const subscription =
+//     Linking.addEventListener(
+//       'url',
+//       ({ url }) => {
+//         console.log('url----', url);
+//       }
+//     );
 
-  },)
+//   if (!isUserBack) {
+//     Linking.getInitialURL()
+//       .then((url) => {
+//         if (
+//           url &&
+//           route?.params?.pdf === undefined
+//         ) {
+//           console.log(
+//             'first----',
+//             url
+//           );
 
+//           navigation.navigate(
+//             'PdfViewer',
+//             { uri: url }
+//           );
+//         }
+//       })
+//       .catch((err) => {
+//         console.error(err);
+//       });
+//   }
+
+//   return () => {
+//     subscription.remove();
+//   };
+
+// }, []);
 
  
   return (

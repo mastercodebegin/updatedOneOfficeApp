@@ -103,15 +103,15 @@ export default function App(props) {
   //   }
   // };
 
-  React.useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
-        // syncAll();
-      }
-    });
+  // React.useEffect(() => {
+  //   const sub = AppState.addEventListener('change', (state) => {
+  //     if (state === 'active') {
+  //       syncAll();
+  //     }
+  //   });
 
-    return () => sub.remove();
-  }, []);
+  //   return () => sub.remove();
+  // }, []);
 
 
 

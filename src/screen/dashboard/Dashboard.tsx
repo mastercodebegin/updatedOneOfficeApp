@@ -10,6 +10,7 @@ import {
   Alert, KeyboardAvoidingView,
   ScrollView,
   Button,
+  NativeModules,
 } from 'react-native';
 import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile, Utility, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -71,6 +72,8 @@ import { AuthService } from '../../service/AuthService';
 
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
+
+const { PdfCacheModule } = NativeModules;
 
 function Dashboard({ navigation, route }) {
 
@@ -475,25 +478,7 @@ function Dashboard({ navigation, route }) {
     }
   }, [])
 
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // If no files are loaded, trigger a scan.
-        if (documents.pdfFiles.length === 0) {
-          readPdfFiles();
-        }
-      }
-      setAppState(nextAppState);
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [appState, documents.pdfFiles.length]);
-
-  const readPdfFiles = async () => {
+  const readPdfFiles = React.useCallback(async () => {
  
     setIsLoading(true)
     setIsScanning(true)
@@ -516,7 +501,25 @@ function Dashboard({ navigation, route }) {
 
     setDocuments(files)
     setUniqueNumber(Utility.generateUniqueNumber())
-  }
+  }, []);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        if(documents.pdfFiles.length == 0){
+
+          readPdfFiles();
+        }
+      }
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, readPdfFiles]);
 
 
   //   if (!isFocused) return;
@@ -559,15 +562,56 @@ function Dashboard({ navigation, route }) {
 
   // }, [isFocused]);
 
+const openPdf = async (uri: string) => {
+  console.log('openPdf uri', uri);
+
+  if (!uri) return;
+
+  try {
+    if (
+      Platform.OS === 'android' &&
+      uri.startsWith('content://')
+    ) {
+      const localPath =
+        await PdfCacheModule.copyToCache(
+          uri,
+        );
+
+      const pdfUri = localPath.startsWith('file://')
+        ? localPath
+        : `file://${localPath}`;
+
+      console.log('cached Gmail PDF path', pdfUri);
+
+      navigation.navigate(
+        'PdfViewer',
+        {
+          uri: pdfUri,
+        },
+      );
+
+      return;
+    }
+
+    navigation.navigate(
+      'PdfViewer',
+      {
+        uri,
+      },
+    );
+  } catch (e) {
+    console.log('openPdf error', e);
+  }
+};
 
   //Linking 
   useEffect(() => {
     let isRead = true
 
-    Linking.addEventListener('url', (url) => {
+    const linkingSubscription = Linking.addEventListener('url', (url) => {
       console.log('addEventListener', url);
-
-      navigation.navigate('PdfViewer', { uri: url.url })
+      openPdf(url.url)
+      // navigation.navigate('PdfViewer', { uri: url.url })
     });
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -586,7 +630,7 @@ function Dashboard({ navigation, route }) {
           if (url && route?.params?.pdf == undefined) {
             console.log('listener2', url);
 
-            navigation.navigate('PdfViewer', { uri: url })
+            openPdf(url)
           }
         })
         .catch((err) => {
@@ -599,10 +643,9 @@ function Dashboard({ navigation, route }) {
       //checkStorage()
     }
     return () => {
+      linkingSubscription.remove();
       backHandler.remove();
     };
-
-
   }, [navigation, route, isFocused]);
 
 
