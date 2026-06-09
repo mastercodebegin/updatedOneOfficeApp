@@ -474,6 +474,25 @@ function Dashboard({ navigation, route }) {
       // readPdfFiles()
     }
   }, [])
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // If no files are loaded, trigger a scan.
+        if (documents.pdfFiles.length === 0) {
+          readPdfFiles();
+        }
+      }
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, documents.pdfFiles.length]);
+
   const readPdfFiles = async () => {
  
     setIsLoading(true)
