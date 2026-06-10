@@ -429,7 +429,7 @@ function Dashboard({ navigation, route }) {
   const [index, setIndex] = React.useState(0);
   const [routes] = React.useState([
     { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
-    { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
+    // { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
     // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
     // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
 
@@ -466,7 +466,7 @@ function Dashboard({ navigation, route }) {
   useEffect(() => {
     const obj = getLocalData(asyncStorageKeyName.ALL_FILES);
     console.log('obj', obj);
-    console.log('obj type of >>>>>>>',typeof obj);
+    console.log('obj type of >>>>>>>', typeof obj);
     if (obj?.pdfFiles?.length > 0) {
 
       setDocuments(obj);
@@ -479,14 +479,14 @@ function Dashboard({ navigation, route }) {
   }, [])
 
   const readPdfFiles = React.useCallback(async () => {
- 
+
     setIsLoading(true)
     setIsScanning(true)
     setFileScanProgress(0);
     setFilesFound(0);
     setFoundFilesList([]);
     const files = await getFilesFromPhoneByFileExtention(
-      1, 
+      1,
       (status: {
         percentage: number,
         filesFound: number,
@@ -506,8 +506,7 @@ function Dashboard({ navigation, route }) {
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        if(documents.pdfFiles.length == 0){
-
+        if (documents.pdfFiles.length == 0) {
           readPdfFiles();
         }
       }
@@ -522,87 +521,70 @@ function Dashboard({ navigation, route }) {
   }, [appState, readPdfFiles]);
 
 
-  //   if (!isFocused) return;
 
-  //   console.log('index', screeName);
 
-  //   const obj = getLocalData(
-  //     asyncStorageKeyName.ALL_FILES
-  //   );
 
-  //   if (
-  //     obj?.pdfFiles &&
-  //     obj.pdfFiles.length > 0
-  //   ) {
+  const openPdf = async (uri: string) => {
+    console.log('openPdf uri', uri);
 
-  //     setDocuments(obj);
+    if (!uri) return;
 
-  //   } else {
+    try {
+      if (
+        Platform.OS === 'android' &&
+        uri.startsWith('content://')
+      ) {
+        const localPath =
+          await PdfCacheModule.copyToCache(
+            uri,
+          );
 
-  //     setIsLoading(true);
+        const pdfUri = localPath.startsWith('file://')
+          ? localPath
+          : `file://${localPath}`;
 
-  //     const getAllFiles = async () => {
+        console.log('Cached PDF path:', pdfUri);
 
-  //       const files =
-  //         await getFilesFromPhoneByFileExtention(
-  //           1
-  //         );
+        const statResult = await RNFS.stat(pdfUri);
 
-  //       setDocuments(files);
 
-  //       setIsLoading(false);
 
-  //       setUniqueNumber(
-  //         Utility.generateUniqueNumber()
-  //       );
-  //     };
+        // Construct a file object in the expected format for your app's state
+        const newPdfFile = {
+          id: Utility.generateUniqueNumber(), // Generate a unique ID for the new file
+          name: statResult.path.split('/').pop() || `document-${Date.now()}.pdf`, // Extract name, provide fallback
+          path: statResult.path,
+          size: statResult.size,
+          mtime: statResult.mtime ? new Date(statResult.mtime).toISOString() : new Date().toISOString(), // Ensure mtime is serializable
+        };
 
-  //     getAllFiles();
-  //   }
+    
 
-  // }, [isFocused]);
 
-const openPdf = async (uri: string) => {
-  console.log('openPdf uri', uri);
-
-  if (!uri) return;
-
-  try {
-    if (
-      Platform.OS === 'android' &&
-      uri.startsWith('content://')
-    ) {
-      const localPath =
-        await PdfCacheModule.copyToCache(
-          uri,
+        navigation.navigate(
+          'PdfViewer',
+          {
+            uri: pdfUri,
+            name: newPdfFile.name, // Pass the name for the viewer header
+          },
         );
-
-      const pdfUri = localPath.startsWith('file://')
-        ? localPath
-        : `file://${localPath}`;
-
-      console.log('cached Gmail PDF path', pdfUri);
+      }
 
       navigation.navigate(
         'PdfViewer',
         {
-          uri: pdfUri,
+          uri,
+          name: uri.split('/').pop() || 'Document', // Extract name, provide fallback
         },
       );
-
-      return;
+    } catch (e) {
+      console.log('openPdf error', e);
+      setErrorMsg('Failed to open the file. It might be corrupted or unsupported.');
+      setIsShowErrorModal(true);
+    } finally {
+      setIsLoading(false); // Always hide loading indicator
     }
-
-    navigation.navigate(
-      'PdfViewer',
-      {
-        uri,
-      },
-    );
-  } catch (e) {
-    console.log('openPdf error', e);
-  }
-};
+  };
 
   //Linking 
   useEffect(() => {
@@ -611,7 +593,6 @@ const openPdf = async (uri: string) => {
     const linkingSubscription = Linking.addEventListener('url', (url) => {
       console.log('addEventListener', url);
       openPdf(url.url)
-      // navigation.navigate('PdfViewer', { uri: url.url })
     });
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -629,7 +610,6 @@ const openPdf = async (uri: string) => {
         .then((url) => {
           if (url && route?.params?.pdf == undefined) {
             console.log('listener2', url);
-
             openPdf(url)
           }
         })
@@ -740,9 +720,9 @@ const openPdf = async (uri: string) => {
           selectedSort={selectedSort}
           viewMode={viewMode}
           onReLoad={readPdfFiles} isLoading={isLoading} />;
-      case asyncStorageKeyName.WORD_FILES:
-        return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
-          selectedSort={selectedSort} viewMode={viewMode} />;
+      // case asyncStorageKeyName.WORD_FILES:
+      //   return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
+      //     selectedSort={selectedSort} viewMode={viewMode} />;
       // case asyncStorageKeyName.XLSX_FILES:
       //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
       //   case asyncStorageKeyName.PPT_FILES:
@@ -756,7 +736,7 @@ const openPdf = async (uri: string) => {
       {...props}
       indicatorStyle={{
         backgroundColor: theme.themeColor,
-        height: scaledSize(2),
+        height: .5,
       }}
       style={{
         backgroundColor: mode === 'dark' ? theme.bgContainor : '#FFFFFF',
@@ -937,15 +917,15 @@ const openPdf = async (uri: string) => {
 
         navigation.navigate('PdfViewer', { uri: uri })
       }
-      else if (fileExtension === 'docx') {
-        navigation.navigate('WordReader', { uri: uri })
-      }
-      else if (fileExtension === 'xlsx') {
-        navigation.navigate('XslxReader', { uri: uri })
-      }
-      else if (fileExtension === 'ppt') {
-        navigation.navigate('PowerPointReader', { uri: uri })
-      }
+      // else if (fileExtension === 'docx') {
+      //   navigation.navigate('WordReader', { uri: uri })
+      // }
+      // else if (fileExtension === 'xlsx') {
+      //   navigation.navigate('XslxReader', { uri: uri })
+      // }
+      // else if (fileExtension === 'ppt') {
+      //   navigation.navigate('PowerPointReader', { uri: uri })
+      // }
 
 
     }

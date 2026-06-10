@@ -58,7 +58,7 @@ console.log('savedTheme', savedTheme);
         </View>
         <View>
           <Text style={styles.profileName}>{user ? user.displayName : 'Guest User'}</Text>
-          <Text style={styles.profileEmail}>{user ? user.email : 'guest@example.com'}</Text>
+          <Text style={styles.profileEmail}>{user ? user.email : ''}</Text>
         </View>
       </View>
 
@@ -77,25 +77,26 @@ console.log('savedTheme', savedTheme);
           />
         </View>
 
-        <TouchableOpacity style={styles.settingRow} onPress={handleNavigateToUsers}>
+        <TouchableOpacity style={styles.settingRow} onPress={()=>Utility.navigation.navigateTo('contactus')}>
           <View style={styles.settingInfo}>
-            <MaterialCommunityIcons name="account-group-outline" size={scaledSize(22)} color={theme.secondaryTextColor} style={styles.settingIcon} />
-            <Text style={styles.settingLabel}>User Management</Text>
+            <MaterialCommunityIcons name="account-group-outline" 
+            size={scaledSize(22)} color={theme.secondaryTextColor} style={styles.settingIcon} />
+            <Text style={styles.settingLabel}>Contact us</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={scaledSize(24)} color={theme.secondaryTextColor} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.settingRow} onPress={handleSupportEmail}>
+        {/* <TouchableOpacity style={styles.settingRow} onPress={handleSupportEmail}>
           <View style={styles.settingInfo}>
             <MaterialCommunityIcons name="email-outline" size={scaledSize(22)} color={theme.secondaryTextColor} style={styles.settingIcon} />
             <Text style={styles.settingLabel}>Support</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={scaledSize(24)} color={theme.secondaryTextColor} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <View style={styles.footer}>
-        {user ? (
+        {/* {user ? (
           <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
             <MaterialCommunityIcons name="logout" size={scaledSize(20)} color={'#FF3B5C'} style={styles.buttonIcon} />
             <Text style={[styles.buttonText, styles.logoutButtonText]}>Logout</Text>
@@ -105,7 +106,7 @@ console.log('savedTheme', savedTheme);
             <MaterialCommunityIcons name="login" size={scaledSize(20)} color={theme.themeColor} style={styles.buttonIcon} />
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
-        )}
+        )} */}
       </View>
       <CustomSpinner isLoading={loading}/>
     </SafeAreaView>

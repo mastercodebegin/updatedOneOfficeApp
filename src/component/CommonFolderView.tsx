@@ -53,9 +53,9 @@ const CommonFolderView = (props: Props) => {
   const { theme } = useTheme();
 
   const [selectedFolder, setSelectedFolder] =
-    useState<FolderGroup | null>(null);
+    useState<FolderGroup | []>([]);
 
-const getFolderByFileName = (filename: string) => {
+const getFolderByFileName = (filename: string='') => {
   const name = filename.toLowerCase();
 
   /* Banking */
@@ -271,137 +271,109 @@ if (
         ? groupedFiles
         : filteredFiles;
 
- const renderFolder = ({ item }: { item: FolderGroup }) => {
+const FOLDER_COLORS = [
+  {bg: '#E6F1FB', icon: '#185FA5'},
+  {bg: '#E1F5EE', icon: '#0F6E56'},
+  {bg: '#FAEEDA', icon: '#854F0B'},
+  {bg: '#EEEDFE', icon: '#3C3489'},
+  {bg: '#FAECE7', icon: '#993C1D'},
+];
+
+const getFolderColor = (name: string) => {
+  const index =
+    name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) %
+    FOLDER_COLORS.length;
+  return FOLDER_COLORS[index];
+};
+
+const renderFolder = ({item, index}: {item: FolderGroup; index: number}) => {
+  const folderColor = getFolderColor(item.folder);
+  const fileCount = item.files.length;
+
   return (
-
     <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={() =>
-        setSelectedFolder(item)
-      }
-
+      activeOpacity={0.8}
+      onPress={() => setSelectedFolder(item)}
       style={{
-
-        marginHorizontal:
-          scaledSize(18),
-
-        marginTop:
-          scaledSize(12),
-
-        paddingHorizontal:
-          scaledSize(18),
-
-        height:
-          scaledSize(52),
-
-        borderRadius:
-          scaledSize(22),
-
-        backgroundColor:
-          theme.bgColor,
-
-        borderWidth: 1,
-
-        borderColor:
-          theme.borderColor,
-
-        flexDirection:
-          'row',
-
-        alignItems:
-          'center',
-
-        justifyContent:
-          'space-between',
-
+        marginHorizontal: scaledSize(16),
+        marginTop: scaledSize(10),
+        paddingHorizontal: scaledSize(16),
+        paddingVertical: scaledSize(14),
+        borderRadius: scaledSize(14),
+        backgroundColor: theme.bgContainor || theme.bgColor,
+        borderWidth: 0.5,
+        borderColor: theme.borderColor,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scaledSize(14),
       }}>
 
-      {/* Left */}
-
+      {/* Icon tile */}
       <View
         style={{
-
-          flexDirection:
-            'row',
-
-          alignItems:
-            'center',
-
+          width: scaledSize(46),
+          height: scaledSize(46),
+          borderRadius: scaledSize(12),
+          backgroundColor: folderColor.bg,
+          justifyContent: 'center',
+          alignItems: 'center',
         }}>
-
-        <View
-          style={{
-
-            width:
-              scaledSize(30),
-
-            height:
-              scaledSize(30),
-
-            borderRadius:
-              scaledSize(10),
-
-            backgroundColor:
-              theme.bgColor,
-
-            justifyContent:
-              'center',
-
-            alignItems:
-              'center',
-
-          }}>
-
-          <MaterialIcons
-            name="folder"
-            size={scaledSize(26)}
-            color={theme.themeColor}
-          />
-
-        </View>
-
-        <Text
-          style={{
-
-            marginLeft:
-              scaledSize(14),
-
-            color:
-              theme.primaryTextColor,
-
-            fontSize:
-              scaledSize(13),
-
-            fontFamily:
-              FONTS.regular,
-
-          }}>
-
-          {item.folder}
-
-        </Text>
-
+        <MaterialIcons
+          name="folder"
+          size={scaledSize(24)}
+          color={folderColor.icon}
+        />
       </View>
 
-      {/* Right */}
+      {/* Name + subtitle */}
+      <View style={{flex: 1, minWidth: 0}}>
+        <Text
+          numberOfLines={1}
+          style={{
+            color: theme.primaryTextColor,
+            fontSize: scaledSize(15),
+            fontFamily: FONTS.regular,
+            marginBottom: scaledSize(3),
+          }}>
+          {item.folder}
+        </Text>
+        <Text
+          style={{
+            color: theme.secondaryTextColor,
+            fontSize: scaledSize(12),
+            fontFamily: FONTS.regular,
+          }}>
+          {fileCount} {fileCount === 1 ? 'file' : 'files'}
+        </Text>
+      </View>
 
-      <Text
-        style={{
-
-          color:
-            theme.secondaryTextColor,
-
-          fontSize:
-            scaledSize(14),
-
-        }}>
-
-        {item.files.length} files
-
-      </Text>
-
+      {/* Badge + chevron */}
+      <View style={{alignItems: 'flex-end', gap: scaledSize(4)}}>
+        <View
+          style={{
+            backgroundColor: theme.bgColor,
+            borderRadius: scaledSize(20),
+            paddingHorizontal: scaledSize(10),
+            paddingVertical: scaledSize(3),
+            borderWidth: 0.5,
+            borderColor: theme.borderColor,
+          }}>
+          <Text
+            style={{
+              color: theme.secondaryTextColor,
+              fontSize: scaledSize(11),
+              fontFamily: FONTS.regular,
+            }}>
+            {fileCount} files
+          </Text>
+        </View>
+        <MaterialIcons
+          name="chevron-right"
+          size={scaledSize(18)}
+          color={theme.secondaryTextColor}
+        />
+      </View>
     </TouchableOpacity>
-
   );
 };
 
