@@ -513,7 +513,7 @@ const DocumentPicker = async (props: S) => {
   try {
     const res = await pick({
       allowMultiSelection: isMultipleSelection,
-      // type:fileTypes,
+      type: fileTypes,
       mode: 'open', // 👈 important
       copyTo: 'cachesDirectory', // 👈 BEST FIX
     });

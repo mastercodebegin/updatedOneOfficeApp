@@ -29,6 +29,7 @@ import Spinner from 'react-native-loading-spinner-overlay';
 import { useIsFocused } from '@react-navigation/native';
 import CustomFAB from '../../component/CustomFAB';
 import { zip, unzip } from 'react-native-zip-archive';
+import { types } from '@react-native-documents/picker';
 import { animation_completed, backup_animation } from '../../assets/animation/AnimationAssets';
 import LottieView from 'lottie-react-native';
 import CustomCloseIcon from '../../component/CustomCloseIcon';
@@ -105,6 +106,8 @@ export const DocumentScan = () => {
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [isShowImportConfirmation, setIsShowImportConfirmation] = useState(false);
+  const [backupFileToImport, setBackupFileToImport] = useState<string | null>(null);
   const [tagToRename, setTagToRename] = useState(null);
   const [isShowDeleteMultipleTagsConfirmation, setIsShowDeleteMultipleTagsConfirmation] = useState(false)
   const [isShowUpdateTagModal, setIsShowUpdateTagModal] = useState(false)
@@ -1159,6 +1162,7 @@ const renderTags = () => {
             />
           </View>
           {renderGradientButton('filter', theme.iconColor, () => setIsShowSortModal(true))}
+          {renderGradientButton('cloud-upload-outline', theme.iconColor, createBackup)}
 
         </View>
       </SafeAreaView>
@@ -1626,110 +1630,192 @@ const renderTags = () => {
     return filteredData;
   };
 
-
-  const backupFolderPath = CONSTANT.ASYNC_STORAGE_STRING_INTO_JSON_BAKUP_PATH;
-  const jsonPath = `${CONSTANT.BACKUP_PATH}/path.json`;
-  const downloadPath = `${CONSTANT.BACKUP_PATH}/document_backup.zip`; // Downloads path
-
-  const saveAsyncStorageToFile = async () => {
-    try {
-      // Fetch data from AsyncStorage
-      const storedData = getLocalData(asyncStorageKeyName.DOCUMENTS);
-      const jsonData = { imagePaths: JSON.parse(storedData) || [] };
-
-      const fileExists = await RNFS.exists(jsonPath);
-
-      if (fileExists) {
-        // Delete the file if it exists
-        await RNFS.unlink(jsonPath);
-        console.log(`Existing file deleted at: ${jsonPath}`);
-      }
-
-      // Convert to string and save to JSON file
-      await RNFS.writeFile(jsonPath, JSON.stringify(jsonData), 'utf8');
-      console.log('AsyncStorage data saved to JSON file:', jsonPath);
-      return jsonPath; // Return the path to include it in the zip
-    }
-    catch (error) {
-      console.error('Error saving AsyncStorage to file:', error);
-    }
-  }
-
   const createBackup = async () => {
+    setIsLoading(true);
+    setIsBackupStarted(true);
+    setIsBackupCompleted(false);
+
     try {
-      // Get the image paths from AsyncStorage
+      // 1. Get all data from the database
+      const folders = await FolderLocalService.getAllFolders();
+      const files = await FileLocalService.getAllFiles();
+      const tags = await tagLocalService.getTags();
 
-      const storedImages = getLocalData(asyncStorageKeyName.DOCUMENTS);
-      const imagePaths = storedImages?storedImages:[]
-      if (imagePaths.length == 0) {
-        console.log('imagePaths is zero :', imagePaths);
-        setIsBackupStarted(false)
-        CustomErrorToast('you have no images to backup. Please make sure you have images before attempting to backup. :)');
-        return
-
-      }
-      console.log('imagePaths:', imagePaths[0].files);
-
-      const arr = imagePaths.flatMap(item => item.files.map(fileItem => fileItem.path));
-      console.log('arrrr=====', arr);
-      // Ensure backup directory exists
-      // await RNFS.mkdir(backupFolderPath);
-
-      // Save AsyncStorage data to a JSON file
-      const jsonFilePath = await saveAsyncStorageToFile();
-      // console.log('jsonFilePath======', jsonFilePath);
-      // Create a list of files to zip (images + JSON file)
-      const fileExists = await RNFS.exists(downloadPath);
-      if (fileExists) {
-        await RNFS.unlink(downloadPath);
-        console.log('Existing file deleted in Downloads:', downloadPath);
+      if (files.length === 0) {
+        CustomErrorToast('No documents to backup.');
+        setIsLoading(false);
+        setIsBackupStarted(false);
+        return;
       }
 
-      const filesToZip = [...arr, jsonFilePath];
-      console.log('filesToZip======', filesToZip);
+      // 2. Prepare metadata JSON
+      const backupData = {
+        folders,
+        files,
+        tags,
+        version: 1, // for future migrations
+      };
 
-      // Create a zip archive of the images and JSON file
-      console.log('fdownloadPath======', downloadPath);
-      const result = await zip(filesToZip, downloadPath);
+      // 3. Create a temporary directory for zipping
+      const tempBackupDir = `${RNFS.CachesDirectoryPath}/backup_${Date.now()}`;
+      await RNFS.mkdir(tempBackupDir);
 
-      setTimeout(() => {
-        setIsBackupCompleted(true)
-        console.log('Backup created at:', result);
-      }, 3000);
+      // 4. Save metadata to a file inside the temp directory
+      const metadataPath = `${tempBackupDir}/metadata.json`;
+      await RNFS.writeFile(metadataPath, JSON.stringify(backupData), 'utf8');
+
+      // 5. Copy all document files to a 'documents' subfolder in the temp directory
+      const documentsSourceDir = CONSTANT.SAVED_DOCUMENTS_PATH;
+      const documentsDestDir = `${tempBackupDir}/documents`;
+      await RNFS.mkdir(documentsDestDir);
+
+      for (const file of files) {
+        const sourcePath = `${documentsSourceDir}${file.name}`;
+        const destPath = `${documentsDestDir}/${file.name}`;
+        if (await RNFS.exists(sourcePath)) {
+          await RNFS.copyFile(sourcePath, destPath);
+        }
+      }
+
+      // 6. Zip the temporary directory
+      const backupFileName = `OneOffice_Backup_${Utility.date.getDateByMomentFormat(new Date(), 'YYYYMMDD_HHmm')}.zip`;
+      const finalZipPath = `${RNFS.DownloadDirectoryPath}/${backupFileName}`;
+
+      // Ensure Download directory exists
+      await RNFS.mkdir(RNFS.DownloadDirectoryPath);
+
+      // Delete old backup if it exists
+      if (await RNFS.exists(finalZipPath)) {
+        await RNFS.unlink(finalZipPath);
+      }
+
+      await zip(tempBackupDir, finalZipPath);
+
+      // 7. Clean up temporary directory
+      await RNFS.unlink(tempBackupDir);
+
+      setIsBackupCompleted(true);
+      CustomSuccessToast(`Backup created: ${backupFileName}`);
+
     } catch (error) {
       console.error('Error creating backup:', error);
+      CustomErrorToast('Backup failed. Please try again.');
+    } finally {
+      // Use a timeout to show the completion animation
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsBackupStarted(false);
+        setIsBackupCompleted(true)
+      }, 3000);
     }
   };
 
-  const importBackup = async (zipFile: any) => {
-    console.log('zipfile-----', zipFile);
-
-
-
-    const extractedPath = await unzip(zipFile.fileCopyUri, CONSTANT.SAVED_DOCUMENTS_PATH);
-    console.log('extractedPath-----', extractedPath);
+  const importBackup = async (zipFileUri: string) => {
+    if (!zipFileUri) return;
+    setIsLoading(true);
     try {
-      // Read the JSON file content
-      const fileContent = await RNFS.readFile(`${CONSTANT.SAVED_DOCUMENTS_PATH}path.json`, 'utf8');
+      // 1. Unzip to a temporary directory
+      const tempExtractDir = `${RNFS.CachesDirectoryPath}/import_${Date.now()}`;
+      await RNFS.mkdir(tempExtractDir);
+      await unzip(zipFileUri, tempExtractDir);
 
-      // Parse the JSON content
-      const jsonData = JSON.parse(fileContent);
+      // 2. Read metadata.json
+      const metadataPath = `${tempExtractDir}/metadata.json`;
+      if (!(await RNFS.exists(metadataPath))) {
+        throw new Error('Invalid backup file: metadata.json not found.');
+      }
+      const metadataContent = await RNFS.readFile(metadataPath, 'utf8');
+      const backupData = JSON.parse(metadataContent);
 
-      // Save parsed JSON to AsyncStorage (assuming you want to save it with a specific key)
-      console.log('AsyncStorage saved with JSON data:', jsonData);
-      await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(jsonData.imagePaths));
-      setData(jsonData.imagePaths)
-      console.log('AsyncStorage saved with JSON data:', jsonData);
+      // 3. Clear existing data
+      await FileLocalService.resetFilesTable();
+      await FolderLocalService.resetFoldersTable();
+      await tagLocalService.resetTagsTable();
+      await RNFS.unlink(CONSTANT.SAVED_DOCUMENTS_PATH).catch(() => { }); // delete old docs folder
+      await RNFS.mkdir(CONSTANT.SAVED_DOCUMENTS_PATH); // create new empty one
 
+      // 4. Import data into database with ID mapping
+      if (backupData.tags && backupData.tags.length > 0) {
+        for (const tag of backupData.tags) {
+          await tagLocalService.addTag({ name: tag.name, color: tag.color, isDeleted: tag.isDeleted });
+        }
+      }
+      const newTags = await tagLocalService.getTags();
+      const oldTagIdToNewTagIdMap = new Map();
+      backupData.tags.forEach(oldTag => {
+        const newTag = newTags.find(nt => nt.name === oldTag.name);
+        if (newTag) {
+          oldTagIdToNewTagIdMap.set(oldTag.id, newTag.id);
+        }
+      });
+
+      if (backupData.folders && backupData.folders.length > 0) {
+        for (const folder of backupData.folders) {
+          const newTagId = oldTagIdToNewTagIdMap.get(folder.tagId) || null;
+          await FolderLocalService.createFolder(folder.userId, folder.name, folder.firebaseId, folder.coverUri, folder.driveFolderId, 0, Date.now(), newTagId);
+        }
+      }
+      const newFolders = await FolderLocalService.getAllFolders();
+      const oldFolderIdToNewFolderIdMap = new Map();
+      backupData.folders.forEach(oldFolder => {
+        const newFolder = newFolders.find(nf => nf.name === oldFolder.name);
+        if (newFolder) {
+          oldFolderIdToNewFolderIdMap.set(oldFolder.id, newFolder.id);
+        }
+      });
+
+      if (backupData.files && backupData.files.length > 0) {
+        for (const file of backupData.files) {
+          const newFolderId = oldFolderIdToNewFolderIdMap.get(file.folderId);
+          if (newFolderId) {
+            await FileLocalService.createFile({ ...file, id: undefined, folderId: newFolderId, isSynced: 0 });
+          }
+        }
+      }
+
+      // 5. Copy document files from temp extracted folder to app's document folder
+      const sourceDocsDir = `${tempExtractDir}/documents`;
+      if (await RNFS.exists(sourceDocsDir)) {
+        const filesToCopy = await RNFS.readDir(sourceDocsDir);
+        for (const file of filesToCopy) {
+          await RNFS.copyFile(file.path, `${CONSTANT.SAVED_DOCUMENTS_PATH}${file.name}`);
+        }
+      }
+
+      // 6. Clean up
+      await RNFS.unlink(tempExtractDir);
+
+      // 7. Refresh UI
+      const folders = await FolderLocalService.getActiveFolders();
+      const files = await FileLocalService.getAllFiles();
+      setData(folders);
+      setLocalFiles(files);
+
+      CustomSuccessToast('Backup restored successfully!');
     } catch (error) {
-      console.error('Error reading or saving JSON data:', error);
+      console.error('Error restoring backup:', error);
+      CustomErrorToast('Failed to restore backup. The file might be invalid or corrupted.');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
+  const handleImportBackup = async () => {
+    try {
+      const res = await Utility.images.DocumentPicker({
+        isMultipleSelection: false,
+        fileTypes: [types.zip],
+      });
 
-
-
-  }
-
+      if (res && res.length > 0) {
+        setIsShowImportConfirmation(true);
+        setBackupFileToImport(res[0].uri);
+      }
+    } catch (error) {
+      console.error('Error during backup import:', error);
+      CustomErrorToast('Failed to import backup.');
+    }
+  };
 
   const openFile = async () => {
     console.log('open file===');
@@ -2313,9 +2399,26 @@ const renderTags = () => {
               </View>
               :
               !user ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-               
-                {<CustomGoogleBtn onPress={handleLogin} isLoading={isLoading}/>}
+                <View style={styles.backupContainer}>
+                  {data.length > 0 ? (
+                    <>
+                      <Text style={styles.backupInfoText}>
+                        Create a local backup of your documents. This does not require a Google account.
+                      </Text>
+                      <TouchableOpacity style={styles.backupButton} onPress={createBackup}>
+                        <MaterialCommunityIcons name="cloud-upload-outline" size={22} color={theme.themeColor} />
+                        <Text style={styles.backupButtonText}>Create Backup</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file.</Text>
+                      <TouchableOpacity style={styles.backupButton} onPress={handleImportBackup}>
+                        <MaterialCommunityIcons name="cloud-download-outline" size={22} color={theme.themeColor} />
+                        <Text style={styles.backupButtonText}>Import Backup</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               ) : (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaledSize(20) }}>
@@ -2402,7 +2505,7 @@ const renderTags = () => {
 
         </View>
       </Overlay>
-      <CustomSpinner isLoading={isLoading} />
+      {/* <CustomSpinner isLoading={isLoading} /> */}
 
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
         ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
@@ -3211,5 +3314,37 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontWeight: '500',
     fontFamily: Fonts.regular,
     letterSpacing: 0.5,
+  },
+  backupContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    gap: 16
+  },
+  backupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: scaledSize(52),
+    width: '100%',
+    backgroundColor: theme.buttonBGColor,
+    borderRadius: scaledSize(16),
+    borderWidth: 1,
+    borderColor: theme.borderColor,
+  },
+  backupButtonText: {
+    color: theme.primaryTextColor,
+    fontSize: scaledSize(15),
+    fontWeight: '500',
+    marginLeft: scaledSize(12),
+  },
+  backupInfoText: {
+    color: theme.secondaryTextColor,
+    fontSize: scaledSize(13),
+    textAlign: 'center',
+    lineHeight: scaledSize(20),
+    marginBottom: scaledSize(12),
+    paddingHorizontal: scaledSize(10),
   },
 });
