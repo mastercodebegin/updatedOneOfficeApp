@@ -10,6 +10,7 @@ import CustomSpinner from './CustomSpinner';
 
 interface CustomProgressBarProps {
     progress: number;
+    title?: string;
     filesFound?: number;
     foundFiles?: { name: string }[];
     onRescan?: () => void;
@@ -20,7 +21,8 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
     const isComplete = props.progress === 100;
-    const { onRescan, onContinue, progress, filesFound, foundFiles } = props;
+    const { onRescan, onContinue, progress, filesFound, foundFiles, title } = props;
+    const isBackup = title?.includes('Backup');
 
     const getFileIcon = (fileName: string) => {
         const extension = fileName.split('.').pop()?.toLowerCase();
@@ -53,12 +55,12 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
         <View style={[styles.box, isComplete && styles.glow]}>
             <View style={styles.progressContent}>
                 <View style={styles.headerSection}>
-                    <MaterialCommunityIcons name="file-search-outline" size={scaledSize(28)} color="#A1A1AA" />
-                    <Text style={styles.progressTitle}>Scanning Files...</Text>
+                    <MaterialCommunityIcons name={title?.includes('Backup') ? "cloud-upload-outline" : "file-search-outline"} size={scaledSize(28)} color={theme.primaryTextColor} />
+                    <Text style={styles.progressTitle}>{title || 'Scanning Files...'}</Text>
                 </View>
 
                 <View style={styles.divider} />
-
+                {foundFiles && foundFiles.length > 0 && // Only show files section if there are files
                 <View style={styles.filesSection}>
                     <Text style={styles.filesFoundText}>{`${filesFound || 0} files found`}</Text>
 
@@ -70,15 +72,15 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                         contentContainerStyle={{ paddingBottom: 4 }}
                         ListEmptyComponent={
                             <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                            <ActivityIndicator size="small" color={theme.themeColor} />
+                                <ActivityIndicator size="small" color={theme.themeColor} />
                                 </View>
                         }
                     />
-                </View>
+                </View>}
 
                 <View style={styles.progressSection}>
                     <Progress.Bar
-                        indeterminate={foundFiles?.length == 0 ? true : false}
+                        indeterminate={!isComplete && (progress === 0 || !foundFiles)}
                         progress={(progress || 0) / 100}
                         width={scaledSize(220)}
                         height={10}
@@ -92,11 +94,11 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                     <Text style={styles.progressPercentage}>{`${progress || 0}% complete`}</Text>
                 </View>
 
-                {isComplete && (
+                {isComplete && onContinue && onRescan && (
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity style={styles.secondaryButton} onPress={onRescan}>
-                            <MaterialCommunityIcons name="refresh" size={scaledSize(18)} color="#A1A1AA" />
-                            <Text style={styles.secondaryButtonText}>Rescan</Text>
+                            <MaterialCommunityIcons name={isBackup ? "close" : "refresh"} size={scaledSize(isBackup ? 20 : 18)} color="#A1A1AA" />
+                            <Text style={styles.secondaryButtonText}>{isBackup ? "Close" : "Rescan"}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.primaryButton}
@@ -104,7 +106,7 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                             activeOpacity={0.85}
                         >
                             <Text style={styles.primaryButtonText}>Continue</Text>
-                            <MaterialCommunityIcons name="arrow-right" size={scaledSize(20)} color="#34C759" />
+                            <MaterialCommunityIcons name="arrow-right" size={scaledSize(20)} color={theme.themeColor} />
                         </TouchableOpacity>
                     </View>
                 )}
@@ -238,7 +240,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         justifyContent: 'center',
         height: scaledSize(48),
         borderWidth: 1.5,
-        borderColor: theme.borderColor,
+        borderColor: theme.themeColor,
         borderRadius: scaledSize(14),
         marginLeft: scaledSize(8),
     },

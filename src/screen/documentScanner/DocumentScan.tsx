@@ -66,6 +66,7 @@ import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomUpdateFolderTagModal from '../../component/CustomUpdateFolderTagModal';
 import CustomGoogleBtn from '../../component/CustomGoogleBtn';
 import AntDesign from 'react-native-vector-icons/AntDesign'
+import CustomProgressBar from '../../component/CustomProgressBar';
 // import { getAuth } from '@react-native-firebase/auth';
 
 
@@ -106,6 +107,9 @@ export const DocumentScan = () => {
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isShowSortModal, setIsShowSortModal] = useState(false)
+  const [backupProgressPercentage, setBackupProgressPercentage] = useState(0);
+  const [backupFilesProcessedCount, setBackupFilesProcessedCount] = useState(0);
+  const [backupFilesProcessedList, setBackupFilesProcessedList] = useState<any[]>([]);
   const [isShowImportConfirmation, setIsShowImportConfirmation] = useState(false);
   const [backupFileToImport, setBackupFileToImport] = useState<string | null>(null);
   const [tagToRename, setTagToRename] = useState(null);
@@ -1630,85 +1634,113 @@ const renderTags = () => {
     return filteredData;
   };
 
-  const createBackup = async () => {
-    setIsLoading(true);
+const createBackup = async () => {
+  try {
     setIsBackupStarted(true);
     setIsBackupCompleted(false);
+    setBackupProgressPercentage(0);
+    setBackupFilesProcessedCount(0);
+    setBackupFilesProcessedList([]);
 
-    try {
-      // 1. Get all data from the database
-      const folders = await FolderLocalService.getAllFolders();
-      const files = await FileLocalService.getAllFiles();
-      const tags = await tagLocalService.getTags();
+    const folders = await FolderLocalService.getAllFolders();
+    const files = await FileLocalService.getAllFiles();
+    const tags = await tagLocalService.getTags();
 
-      if (files.length === 0) {
-        CustomErrorToast('No documents to backup.');
-        setIsLoading(false);
-        setIsBackupStarted(false);
-        return;
+    const backupData = {
+      folders,
+      files,
+      tags,
+      version: 1,
+    };
+
+    const totalFilesToCopy = files.length;
+    const progressPerFile =
+      totalFilesToCopy > 0 ? 70 / totalFilesToCopy : 0;
+
+    let currentProgress = 0;
+
+    setBackupProgressPercentage(5);
+
+    const tempBackupDir = `${RNFS.CachesDirectoryPath}/backup_${Date.now()}`;
+    await RNFS.mkdir(tempBackupDir);
+
+    setBackupProgressPercentage(10);
+
+    const metadataPath = `${tempBackupDir}/metadata.json`;
+    await RNFS.writeFile(
+      metadataPath,
+      JSON.stringify(backupData),
+      'utf8',
+    );
+
+    setBackupProgressPercentage(15);
+
+    const documentsSourceDir = CONSTANT.SAVED_DOCUMENTS_PATH;
+    const documentsDestDir = `${tempBackupDir}/documents`;
+
+    await RNFS.mkdir(documentsDestDir);
+
+    const processedFiles: any[] = [];
+
+    for (const file of files) {
+      const sourcePath = `${documentsSourceDir}${file.name}`;
+      const destPath = `${documentsDestDir}/${file.name}`;
+
+      if (await RNFS.exists(sourcePath)) {
+        await RNFS.copyFile(sourcePath, destPath);
       }
 
-      // 2. Prepare metadata JSON
-      const backupData = {
-        folders,
-        files,
-        tags,
-        version: 1, // for future migrations
-      };
+      processedFiles.push(file);
 
-      // 3. Create a temporary directory for zipping
-      const tempBackupDir = `${RNFS.CachesDirectoryPath}/backup_${Date.now()}`;
-      await RNFS.mkdir(tempBackupDir);
+      setBackupFilesProcessedCount(processedFiles.length);
+      setBackupFilesProcessedList([...processedFiles]);
 
-      // 4. Save metadata to a file inside the temp directory
-      const metadataPath = `${tempBackupDir}/metadata.json`;
-      await RNFS.writeFile(metadataPath, JSON.stringify(backupData), 'utf8');
+      currentProgress =
+        15 + processedFiles.length * progressPerFile;
 
-      // 5. Copy all document files to a 'documents' subfolder in the temp directory
-      const documentsSourceDir = CONSTANT.SAVED_DOCUMENTS_PATH;
-      const documentsDestDir = `${tempBackupDir}/documents`;
-      await RNFS.mkdir(documentsDestDir);
-
-      for (const file of files) {
-        const sourcePath = `${documentsSourceDir}${file.name}`;
-        const destPath = `${documentsDestDir}/${file.name}`;
-        if (await RNFS.exists(sourcePath)) {
-          await RNFS.copyFile(sourcePath, destPath);
-        }
-      }
-
-      // 6. Zip the temporary directory
-      const backupFileName = `OneOffice_Backup_${Utility.date.getDateByMomentFormat(new Date(), 'YYYYMMDD_HHmm')}.zip`;
-      const finalZipPath = `${RNFS.DownloadDirectoryPath}/${backupFileName}`;
-
-      // Ensure Download directory exists
-      await RNFS.mkdir(RNFS.DownloadDirectoryPath);
-
-      // Delete old backup if it exists
-      if (await RNFS.exists(finalZipPath)) {
-        await RNFS.unlink(finalZipPath);
-      }
-
-      await zip(tempBackupDir, finalZipPath);
-
-      // 7. Clean up temporary directory
-      await RNFS.unlink(tempBackupDir);
-
-      setIsBackupCompleted(true);
-      CustomSuccessToast(`Backup created: ${backupFileName}`);
-
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      CustomErrorToast('Backup failed. Please try again.');
-    } finally {
-      // Use a timeout to show the completion animation
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsBackupStarted(false);
-        setIsBackupCompleted(true)
-      }, 3000);
+      setBackupProgressPercentage(
+        Math.min(currentProgress, 85),
+      );
     }
-  };
+
+    const backupFileName =
+      `OneOffice_Backup_${Utility.date.getDateByMomentFormat(
+        new Date(),
+        'YYYYMMDD_HHmm',
+      )}.zip`;
+
+    const finalZipPath =
+      `${RNFS.DownloadDirectoryPath}/${backupFileName}`;
+
+    await RNFS.mkdir(RNFS.DownloadDirectoryPath);
+
+    if (await RNFS.exists(finalZipPath)) {
+      await RNFS.unlink(finalZipPath);
+    }
+
+    setBackupProgressPercentage(90);
+
+    await zip(tempBackupDir, finalZipPath);
+
+    setBackupProgressPercentage(95);
+
+    await RNFS.unlink(tempBackupDir);
+
+    setBackupProgressPercentage(100);
+
+    setIsBackupCompleted(true);
+
+    CustomSuccessToast(`Backup created: ${backupFileName}`);
+  } catch (error) {
+    console.error('Error creating backup:', error);
+
+    CustomErrorToast('Backup failed. Please try again.');
+
+    setTimeout(() => {
+      setIsBackupStarted(false);
+    }, 3000);
+  }
+};
 
   const importBackup = async (zipFileUri: string) => {
     if (!zipFileUri) return;
@@ -2450,7 +2482,7 @@ const renderTags = () => {
       </View>
 
       {renderFolderNameModal()}
-      <Overlay isVisible={isBackupStarted} >
+      {/* <Overlay isVisible={isBackupStarted} >
         <View style={{ height: 300, justifyContent: 'center', alignItems: 'center' }}>
           <View style={{
             height: scaledSize(300), width: '100%',
@@ -2474,6 +2506,12 @@ const renderTags = () => {
                     source={animation_completed}
                     autoPlay loop >
                   </LottieView>
+                  <Text style={{
+                    fontSize: scaledSize(16), color: 'white', fontFamily: Fonts.bold, letterSpacing: .8,
+                    textAlign: 'center', bottom: scaledSize(10)
+                  }}>
+                    Backup Successful!
+                  </Text>
                 </View>
 
               </View>
@@ -2504,7 +2542,7 @@ const renderTags = () => {
           </View>
 
         </View>
-      </Overlay>
+      </Overlay> */}
       {/* <CustomSpinner isLoading={isLoading} /> */}
 
       <CustomBottomSheet title='Option' headerColor='#f5f5f5'
@@ -2569,6 +2607,20 @@ const renderTags = () => {
       <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
         onCancel={() => setIsFolderDeleteConfirmation(false)}
         onSubmit={() => deleteTagHandler()} />
+
+      <Modal visible={isBackupStarted} transparent animationType="fade">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <CustomProgressBar
+            progress={backupProgressPercentage}
+            title={isBackupCompleted ? "Backup Successful!" : "Creating Backup..."}
+            filesFound={[]}
+            foundFiles={[]}
+            onContinue={()=>setIsBackupStarted(false)}
+            onRescan={()=>setIsBackupStarted(false)}
+          />
+        </View>
+      </Modal>
+
     </SafeAreaView>
   )
 }
