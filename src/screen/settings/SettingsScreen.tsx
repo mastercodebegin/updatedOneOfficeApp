@@ -11,6 +11,7 @@ import { asyncStorageKeyName } from '../../utilies/Constants';
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import CustomHeader from '../../component/CustomHeader';
 import CustomSpinner from '../../component/CustomSpinner';
+import CustomVectorIcon from '../../component/CustomVectorIcon';
 
 const SettingsScreen = () => {
 
@@ -86,13 +87,17 @@ console.log('savedTheme', savedTheme);
           <MaterialCommunityIcons name="chevron-right" size={scaledSize(24)} color={theme.secondaryTextColor} />
         </TouchableOpacity>
 
-        {/* <TouchableOpacity style={styles.settingRow} onPress={handleSupportEmail}>
+        <TouchableOpacity style={styles.settingRow} onPress={()=>Utility.shareApp()}>
           <View style={styles.settingInfo}>
-            <MaterialCommunityIcons name="email-outline" size={scaledSize(22)} color={theme.secondaryTextColor} style={styles.settingIcon} />
-            <Text style={styles.settingLabel}>Support</Text>
+            <CustomVectorIcon iconName="share" 
+            size={scaledSize(22)} iconLibrary='Feather'
+            style={styles.settingIcon} 
+            onPress={()=>Utility.shareApp()}
+            />
+            <Text style={styles.settingLabel}>Share</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={scaledSize(24)} color={theme.secondaryTextColor} />
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
@@ -169,6 +174,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   settingIcon: {
     marginRight: scaledSize(16),
+    color: theme.secondaryTextColor,
   },
   settingLabel: {
     fontSize: scaledSize(16),

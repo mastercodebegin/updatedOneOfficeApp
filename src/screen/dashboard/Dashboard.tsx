@@ -770,12 +770,7 @@ function Dashboard({ navigation, route }) {
     />
   );
 
-  const shareApp = () => {
-    Platform.OS == 'android' ?
-      Share.open({ url: AppShare.ANDROID_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', }) :
-      Share.open({ url: AppShare.IOS_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', })
 
-  }
 
   const onPressMultiPdfViewer = () => {
     if (response.selectedFiles.length < 2) {
@@ -859,7 +854,7 @@ function Dashboard({ navigation, route }) {
             color={theme.themeColor} />
         </TouchableOpacity>
 
-        <CustomMenu
+        {/* <CustomMenu
           Icon={<Feather name="more-vertical" size={scaledSize(22)} color={theme.iconColor} />}
           menuOptionstyle={{
             padding: scaledSize(13),
@@ -870,7 +865,7 @@ function Dashboard({ navigation, route }) {
             { onSelect: () => shareApp(), label: 'Share' },
             { onSelect: () => navigation.navigate('contactus'), label: 'Contact us' },
           ]}
-        />
+        /> */}
 
       </View>
     )

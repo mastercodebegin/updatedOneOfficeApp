@@ -432,7 +432,8 @@ export const getConvertedPdfFileFromPhoneStorage = async () => {
 //     console.log('error-----', e);
 //   }
 // }
-const shareApp = () => {
+
+ const shareApp = () => {
   Platform.OS == 'android' ?
     Share.open({ url: AppShare.ANDROID_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', }) :
     Share.open({ url: AppShare.IOS_SHARE_LINK, message: 'Give a shot to pdfViewer and converter', })
