@@ -110,6 +110,7 @@ export const DocumentScan = () => {
   const [backupProgressPercentage, setBackupProgressPercentage] = useState(0);
   const [backupFilesProcessedCount, setBackupFilesProcessedCount] = useState(0);
   const [backupFilesProcessedList, setBackupFilesProcessedList] = useState<any[]>([]);
+  const [isShowCreateBackupConfirmation, setIsShowCreateBackupConfirmation] = useState(false);
   const [isShowImportConfirmation, setIsShowImportConfirmation] = useState(false);
   const [backupFileToImport, setBackupFileToImport] = useState<string | null>(null);
   const [tagToRename, setTagToRename] = useState(null);
@@ -189,9 +190,9 @@ export const DocumentScan = () => {
   useEffect(() => {
     // console.log('ThemeSlice', theme);
     // console.log('mode', mode);
-   const user = getLocalData(asyncStorageKeyName.USER_DETAILS)
-   console.log('user',user);
-   
+    const user = getLocalData(asyncStorageKeyName.USER_DETAILS)
+    console.log('user', user);
+
   })
 
 
@@ -673,28 +674,7 @@ export const DocumentScan = () => {
     }
 
   }
-  const deleteMultipleFolder = async () => {
-    console.log('folder------', selectedFoldersId);
-    const updatedData = [...data];
-    updatedData.forEach((item, index) => {
-      if (selectedFoldersId.some(selectedItem => selectedItem.id === item.id)) {
-        updatedData.splice(index, 1);
-      }
-    });
 
-    setData(updatedData)
-    await AsyncStorage.setItem(asyncStorageKeyName.DOCUMENTS, JSON.stringify(updatedData))
-    setSelectedFoldersId([])
-    try {
-      for (const filePath of selectedFoldersId) {
-        // deleteFile(filePath)
-      }
-      console.log('Files deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting files:', error);
-    }
-    setMultidelete(false)
-  }
 
   const generateAndSharePdfs = async (selectedFolders: any) => {
 
@@ -755,44 +735,45 @@ export const DocumentScan = () => {
     }
   };
 
-  const deleteSingleFolder = async (obj: any) => {
+  const deleteFolder = async () => {
     try {
-      console.log('Deleting folder:', obj.id);
 
-      // 1. Get all files of this folder
-      // const files = data.photos.filter((item:any) => item.folderId === obj.id);
-      const files = await FileLocalService.getFilesByFolder(obj.id)
-      FolderLocalService.deleteFolderById(obj.id)
-      console.log('Files to delete:', files);
+      for (const folderId of selectedFoldersId) {
+        // Get files for this folder
+        const files = await FileLocalService.getFilesByFolder(folderId);
 
-      // 2. Delete files from storage
-      await Promise.all(
-        files.map(async (file: any) => {
-          const path = `${destinationPath}${file.name}`;
-          const exists = await RNFS.exists(path);
+        // Delete files from storage
+        await Promise.all(
+          files.map(async (file: any) => {
+            const path = `${destinationPath}${file.name}`;
 
-          if (exists) {
-            await RNFS.unlink(path);
-          }
-        })
-      );
+            if (await RNFS.exists(path)) {
+              await RNFS.unlink(path);
+            }
+          }),
+        );
 
-      // 3. Delete files from DB
-      const updatedData = await FolderLocalService.getActiveFolders()
+        // Delete files from DB if required
+        await FileLocalService.deleteFilesByFolderId(folderId);
 
+        // Delete folder from DB
+        await FolderLocalService.deleteFolderById(folderId);
+      }
+
+      // Refresh folders list
+      const updatedData = await FolderLocalService.getActiveFolders();
       setData(updatedData);
-
-
 
       // Reset UI states
       setSelectedFoldersId([]);
-      setMultidelete(false);
+      setIsFolderDeleteConfirmation(false);
 
-      console.log('✅ Folder deleted successfully');
+      console.log('✅ Folders deleted successfully');
     } catch (error) {
-      console.log('❌ Error deleting folder:', error);
+      console.log('❌ Error deleting folders:', error);
     }
   };
+
 
   const deleteFilesFromFolder = async (photos: Array<any>) => {
     console.log('photos===', photos);
@@ -809,13 +790,11 @@ export const DocumentScan = () => {
     // }
   };
 
-  const deleteFoldersConfirmationForMultipleItem = () => {
-    ConfirmPopup(() => deleteMultipleFolder());
-  };
-  const deleteFoldersConfirmationForSingleItem = (item: any) => {
+
+  const deleteFoldersConfirmation = (item: any) => {
     setSelectedFolder(item)
+    setSelectedFoldersId([item.id])
     setIsFolderDeleteConfirmation(true)
-    //  deleteSingleFolder(item)
   };
   const onPressSelectAll = () => {
     if (selectedFoldersId.length == data.length) {
@@ -903,189 +882,193 @@ export const DocumentScan = () => {
       setSelectedTags(arr => [...arr, tag])
     }
   }
-const getTagIcon = (tagName: string) => {
-  switch (tagName?.toLowerCase()) {
-    case 'photos':
-      return 'image';
+  const getTagIcon = (tagName: string) => {
+    switch (tagName?.toLowerCase()) {
+      case 'photos':
+        return 'image';
 
-    case 'others':
-      return 'folder';
+      case 'others':
+        return 'folder';
 
-    case 'documents':
-      return 'description';
+      case 'documents':
+        return 'description';
 
-    case 'videos':
-      return 'videocam';
+      case 'videos':
+        return 'videocam';
 
-    case 'music':
-      return 'music-note';
+      case 'music':
+        return 'music-note';
 
-    default:
-      return 'label';
-  }
-};
+      default:
+        return 'label';
+    }
+  };
 
-const renderTags = () => {
-  return (
-    <View style={styles.tagsWrapper}>
+  const renderTags = () => {
 
-      {/* LEFT ICON */}
+    return (
+      <View style={styles.tagsWrapper}>
 
-      <TouchableOpacity
-        disabled={selectedTags.length === 0}
-        onPress={() => {
-          if (selectedTags.length > 0) {
-            setSelectedTags([]);
+        {/* LEFT ICON */}
+
+        <TouchableOpacity
+          disabled={selectedTags.length === 0}
+          onPress={() => {
+            if (selectedTags.length > 0) {
+              setSelectedTags([]);
+            }
+          }}
+          style={[
+            styles.tagIconContainer,
+            {
+              backgroundColor: theme.bgContainor,
+              // borderColor: selectedTags.length > 0 ? theme.deleteIconColor : theme.borderColor,
+            },
+          ]}
+        >
+          {selectedTags.length > 0 ?
+            <CustomVectorIcon iconLibrary='Fontisto'
+              iconName='close-a'
+              style={{ color: theme.primaryTextColor, fontSize: scaledSize(14) }}
+              onPress={() => setSelectedTags([])}
+            /> :
+            <CustomVectorIcon iconLibrary='MaterialIcons'
+              iconName='local-offer' style={{ color: theme.themeColor }}
+              onPress={() => setSelectedTags([])}
+            />
           }
-        }}
-        style={[
-          styles.tagIconContainer,
-          {
-            backgroundColor: theme.bgContainor,
-            // borderColor: selectedTags.length > 0 ? theme.deleteIconColor : theme.borderColor,
-          },
-        ]}
-      >
-        {selectedTags.length > 0 ?
-        <CustomVectorIcon iconLibrary='Fontisto' 
-        iconName='close-a' style={{color:theme.primaryTextColor,fontSize:scaledSize(14)}}/>:
-        <CustomVectorIcon iconLibrary='MaterialIcons' 
-        iconName='local-offer' style={{color:theme.themeColor}}
-        onPress={()=>setSelectedTags([])}
-        />
-        }
-        {/* <AntDesign
+          {/* <AntDesign
           name={selectedTags.length > 0 ? 'clear' : "local-offer"}
           size={22}
           color={selectedTags.length > 0 ? theme.deleteIconColor : theme.themeColor}
         /> */}
-      </TouchableOpacity>
+        </TouchableOpacity>
 
-      {/* TAGS */}
-<FlatList
-  horizontal
-  data={userTags}
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.scrollContent}
-  keyExtractor={item => item.id.toString()}
-  renderItem={({item}) => {
-    const isSelected = selectedTags.some(
-      tag => tag.id === item.id,
-    );
+        {/* TAGS */}
+        <FlatList
+          horizontal
+          data={userTags}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => {
+            const isSelected = selectedTags.some(
+              tag => tag.id === item.id,
+            );
 
-    return (
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => selectTagHandler(item)}
-        style={[
-          styles.tagChip,
-          {
-            backgroundColor: theme.bgContainor,
-            borderColor: isSelected
-              ? theme.themeColor
-              : theme.borderColor,
-          },
-        ]}>
-        <MaterialIcons
-          name={getTagIcon(item.name)}
-          size={18}
-          color={
-            isSelected
-              ? theme.themeColor
-              : theme.iconColor
-          }
+            return (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => selectTagHandler(item)}
+                style={[
+                  styles.tagChip,
+                  {
+                    backgroundColor: theme.bgContainor,
+                    borderColor: isSelected
+                      ? theme.themeColor
+                      : theme.borderColor,
+                  },
+                ]}>
+                <MaterialIcons
+                  name={getTagIcon(item.name)}
+                  size={18}
+                  color={
+                    isSelected
+                      ? theme.themeColor
+                      : theme.iconColor
+                  }
+                />
+
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={[
+                    styles.tagText,
+                    {
+                      color: theme.primaryTextColor,
+                    },
+                  ]}>
+                  {Utility.string.getFirstLetterCapitalize(
+                    item.name,
+                  )}
+                </Text>
+
+                <CustomMenu
+                  Icon={
+                    <MaterialIcons
+                      name="more-horiz"
+                      size={18}
+                      color={theme.secondaryTextColor}
+                      style={styles.menuIcon}
+                    />
+                  }
+                  menuOption={[
+                    {
+                      label: 'Rename',
+                      onSelect: () => {
+                        setTagToRename(item);
+                        setTagName(item.name);
+                        setIsShowRenderRenameTagModal(true);
+                      },
+                    },
+                    {
+                      label: 'Delete',
+                      onSelect: () => {
+                        setTagForDeletion(item);
+                        setIsShowDeleteTagConfirmation(
+                          true,
+                        );
+                      },
+                    },
+                  ]}
+                />
+              </TouchableOpacity>
+            );
+          }}
+          ListEmptyComponent={<Text style={{ alignSelf: 'center' }}>No Tags</Text>}
         />
 
-        <Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={[
-            styles.tagText,
-            {
-              color: theme.primaryTextColor,
-            },
-          ]}>
-          {Utility.string.getFirstLetterCapitalize(
-            item.name,
-          )}
-        </Text>
+        {/* ACTION */}
 
-        <CustomMenu
-          Icon={
-            <MaterialIcons
-              name="more-horiz"
-              size={18}
-              color={theme.secondaryTextColor}
-              style={styles.menuIcon}
-            />
-          }
-          menuOption={[
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            if (selectedTags.length > 0) {
+              setIsShowDeleteMultipleTagsConfirmation(true);
+            } else {
+              setIsTagModalVisible(true);
+            }
+          }}
+          style={[
+            styles.actionButton,
             {
-              label: 'Rename',
-              onSelect: () => {
-                setTagToRename(item);
-                setTagName(item.name);
-                setIsShowRenderRenameTagModal(true);
-              },
-            },
-            {
-              label: 'Delete',
-              onSelect: () => {
-                setTagForDeletion(item);
-                setIsShowDeleteTagConfirmation(
-                  true,
-                );
-              },
+              backgroundColor:
+                theme.bgContainor,
+
+              borderColor:
+                selectedTags.length > 0 ?
+                  theme.deleteIconColor :
+                  theme.borderColor,
             },
           ]}
-        />
-      </TouchableOpacity>
-    );
-  }}
-  ListEmptyComponent={<Text style={{alignSelf:'center'}}>No Tags</Text>}
-/>
-
-      {/* ACTION */}
-
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => {
-          if (selectedTags.length > 0) {
-            setIsShowDeleteMultipleTagsConfirmation(true);
-          } else {
-            setIsTagModalVisible(true);
-          }
-        }}
-        style={[
-          styles.actionButton,
-          {
-            backgroundColor:
-              theme.bgContainor,
-
-            borderColor:
+        >
+          <MaterialIcons
+            name={
+              selectedTags.length > 0
+                ? 'delete-outline'
+                : 'add'
+            }
+            size={22}
+            color={
               selectedTags.length > 0 ?
                 theme.deleteIconColor :
-                theme.borderColor,
-          },
-        ]}
-      >
-        <MaterialIcons
-          name={
-            selectedTags.length > 0
-              ? 'delete-outline'
-              : 'add'
-          }
-          size={22}
-          color={
-            selectedTags.length > 0 ?
-              theme.deleteIconColor :
-              theme.themeColor}
-        />
-      </TouchableOpacity>
+                theme.themeColor}
+          />
+        </TouchableOpacity>
 
-    </View>
-  );
-};
+      </View>
+    );
+  };
   const renderGradientButton = (iconName: any, color = 'white', onPress: any) => {
     return (
       <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
@@ -1113,7 +1096,7 @@ const renderTags = () => {
         {/* Top Row */}
         <View style={styles.topRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: scaledSize(10) }}>
-            
+
             <View>
               <Text style={styles.heading}>
                 My{' '}
@@ -1166,14 +1149,13 @@ const renderTags = () => {
             />
           </View>
           {renderGradientButton('filter', theme.iconColor, () => setIsShowSortModal(true))}
-          {renderGradientButton('cloud-upload-outline', theme.iconColor, createBackup)}
+          {renderGradientButton('cloud-upload-outline', theme.iconColor, () => setIsShowCreateBackupConfirmation(true))}
 
         </View>
       </SafeAreaView>
     );
   };
   const getTagByIdHandler = (id: number) => {
-    console.log('usertags===', userTags);
 
     const tag: any = userTags.find(
       (t: any) => t.id === id
@@ -1234,19 +1216,26 @@ const renderTags = () => {
           </View>
         </View>
 
-        {!isMultiDelete && (
+        {isMultiDelete && (
           <View style={styles.docActions}>
-            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => shareFile(item)}>
+            <TouchableOpacity style={styles.actionBtnSquare}
+              disabled={isMultiDelete}
+              onPress={() => shareFile(item)}>
               <Ionicons name="share-social-outline" size={scaledSize(18)} color={theme.iconColor} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => {
-              setIsFolderNameChange(true);
-              setFolderId(item.id);
-              setFolderName(item.name);
-            }}>
+            <TouchableOpacity style={styles.actionBtnSquare}
+              disabled={isMultiDelete}
+              onPress={() => {
+                setIsFolderNameChange(true);
+                setFolderId(item.id);
+                setFolderName(item.name);
+              }}>
               <Ionicons name="pencil-outline" size={scaledSize(18)} color={theme.iconColor} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtnSquare} onPress={() => deleteFoldersConfirmationForSingleItem(item)}>
+            <TouchableOpacity style={styles.actionBtnSquare}
+              disabled={isMultiDelete}
+              onPress={() => deleteFoldersConfirmation(item)}
+            >
               <Ionicons name="trash-outline" size={scaledSize(18)} color={theme.deleteIconColor} />
             </TouchableOpacity>
           </View>
@@ -1419,7 +1408,7 @@ const renderTags = () => {
 
                 <LinearGradient
                   colors={[
-                    theme.themeSecondaryColor,
+                    theme.themeColor,
                     theme.themeColor,
                   ]}
                   start={{ x: 0, y: 0 }}
@@ -1479,7 +1468,7 @@ const renderTags = () => {
               <TouchableOpacity
                 activeOpacity={0.8}
                 style={styles.cancelButton}
-                    onPress={handleCancelRename}>
+                onPress={handleCancelRename}>
 
                 <Text style={styles.cancelText}>
                   Cancel
@@ -1568,7 +1557,7 @@ const renderTags = () => {
 
                 <LinearGradient
                   colors={[
-                    theme.themeSecondaryColor,
+                    theme.themeColor,
                     theme.themeColor,
                   ]}
                   start={{ x: 0, y: 0 }}
@@ -1634,113 +1623,113 @@ const renderTags = () => {
     return filteredData;
   };
 
-const createBackup = async () => {
-  try {
-    setIsBackupStarted(true);
-    setIsBackupCompleted(false);
-    setBackupProgressPercentage(0);
-    setBackupFilesProcessedCount(0);
-    setBackupFilesProcessedList([]);
+  const createBackup = async () => {
+    try {
+      setIsBackupStarted(true);
+      setIsBackupCompleted(false);
+      setBackupProgressPercentage(0);
+      setBackupFilesProcessedCount(0);
+      setBackupFilesProcessedList([]);
 
-    const folders = await FolderLocalService.getAllFolders();
-    const files = await FileLocalService.getAllFiles();
-    const tags = await tagLocalService.getTags();
+      const folders = await FolderLocalService.getAllFolders();
+      const files = await FileLocalService.getAllFiles();
+      const tags = await tagLocalService.getTags();
 
-    const backupData = {
-      folders,
-      files,
-      tags,
-      version: 1,
-    };
+      const backupData = {
+        folders,
+        files,
+        tags,
+        version: 1,
+      };
 
-    const totalFilesToCopy = files.length;
-    const progressPerFile =
-      totalFilesToCopy > 0 ? 70 / totalFilesToCopy : 0;
+      const totalFilesToCopy = files.length;
+      const progressPerFile =
+        totalFilesToCopy > 0 ? 70 / totalFilesToCopy : 0;
 
-    let currentProgress = 0;
+      let currentProgress = 0;
 
-    setBackupProgressPercentage(5);
+      setBackupProgressPercentage(5);
 
-    const tempBackupDir = `${RNFS.CachesDirectoryPath}/backup_${Date.now()}`;
-    await RNFS.mkdir(tempBackupDir);
+      const tempBackupDir = `${RNFS.CachesDirectoryPath}/backup_${Date.now()}`;
+      await RNFS.mkdir(tempBackupDir);
 
-    setBackupProgressPercentage(10);
+      setBackupProgressPercentage(10);
 
-    const metadataPath = `${tempBackupDir}/metadata.json`;
-    await RNFS.writeFile(
-      metadataPath,
-      JSON.stringify(backupData),
-      'utf8',
-    );
+      const metadataPath = `${tempBackupDir}/metadata.json`;
+      await RNFS.writeFile(
+        metadataPath,
+        JSON.stringify(backupData),
+        'utf8',
+      );
 
-    setBackupProgressPercentage(15);
+      setBackupProgressPercentage(15);
 
-    const documentsSourceDir = CONSTANT.SAVED_DOCUMENTS_PATH;
-    const documentsDestDir = `${tempBackupDir}/documents`;
+      const documentsSourceDir = CONSTANT.SAVED_DOCUMENTS_PATH;
+      const documentsDestDir = `${tempBackupDir}/documents`;
 
-    await RNFS.mkdir(documentsDestDir);
+      await RNFS.mkdir(documentsDestDir);
 
-    const processedFiles: any[] = [];
+      const processedFiles: any[] = [];
 
-    for (const file of files) {
-      const sourcePath = `${documentsSourceDir}${file.name}`;
-      const destPath = `${documentsDestDir}/${file.name}`;
+      for (const file of files) {
+        const sourcePath = `${documentsSourceDir}${file.name}`;
+        const destPath = `${documentsDestDir}/${file.name}`;
 
-      if (await RNFS.exists(sourcePath)) {
-        await RNFS.copyFile(sourcePath, destPath);
+        if (await RNFS.exists(sourcePath)) {
+          await RNFS.copyFile(sourcePath, destPath);
+        }
+
+        processedFiles.push(file);
+
+        setBackupFilesProcessedCount(processedFiles.length);
+        setBackupFilesProcessedList([...processedFiles]);
+
+        currentProgress =
+          15 + processedFiles.length * progressPerFile;
+
+        setBackupProgressPercentage(
+          Math.min(currentProgress, 85),
+        );
       }
 
-      processedFiles.push(file);
+      const backupFileName =
+        `OneOffice_Backup_${Utility.date.getDateByMomentFormat(
+          new Date(),
+          'YYYYMMDD_HHmm',
+        )}.zip`;
 
-      setBackupFilesProcessedCount(processedFiles.length);
-      setBackupFilesProcessedList([...processedFiles]);
+      const finalZipPath =
+        `${RNFS.DownloadDirectoryPath}/${backupFileName}`;
 
-      currentProgress =
-        15 + processedFiles.length * progressPerFile;
+      await RNFS.mkdir(RNFS.DownloadDirectoryPath);
 
-      setBackupProgressPercentage(
-        Math.min(currentProgress, 85),
-      );
+      if (await RNFS.exists(finalZipPath)) {
+        await RNFS.unlink(finalZipPath);
+      }
+
+      setBackupProgressPercentage(90);
+
+      await zip(tempBackupDir, finalZipPath);
+
+      setBackupProgressPercentage(95);
+
+      await RNFS.unlink(tempBackupDir);
+
+      setBackupProgressPercentage(100);
+
+      setIsBackupCompleted(true);
+
+      CustomSuccessToast(`Backup created: ${backupFileName}`);
+    } catch (error) {
+      console.error('Error creating backup:', error);
+
+      CustomErrorToast('Backup failed. Please try again.');
+
+      setTimeout(() => {
+        setIsBackupStarted(false);
+      }, 3000);
     }
-
-    const backupFileName =
-      `OneOffice_Backup_${Utility.date.getDateByMomentFormat(
-        new Date(),
-        'YYYYMMDD_HHmm',
-      )}.zip`;
-
-    const finalZipPath =
-      `${RNFS.DownloadDirectoryPath}/${backupFileName}`;
-
-    await RNFS.mkdir(RNFS.DownloadDirectoryPath);
-
-    if (await RNFS.exists(finalZipPath)) {
-      await RNFS.unlink(finalZipPath);
-    }
-
-    setBackupProgressPercentage(90);
-
-    await zip(tempBackupDir, finalZipPath);
-
-    setBackupProgressPercentage(95);
-
-    await RNFS.unlink(tempBackupDir);
-
-    setBackupProgressPercentage(100);
-
-    setIsBackupCompleted(true);
-
-    CustomSuccessToast(`Backup created: ${backupFileName}`);
-  } catch (error) {
-    console.error('Error creating backup:', error);
-
-    CustomErrorToast('Backup failed. Please try again.');
-
-    setTimeout(() => {
-      setIsBackupStarted(false);
-    }, 3000);
-  }
-};
+  };
 
   const importBackup = async (zipFileUri: string) => {
     if (!zipFileUri) return;
@@ -1945,193 +1934,6 @@ const createBackup = async () => {
 
 
 
-  // const renderFolderNameModal = () => {
-  //   const tags = [
-  //     'Work',
-  //     'Personal',
-  //     'Important',
-  //     'Study',
-  //   ];
-
-  //   return (
-  //     <Overlay
-  //       isVisible={isShowFolderNameModal}
-  //       onBackdropPress={() =>
-  //         setIsShowFolderNameModal(false)
-  //       }
-  //       overlayStyle={{
-  //         backgroundColor: 'transparent',
-  //         padding: 0,
-  //         elevation: 0,
-  //       }}
-  //     >
-  //       <View
-  //         style={{
-  //           width: scaledSize(330),
-  //           backgroundColor: '#111216',
-  //           borderRadius: scaledSize(30),
-  //           padding: scaledSize(24),
-  //         }}
-  //       >
-  //         {/* Header */}
-
-  //         <View
-  //           style={{
-  //             flexDirection: 'row',
-  //             justifyContent:
-  //               'space-between',
-  //             alignItems: 'center',
-  //           }}
-  //         >
-  //           <Text
-  //             style={{
-  //               color: 'white',
-  //               fontSize: scaledSize(26),
-  //               fontFamily:
-  //                 FONTS.QuicksandBold,
-  //             }}
-  //           >
-  //             Create Folder
-  //           </Text>
-
-  //           <TouchableOpacity
-  //             onPress={() =>
-  //               setIsShowFolderNameModal(
-  //                 false
-  //               )
-  //             }
-  //           >
-  //             <MaterialIcons
-  //               name="close"
-  //               color="#8F9196"
-  //               size={30}
-  //             />
-  //           </TouchableOpacity>
-  //         </View>
-
-  //         {/* Input */}
-
-  //         <View
-  //           style={{
-  //             marginTop: scaledSize(28),
-  //             backgroundColor:
-  //               '#1C1D22',
-  //             borderRadius:
-  //               scaledSize(18),
-  //             paddingHorizontal:
-  //               scaledSize(18),
-  //           }}
-  //         >
-  //           <CustomInputBox
-  //             value={folderName}
-  //             onChangeText={
-  //               setFolderName
-  //             }
-  //             placeholder="Folder name"
-  //             placeholderTextColor="#666"
-  //             inputStyle={{
-  //               color: 'white',
-  //             }}
-  //           />
-  //         </View>
-
-  //         {/* Tags */}
-
-  //         <Text
-  //           style={{
-  //             color: '#A2A2A2',
-  //             marginTop:
-  //               scaledSize(24),
-  //             marginBottom:
-  //               scaledSize(14),
-  //             fontSize:
-  //               scaledSize(15),
-  //           }}
-  //         >
-  //           Choose Tag
-  //         </Text>
-
-  //         <View
-  //           style={{
-  //             flexDirection: 'row',
-  //             flexWrap: 'wrap',
-  //             gap: scaledSize(12),
-  //           }}
-  //         >
-  //           {tags.map(item => (
-  //             <TouchableOpacity
-  //               key={item}
-  //               onPress={() =>
-  //                 setSelectedTag(
-  //                   item
-  //                 )
-  //               }
-  //               style={{
-  //                 paddingHorizontal:
-  //                   scaledSize(18),
-  //                 paddingVertical:
-  //                   scaledSize(12),
-
-  //                 borderRadius:
-  //                   scaledSize(999),
-
-  //                 backgroundColor:
-  //                   selectedTag ===
-  //                   item
-  //                     ? COLORS.THEME_COLOR
-  //                     : '#1D1F24',
-  //               }}
-  //             >
-  //               <Text
-  //                 style={{
-  //                   color:
-  //                     selectedTag ===
-  //                     item
-  //                       ? '#fff'
-  //                       : '#CFCFCF',
-  //                   fontSize:
-  //                     scaledSize(
-  //                       14
-  //                     ),
-  //                 }}
-  //               >
-  //                 {item}
-  //               </Text>
-  //             </TouchableOpacity>
-  //           ))}
-  //         </View>
-
-  //         {/* Save */}
-
-  //         <CustomeButton
-  //           name="Create"
-  //           onPress={() =>
-  //             copyFilesToDirectory()
-  //           }
-  //           buttonStyle={{
-  //             marginTop:
-  //               scaledSize(28),
-  //             height:
-  //               scaledSize(56),
-  //             borderRadius:
-  //               scaledSize(18),
-  //             backgroundColor:
-  //               COLORS.THEME_COLOR,
-  //           }}
-  //           textStyle={{
-  //             fontSize:
-  //               scaledSize(18),
-  //             color: 'white',
-  //             fontFamily:
-  //               FONTS.QuicksandBold,
-  //           }}
-  //         />
-  //       </View>
-  //     </Overlay>
-  //   );
-  // };
-
-
   const renderFolderNameModal = () => {
     return (
       <Modal
@@ -2202,8 +2004,7 @@ const createBackup = async () => {
                 Select Tag
               </Text>
               <View style={{ marginTop: scaledSize(4) }}>
-
-                {/* {renderTagBtn({ fontSize: scaledSize(12) })} */}
+                {renderTagBtn({ fontSize: scaledSize(12) })}
               </View>
             </View>
 
@@ -2256,37 +2057,7 @@ const createBackup = async () => {
                 </TouchableOpacity>
               ))}
 
-              {/* <TouchableOpacity
-              onPress={() =>
-                setIsTagModalVisible(
-                  true
-                )
-              }
-              style={{
-                paddingHorizontal:
-                  scaledSize(10),
 
-                paddingVertical:
-                  scaledSize(8),
-
-                borderRadius:
-                  scaledSize(999),
-
-
-              }}
-            >
-              <Text
-                style={{
-                  color:
-                    theme.themeColor,
-                }}
-              >
-                + Add
-              </Text>
-            </TouchableOpacity> */}
-              {/* <View style={{position:'absolute',bottom:scaledSize(40),right:scaledSize(1)}}>
-            {renderTagBtn()}
-            </View> */}
             </View>
 
             {/* Buttons */}
@@ -2344,7 +2115,7 @@ const createBackup = async () => {
                 <LinearGradient
                   colors={[
                     theme
-                      .themeSecondaryColor,
+                      .themeColor,
                     theme.themeColor,
                   ]}
                   start={{
@@ -2396,7 +2167,7 @@ const createBackup = async () => {
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      {renderTags()}
+      {/* {renderTags()} */}
       <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
         {/* {renderTagBtn()} */}
       </View>
@@ -2404,7 +2175,7 @@ const createBackup = async () => {
         height: scaledSize(40), width: scaledSize(100), position: 'absolute',
         top: scaledSize(150), left: scaledSize(10)
       }}>
-        
+
       </View>
 
 
@@ -2432,23 +2203,18 @@ const createBackup = async () => {
               :
               !user ? (
                 <View style={styles.backupContainer}>
-                  {data.length > 0 ? (
-                    <>
-                      <Text style={styles.backupInfoText}>
-                        Create a local backup of your documents. This does not require a Google account.
-                      </Text>
-                      <TouchableOpacity style={styles.backupButton} onPress={createBackup}>
-                        <MaterialCommunityIcons name="cloud-upload-outline" size={22} color={theme.themeColor} />
-                        <Text style={styles.backupButtonText}>Create Backup</Text>
-                      </TouchableOpacity>
-                    </>
-                  ) : (
+                  {data.length > 0 && selectedTags.length == 0 ? (
                     <>
                       <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file.</Text>
                       <TouchableOpacity style={styles.backupButton} onPress={handleImportBackup}>
                         <MaterialCommunityIcons name="cloud-download-outline" size={22} color={theme.themeColor} />
                         <Text style={styles.backupButtonText}>Import Backup</Text>
                       </TouchableOpacity>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.backupInfoText}>No documents found. You can select other tags.</Text>
+
                     </>
                   )}
                 </View>
@@ -2606,17 +2372,23 @@ const createBackup = async () => {
       />
       <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
         onCancel={() => setIsFolderDeleteConfirmation(false)}
-        onSubmit={() => deleteTagHandler()} />
+        onSubmit={() => deleteFolder()} />
+      <ConfirmationDialog
+        visible={isShowCreateBackupConfirmation}
+        message="Creating a new backup may overwrite a previous one in your Downloads folder. Do you want to continue?"
+        onCancel={() => setIsShowCreateBackupConfirmation(false)}
+        onSubmit={() => { createBackup(); setIsShowCreateBackupConfirmation(false); }}
+      />
 
       <Modal visible={isBackupStarted} transparent animationType="fade">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
           <CustomProgressBar
             progress={backupProgressPercentage}
             title={isBackupCompleted ? "Backup Successful!" : "Creating Backup..."}
-            filesFound={[]}
-            foundFiles={[]}
-            onContinue={()=>setIsBackupStarted(false)}
-            onRescan={()=>setIsBackupStarted(false)}
+            filesFound={backupFilesProcessedCount}
+            foundFiles={backupFilesProcessedList}
+            onContinue={() => setIsBackupStarted(false)}
+            onRescan={() => setIsBackupStarted(false)}
           />
         </View>
       </Modal>
@@ -2949,15 +2721,15 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   //   backgroundColor: '#FFFFFF',
   // },
 
-  // addTagText: {
-  //   marginLeft: 8,
+  addTagText: {
+    marginLeft: 8,
 
-  //   fontSize: 16,
+    fontSize: 16,
 
-  //   fontWeight: '700',
+    fontWeight: '700',
 
-  //   color: theme.themeColor,
-  // },
+    color: theme.themeColor,
+  },
 
   // ********************* Rename Modal ***********************
   modalOverlay: {
@@ -3081,23 +2853,23 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
 
   // ************* tag btn ****************
-  // addTagButton: {
-  //   height: scaledSize(40),
-  //   paddingHorizontal: scaledSize(14),
+  addTagButton: {
+    height: scaledSize(40),
+    paddingHorizontal: scaledSize(14),
 
-  //   borderRadius: scaledSize(12),
-
-
-  //   borderColor: theme.themeColor,
-
-  //   flexDirection: 'row',
-
-  //   alignItems: 'center',
-
-  //   justifyContent: 'center',
+    borderRadius: scaledSize(12),
 
 
-  // },
+    borderColor: theme.themeColor,
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
+
+
+  },
   // ******************* Sort Modal ******************
 
 

@@ -60,7 +60,7 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                 </View>
 
                 <View style={styles.divider} />
-                {foundFiles && foundFiles.length > 0 && // Only show files section if there are files
+                {foundFiles && // Only show files section if the prop is provided
                 <View style={styles.filesSection}>
                     <Text style={styles.filesFoundText}>{`${filesFound || 0} files found`}</Text>
 
@@ -72,7 +72,7 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                         contentContainerStyle={{ paddingBottom: 4 }}
                         ListEmptyComponent={
                             <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                                <ActivityIndicator size="small" color={theme.themeColor} />
+                                {/* <ActivityIndicator size="small" color={theme.themeColor} /> */}
                                 </View>
                         }
                     />

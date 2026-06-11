@@ -304,6 +304,19 @@ return {success: true};
     );
   },
 
+  async deleteFilesByFolderId(folderId: number) {
+  const db = await getDB();
+
+  await db.executeSql(
+    `UPDATE files
+     SET isDeleted = 1,
+         isSynced = 0,
+         updatedAt = ?
+     WHERE folderId = ?`,
+    [Date.now(), folderId]
+  );
+},
+
   // 📂 FILES BY LOCAL FOLDER
   async getFilesByFolder(folderId: number) {
     const db = await getDB();
