@@ -188,10 +188,23 @@ const getTagByName = async (name: string) => {
     return null;
   }
 }
+const resetTagsTable=async()=> {
+  const db = await getDB();
+
+  await db.executeSql('DELETE FROM tags');
+
+  // Reset AUTOINCREMENT
+  await db.executeSql(
+    `DELETE FROM sqlite_sequence WHERE name = 'tags'`
+  );
+
+  console.log('🧹 tags table reset');
+}
 export const tagLocalService = {
   getTags,
   addTag,
   updateTag,
     getTagById,
-    getTagByName
+    getTagByName,
+    resetTagsTable
 }

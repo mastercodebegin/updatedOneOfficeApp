@@ -464,14 +464,14 @@ export const DocumentScan = () => {
   };
   const backButtonHandler = () => {
     console.log(
-      'before permission function called successfully',
+      // 'before permission function called successfully',
       isPermissionFunctionCalled.current
     );
     if (!isPermissionFunctionCalled.current) {
       isPermissionFunctionCalled.current = true; // Set the flag
       // requestCameraPermission();
       console.log(
-        'permission function called successfully',
+        // 'permission function called successfully',
         isPermissionFunctionCalled.current
       );
     }
@@ -526,7 +526,11 @@ export const DocumentScan = () => {
   const copyFilesToDirectory = async () => {
     try {
       console.log('scanned images:', images);
-
+if(!selectedFolderTag?.id)
+{
+  setIsShowErrorModal(true)
+  setErrorMessage('please select tag')
+}
       await RNFS.mkdir(destinationPath);
 
       const folderDisplayName =
@@ -925,7 +929,7 @@ export const DocumentScan = () => {
             styles.tagIconContainer,
             {
               backgroundColor: theme.bgContainor,
-              borderColor:theme.borderColor
+              borderColor: theme.borderColor
               // borderColor: selectedTags.length > 0 ? theme.deleteIconColor : theme.borderColor,
             },
           ]}
@@ -937,8 +941,9 @@ export const DocumentScan = () => {
               onPress={() => setSelectedTags([])}
             /> :
             <CustomVectorIcon iconLibrary='MaterialIcons'
-              iconName='local-offer' style={{ color: theme.themeColor,
-                }}
+              iconName='local-offer' style={{
+                color: theme.themeColor,
+              }}
               onPress={() => setSelectedTags([])}
             />
           }
@@ -1030,7 +1035,7 @@ export const DocumentScan = () => {
               </TouchableOpacity>
             );
           }}
-          ListEmptyComponent={<Text style={{ alignSelf: 'center' }}>No Tags</Text>}
+          ListEmptyComponent={<Text style={{ alignSelf: 'center', color: theme.primaryTextColor }}>No Tags</Text>}
         />
 
         {/* ACTION */}
@@ -1049,7 +1054,7 @@ export const DocumentScan = () => {
             {
               backgroundColor:
                 theme.bgContainor,
-                borderWidth:scaledSize(.5),
+              borderWidth: scaledSize(.5),
 
               borderColor:
                 selectedTags.length > 0 ?
@@ -1097,7 +1102,7 @@ export const DocumentScan = () => {
 
   const renderHeader = () => {
     return (
-      <SafeAreaView style={{...styles.headerContainer,backgroundColor:theme.bgContainor}}>
+      <SafeAreaView style={{ ...styles.headerContainer, backgroundColor: theme.bgContainor }}>
 
         {/* Top Row */}
         <View style={styles.topRow}>
@@ -1127,6 +1132,12 @@ export const DocumentScan = () => {
               <Text style={{
                 color: theme.iconColor,
                 letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
+              }} onPress={async () => {
+                await FileLocalService.resetFilesTable();
+                resetFoldersTable()
+                await tagLocalService.resetTagsTable();
+               const t= await tagLocalService.getTags()
+                setUserTags(t)
               }}>AK</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -1690,6 +1701,8 @@ export const DocumentScan = () => {
   };
 
   const createBackup = async () => {
+    console.log('create backup start');
+
     try {
       setIsBackupStarted(true);
       setIsBackupCompleted(false);
@@ -1707,7 +1720,7 @@ export const DocumentScan = () => {
         tags,
         version: 1,
       };
-
+      console.log('backupData', backupData)
       const totalFilesToCopy = files.length;
       const progressPerFile =
         totalFilesToCopy > 0 ? 70 / totalFilesToCopy : 0;
@@ -1798,6 +1811,8 @@ export const DocumentScan = () => {
   };
 
   const importBackup = async (zipFileUri: string) => {
+    console.log('zipFileUri====', zipFileUri);
+
     if (!zipFileUri) return;
     setIsLoading(true);
     try {
@@ -1805,6 +1820,7 @@ export const DocumentScan = () => {
       const tempExtractDir = `${RNFS.CachesDirectoryPath}/import_${Date.now()}`;
       await RNFS.mkdir(tempExtractDir);
       await unzip(zipFileUri, tempExtractDir);
+      console.log('tempExtractDir', tempExtractDir);
 
       // 2. Read metadata.json
       const metadataPath = `${tempExtractDir}/metadata.json`;
@@ -1812,11 +1828,13 @@ export const DocumentScan = () => {
         throw new Error('Invalid backup file: metadata.json not found.');
       }
       const metadataContent = await RNFS.readFile(metadataPath, 'utf8');
+      console.log('metadataContent', metadataContent);
+
       const backupData = JSON.parse(metadataContent);
 
       // 3. Clear existing data
       await FileLocalService.resetFilesTable();
-      await FolderLocalService.resetFoldersTable();
+      resetFoldersTable()
       await tagLocalService.resetTagsTable();
       await RNFS.unlink(CONSTANT.SAVED_DOCUMENTS_PATH).catch(() => { }); // delete old docs folder
       await RNFS.mkdir(CONSTANT.SAVED_DOCUMENTS_PATH); // create new empty one
@@ -1839,7 +1857,16 @@ export const DocumentScan = () => {
       if (backupData.folders && backupData.folders.length > 0) {
         for (const folder of backupData.folders) {
           const newTagId = oldTagIdToNewTagIdMap.get(folder.tagId) || null;
-          await FolderLocalService.createFolder(folder.userId, folder.name, folder.firebaseId, folder.coverUri, folder.driveFolderId, 0, Date.now(), newTagId);
+          await FolderLocalService.createFolder(
+            folder.userId ?? '',
+            newTagId ?? null,
+            folder.name,
+            folder.firebaseId,
+            folder.coverUri,
+            folder.driveFolderId ?? '',
+            0,
+            Date.now(),
+          );
         }
       }
       const newFolders = await FolderLocalService.getAllFolders();
@@ -1874,9 +1901,9 @@ export const DocumentScan = () => {
 
       // 7. Refresh UI
       const folders = await FolderLocalService.getActiveFolders();
-      const files = await FileLocalService.getAllFiles();
+      // const files = await FileLocalService.getAllFiles();
       setData(folders);
-      setLocalFiles(files);
+      // setLocalFiles(files);
 
       CustomSuccessToast('Backup restored successfully!');
     } catch (error) {
@@ -1888,15 +1915,18 @@ export const DocumentScan = () => {
   };
 
   const handleImportBackup = async () => {
+    console.log('handleImportBackup====');
+
     try {
       const res = await Utility.images.DocumentPicker({
         isMultipleSelection: false,
         fileTypes: [types.zip],
       });
+      console.log('res====', res);
 
       if (res && res.length > 0) {
         setIsShowImportConfirmation(true);
-        setBackupFileToImport(res[0].uri);
+        importBackup(res[0].localUri)
       }
     } catch (error) {
       console.error('Error during backup import:', error);
@@ -2234,91 +2264,82 @@ export const DocumentScan = () => {
     <SafeAreaView style={styles.container}>
 
 
-        {renderHeader()}
-        <View style={{
-          paddingTop: scaledSize(0), paddingBottom: scaledSize(8)
-        }}>
-          {isMultiDelete ? renderHeaderMultiSelection() : renderTags()}
-          {/* {renderTagBtn()} */}
-        </View>
-        <View style={{
-          height: scaledSize(40), width: scaledSize(100), position: 'absolute',
-          top: scaledSize(150), left: scaledSize(10)
-        }}>
+      {renderHeader()}
+      <View style={{
+        paddingTop: scaledSize(0), paddingBottom: scaledSize(8)
+      }}>
+        {isMultiDelete ? renderHeaderMultiSelection() : renderTags()}
+        {/* {renderTagBtn()} */}
+      </View>
+      <View style={{
+        height: scaledSize(40), width: scaledSize(100), position: 'absolute',
+        top: scaledSize(150), left: scaledSize(10)
+      }}>
 
-        </View>
+      </View>
 
 
 
-        {/* ----------------------------- */}
-        <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
-          {getFiles().length > 0 ? <FlatList
-            showsVerticalScrollIndicator={false}
-            data={getFiles()}
-            removeClippedSubviews
-            initialNumToRender={10}
-            maxToRenderPerBatch={10}
-            windowSize={10}
-            keyExtractor={(item) => item.id}
-            renderItem={renderParentItem}
-          /> :
-            <>
-              {isPermissionDenied ?
-                <View style={{ flex: 1 }}>
-                  <Modal visible={isPermissionDenied} transparent>
-                    <CustomPermissionMessage permissionMessage={'Please Allow Camera Permission'}
-                      onPressClose={() => setIsPermissionDenied(false)} />
-                  </Modal>
-                </View>
-                :
-                !user ? (
-                  <View style={styles.backupContainer}>
-                    {data.length > 0 && selectedTags.length == 0 ? (
-                      <>
-                        <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file.</Text>
-                        <TouchableOpacity style={styles.backupButton} onPress={handleImportBackup}>
-                          <MaterialCommunityIcons name="cloud-download-outline" size={22} color={theme.themeColor} />
-                          <Text style={styles.backupButtonText}>Import Backup</Text>
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.backupInfoText}>No documents found. You can select other tags.</Text>
+      {/* ----------------------------- */}
+      <View style={{ flex: 1, marginTop: heightFromPercentage(0.5) }}>
+        {getFiles().length > 0 ? <FlatList
+          showsVerticalScrollIndicator={false}
+          data={getFiles()}
+          removeClippedSubviews
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          keyExtractor={(item) => item.id}
+          renderItem={renderParentItem}
+        /> :
+          <>
+            {isPermissionDenied ?
+              <View style={{ flex: 1 }}>
+                <Modal visible={isPermissionDenied} transparent>
+                  <CustomPermissionMessage permissionMessage={'Please Allow Camera Permission'}
+                    onPressClose={() => setIsPermissionDenied(false)} />
+                </Modal>
+              </View>
+              :
 
-                      </>
-                    )}
-                  </View>
+              <View style={styles.backupContainer}>
+                {data.length == 0 && userTags.length == 0 && selectedTags.length == 0 ? (
+                  <>
+                    <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file.</Text>
+                    <TouchableOpacity style={styles.backupButton} onPress={handleImportBackup}>
+                      <MaterialCommunityIcons name="cloud-download-outline" size={22} color={theme.themeColor} />
+                      <Text style={styles.backupButtonText}>Import Backup</Text>
+                    </TouchableOpacity>
+                  </>
                 ) : (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaledSize(20) }}>
-                    <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), textAlign: 'center' }}>
-                      No documents found.
-                    </Text>
-                    <Text style={{ color: theme.secondaryTextColor, fontSize: scaledSize(14), marginTop: 4, textAlign: 'center' }}>
-                      Use the camera button to scan new documents.
-                    </Text>
-                  </View>
-                )
-              }
-            </>
+                  <>
+                    <Text style={{ color: 'white' }}>{'data.length' + data.length + 'userTags.length' + userTags.length + 'selectedTags.length' + selectedTags.length}</Text>
+                    <Text style={styles.backupInfoText}>No documents found. You can select other tags.</Text>
+                  </>
+                )}
+              </View>
 
-          }
+            }
+          </>
 
-        </View>
+        }
 
-        <View style={{
-          height: scaledSize(50), position: "absolute", left: scaledSize(270),
-          top: heightFromPercentage(72)
-        }}>
-          <CustomFAB
-            style={{ borderWidth: .5, borderColor: theme.iconColor }}
-            icon={<Ionicons name='camera-outline' size={scaledSize(24)}
-              color={mode === 'light' ? 'white' : theme.iconColor} />}
-            onPress={() => { requestCameraPermission() }}
-          />
-        </View>
+      </View>
 
-        {renderFolderNameModal()}
-        {/* <Overlay isVisible={isBackupStarted} >
+      <View style={{
+        height: scaledSize(50), position: "absolute", left: scaledSize(270),
+        top: heightFromPercentage(72)
+      }}>
+        <CustomFAB
+          style={{ borderWidth: .5, borderColor: theme.iconColor }}
+          icon={<Ionicons name='camera-outline' size={scaledSize(24)}
+            color={mode === 'light' ? 'white' : theme.iconColor} />}
+          onPress={() => { requestCameraPermission() }}
+        />
+      </View>
+
+      {renderFolderNameModal()}
+      {/* <Overlay isVisible={isBackupStarted} >
         <View style={{ height: 300, justifyContent: 'center', alignItems: 'center' }}>
           <View style={{
             height: scaledSize(300), width: '100%',
@@ -2379,89 +2400,89 @@ export const DocumentScan = () => {
 
         </View>
       </Overlay> */}
-        {/* <CustomSpinner isLoading={isLoading} /> */}
+      {/* <CustomSpinner isLoading={isLoading} /> */}
 
-        <CustomBottomSheet title='Option' headerColor='#f5f5f5'
-          ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
-          <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{ fontSize: scaledSize(16), letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
-            </View>
-
-            <View
-              style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
-              <TouchableOpacity style={styles.shareOptionS} onPress={() => generateAndSharePdfs(selectedFoldersId)}>
-                <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>PDF</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(10) }]}
-                onPress={() => shareFile(selectedFoldersId)}>
-                <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>Images</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(20), }]}
-                onPress={() => refForDocShare.current?.close()}>
-                <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular, color: 'red' }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+      <CustomBottomSheet title='Option' headerColor='#f5f5f5'
+        ref={refForDocShare} bottomShitSnapPoints={['30', '30', '50']} >
+        <View style={{ backgroundColor: '#f5f5f5', padding: scaledSize(10) }}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ fontSize: scaledSize(16), letterSpacing: 1, fontFamily: FONTS.regular }}>Share as</Text>
           </View>
-        </CustomBottomSheet>
-        {renderRenameModal()}
-        {renderAddTagModal()}
-        {renderRenameTagModal()}
-        <CustomSortModal
-          data={sortOptions}
-          isvisible={isShowSortModal}
-          onPressClear={() => {
-            setIsShowSortModal(false);
-            setSelectedSort('');
-          }}
-          onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
-          onPressClose={() => setIsShowSortModal(false)}
-        />
 
-        <CustomUpdateFolderTagModal
-          data={userTags}
-          isvisible={isShowUpdateTagModal}
-          onPressClear={() => {
-            setIsShowUpdateTagModal(false);
-            setSelectedSort('');
-          }}
-          onPressApply={(tag) => updateFolderTagHandler(tag)}
-          onPressClose={() => setIsShowUpdateTagModal(false)}
-        />
-        <CustomErrorMsgModal isVisible={isShowErrorModal}
-          onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
-        <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
-          onCancel={() => setIsShowDeleteTagConfirmation(false)}
-          onSubmit={() => deleteTagHandler()} />
-        <ConfirmationDialog visible={isShowDeleteMultipleTagsConfirmation} mode='delete'
-          message={`Are you sure you want to delete ${selectedTags.length} selected tag(s)?`}
-          onCancel={() => setIsShowDeleteMultipleTagsConfirmation(false)}
-          onSubmit={deleteMultipleTagsHandler}
-        />
-        <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
-          onCancel={() => setIsFolderDeleteConfirmation(false)}
-          onSubmit={() => deleteFolder()} />
-        <ConfirmationDialog
-          visible={isShowCreateBackupConfirmation}
-          message="Creating a new backup may overwrite a previous one in your Downloads folder. Do you want to continue?"
-          onCancel={() => setIsShowCreateBackupConfirmation(false)}
-          onSubmit={() => { createBackup(); setIsShowCreateBackupConfirmation(false); }}
-        />
+          <View
+            style={{ flex: 1, marginTop: scaledSize(10), justifyContent: "center", alignItems: 'center' }}>
+            <TouchableOpacity style={styles.shareOptionS} onPress={() => generateAndSharePdfs(selectedFoldersId)}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>PDF</Text>
+            </TouchableOpacity>
 
-        <Modal visible={isBackupStarted} transparent animationType="fade">
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
-            <CustomProgressBar
-              progress={backupProgressPercentage}
-              title={isBackupCompleted ? "Backup Successful!" : "Creating Backup..."}
-              filesFound={backupFilesProcessedCount}
-              foundFiles={backupFilesProcessedList}
-              onContinue={() => setIsBackupStarted(false)}
-              onRescan={() => setIsBackupStarted(false)}
-            />
+            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(10) }]}
+              onPress={() => shareFile(selectedFoldersId)}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular }}>Images</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.shareOptionS, { marginTop: scaledSize(20), }]}
+              onPress={() => refForDocShare.current?.close()}>
+              <Text style={{ fontSize: scaledSize(16), fontFamily: FONTS.regular, color: 'red' }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </CustomBottomSheet>
+      {renderRenameModal()}
+      {renderAddTagModal()}
+      {renderRenameTagModal()}
+      <CustomSortModal
+        data={sortOptions}
+        isvisible={isShowSortModal}
+        onPressClear={() => {
+          setIsShowSortModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        onPressClose={() => setIsShowSortModal(false)}
+      />
+
+      <CustomUpdateFolderTagModal
+        data={userTags}
+        isvisible={isShowUpdateTagModal}
+        onPressClear={() => {
+          setIsShowUpdateTagModal(false);
+          setSelectedSort('');
+        }}
+        onPressApply={(tag) => updateFolderTagHandler(tag)}
+        onPressClose={() => setIsShowUpdateTagModal(false)}
+      />
+      <CustomErrorMsgModal isVisible={isShowErrorModal}
+        onPressClose={() => setIsShowErrorModal(false)} errorMessage={errorMessage} />
+      <ConfirmationDialog visible={isShowDeleteTagConfirmation} mode='delete'
+        onCancel={() => setIsShowDeleteTagConfirmation(false)}
+        onSubmit={() => deleteTagHandler()} />
+      <ConfirmationDialog visible={isShowDeleteMultipleTagsConfirmation} mode='delete'
+        message={`Are you sure you want to delete ${selectedTags.length} selected tag(s)?`}
+        onCancel={() => setIsShowDeleteMultipleTagsConfirmation(false)}
+        onSubmit={deleteMultipleTagsHandler}
+      />
+      <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
+        onCancel={() => setIsFolderDeleteConfirmation(false)}
+        onSubmit={() => deleteFolder()} />
+      <ConfirmationDialog
+        visible={isShowCreateBackupConfirmation}
+        message="Creating a new backup may overwrite a previous one in your Downloads folder. Do you want to continue?"
+        onCancel={() => setIsShowCreateBackupConfirmation(false)}
+        onSubmit={() => { createBackup(); setIsShowCreateBackupConfirmation(false); }}
+      />
+
+      <Modal visible={isBackupStarted} transparent animationType="fade">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <CustomProgressBar
+            progress={backupProgressPercentage}
+            title={isBackupCompleted ? "Backup Successful!" : "Creating Backup..."}
+            filesFound={backupFilesProcessedCount}
+            foundFiles={backupFilesProcessedList}
+            onContinue={() => setIsBackupStarted(false)}
+            onRescan={() => setIsBackupStarted(false)}
+          />
+        </View>
+      </Modal>
 
 
     </SafeAreaView>
