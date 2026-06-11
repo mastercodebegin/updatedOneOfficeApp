@@ -524,13 +524,19 @@ export const DocumentScan = () => {
 
 
   const copyFilesToDirectory = async () => {
+    if (!folderName.trim()) {
+      setIsShowErrorModal(true);
+      setErrorMessage('Please enter a folder name.');
+      return;
+    }
+    if (!selectedFolderTag?.id) {
+      setIsShowErrorModal(true);
+      setErrorMessage('Please select a tag for the folder.');
+      return;
+    }
+
     try {
       console.log('scanned images:', images);
-if(!selectedFolderTag?.id)
-{
-  setIsShowErrorModal(true)
-  setErrorMessage('please select tag')
-}
       await RNFS.mkdir(destinationPath);
 
       const folderDisplayName =
@@ -1901,8 +1907,9 @@ if(!selectedFolderTag?.id)
 
       // 7. Refresh UI
       const folders = await FolderLocalService.getActiveFolders();
-      // const files = await FileLocalService.getAllFiles();
+      const tags = await tagLocalService.getTags();
       setData(folders);
+      setUserTags(tags)
       // setLocalFiles(files);
 
       CustomSuccessToast('Backup restored successfully!');
