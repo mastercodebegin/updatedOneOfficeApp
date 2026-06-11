@@ -301,7 +301,7 @@ const renderFolder = ({item, index}: {item: FolderGroup; index: number}) => {
         paddingVertical: scaledSize(14),
         borderRadius: scaledSize(14),
         backgroundColor: theme.bgContainor || theme.bgColor,
-        borderWidth: 0.5,
+        borderWidth: scaledSize(.5),
         borderColor: theme.borderColor,
         flexDirection: 'row',
         alignItems: 'center',

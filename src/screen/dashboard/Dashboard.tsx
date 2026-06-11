@@ -955,7 +955,8 @@ function Dashboard({ navigation, route }) {
           </View>
         </Modal>
       ) : (
-        <CustomSpinner isLoading={isLoading} text="Loading..." />
+        <></>
+        // <CustomSpinner isLoading={isLoading} text="Loading..." />
       )}
       <LinearGradient
         colors={[
@@ -1023,7 +1024,7 @@ function Dashboard({ navigation, route }) {
       {/* =================================TabBar Started================================ */}
       <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
 
-        <TabView
+        {/* <TabView
           renderTabBar={renderTabBar}
 
           navigationState={{ index, routes }}
@@ -1031,7 +1032,15 @@ function Dashboard({ navigation, route }) {
           onIndexChange={(i) => { setIndex(i), setSearchQuery('') }}
           initialLayout={{ width: layout.width, height: '100%' }}
 
-        />
+        /> */}
+        <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
+          ref={readPdfFileRef}
+          // pdfFiles={pdfs} 
+          pdfFiles={documents.pdfFiles}
+          selectedSort={selectedSort}
+          viewMode={viewMode}
+          onReLoad={readPdfFiles} isLoading={isLoading} />
+        
       </View>
 
       {isShowErrorModal && <CustomErrorMsgModal errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />}
