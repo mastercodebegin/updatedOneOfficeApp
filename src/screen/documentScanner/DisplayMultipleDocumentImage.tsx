@@ -1446,17 +1446,17 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     letterSpacing: 1
   },
 
-  iconBtn: {
-    height: 38,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    iconBtn: {
+    height: scaledSize(34),
+    paddingHorizontal: scaledSize(7),
+    borderRadius: scaledSize(5),
     backgroundColor: theme.buttonBGColor,   // dark filled background
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 4,
+    marginRight: scaledSize(4),
   },
   iconLabel: {
-    fontSize: 11,
+    fontSize: scaledSize(10),
     fontWeight: '700',
     color: theme.primaryTextColor,             // white text on dark bg
     letterSpacing: 0.5,

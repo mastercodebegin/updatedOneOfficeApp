@@ -737,8 +737,10 @@ export const DocumentScan = () => {
 
   const deleteFolder = async () => {
     try {
+      const folders = selectedFoldersId.map((item: any) => item.id)
+      console.log('selected===', selectedFoldersId);
 
-      for (const folderId of selectedFoldersId) {
+      for (const folderId of folders) {
         // Get files for this folder
         const files = await FileLocalService.getFilesByFolder(folderId);
 
@@ -767,6 +769,7 @@ export const DocumentScan = () => {
       // Reset UI states
       setSelectedFoldersId([]);
       setIsFolderDeleteConfirmation(false);
+      setMultidelete(false)
 
       console.log('✅ Folders deleted successfully');
     } catch (error) {
@@ -793,7 +796,7 @@ export const DocumentScan = () => {
 
   const deleteFoldersConfirmation = (item: any) => {
     setSelectedFolder(item)
-    setSelectedFoldersId([item.id])
+    setSelectedFoldersId([item])
     setIsFolderDeleteConfirmation(true)
   };
   const onPressSelectAll = () => {
@@ -1206,7 +1209,7 @@ export const DocumentScan = () => {
           <View style={styles.storageInfo}>
             <View style={styles.storageBar}>
               <LinearGradient
-                colors={['#47b16a', '#3CF28A']}
+                colors={[theme.themeColor, theme.themeColor]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.storageBarFill, { width: `${sizePercentage}%` }]}
@@ -1216,30 +1219,28 @@ export const DocumentScan = () => {
           </View>
         </View>
 
-        {isMultiDelete && (
-          <View style={styles.docActions}>
-            <TouchableOpacity style={styles.actionBtnSquare}
-              disabled={isMultiDelete}
-              onPress={() => shareFile(item)}>
-              <Ionicons name="share-social-outline" size={scaledSize(18)} color={theme.iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtnSquare}
-              disabled={isMultiDelete}
-              onPress={() => {
-                setIsFolderNameChange(true);
-                setFolderId(item.id);
-                setFolderName(item.name);
-              }}>
-              <Ionicons name="pencil-outline" size={scaledSize(18)} color={theme.iconColor} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtnSquare}
-              disabled={isMultiDelete}
-              onPress={() => deleteFoldersConfirmation(item)}
-            >
-              <Ionicons name="trash-outline" size={scaledSize(18)} color={theme.deleteIconColor} />
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.docActions}>
+          <TouchableOpacity style={styles.actionBtnSquare}
+            disabled={isMultiDelete}
+            onPress={() => shareFile(item)}>
+            <Ionicons name="share-social-outline" size={scaledSize(18)} color={theme.iconColor} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtnSquare}
+            disabled={isMultiDelete}
+            onPress={() => {
+              setIsFolderNameChange(true);
+              setFolderId(item.id);
+              setFolderName(item.name);
+            }}>
+            <Ionicons name="pencil-outline" size={scaledSize(18)} color={theme.iconColor} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtnSquare}
+            disabled={isMultiDelete}
+            onPress={() => deleteFoldersConfirmation(item)}
+          >
+            <MaterialIcons name="delete" size={scaledSize(18)} color={theme.deleteIconColor} />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -1293,6 +1294,68 @@ export const DocumentScan = () => {
     setIsTagModalVisible(false)
     setIsShowRenderRenameTagModal(false)
     setTagName('')
+  }
+
+  const renderHeaderMultiSelection = () => {
+    return (
+      <View style={styles.multiHeader}>
+
+        {/* Back */}
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => {
+            setMultidelete(false)
+            setSelectedFoldersId([])
+          }}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={theme.iconColor} />
+        </TouchableOpacity>
+
+
+        {/* Count Badge */}
+        <View style={{ ...styles.iconBtn, left: 10 }}>
+          <Text style={{ ...styles.iconLabel, padding: 6, fontFamily: Fonts.regular, fontSize: scaledSize(12) }}>
+            {selectedFoldersId.length}
+          </Text>
+        </View>
+
+
+        <View style={{ flex: 1 }} />
+
+
+        {/* Select All */}
+        <TouchableOpacity style={{...styles.iconBtn,right:scaledSize(10)}} onPress={onPressSelectAll}>
+          <MaterialIcons
+            name={
+              data.length === selectedFoldersId.length
+                ? "check-box"
+                : "check-box-outline-blank"
+            }
+            size={22}
+            color={theme.iconColor}
+          />
+        </TouchableOpacity>
+
+
+        {/* Share */}
+        {/* <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => refForDocShare.current?.present()}
+        >
+          <MaterialIcons name="share" size={22} color={theme.iconColor} />
+        </TouchableOpacity> */}
+
+
+        {/* Delete */}
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={() => setIsFolderDeleteConfirmation(true)}
+        >
+          <MaterialIcons name="delete" size={22} color={theme.deleteIconColor} />
+        </TouchableOpacity>
+
+      </View>
+    )
   }
 
   const renameTagHandler = async () => {
@@ -2167,7 +2230,7 @@ export const DocumentScan = () => {
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      {/* {renderTags()} */}
+      {isMultiDelete ? renderHeaderMultiSelection() : renderTags()}
       <View style={{ height: scaledSize(40), width: scaledSize(100), position: 'absolute', top: scaledSize(142), right: scaledSize(10) }}>
         {/* {renderTagBtn()} */}
       </View>
@@ -2418,15 +2481,15 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     padding: scaledSize(12),
     borderWidth: 1,
     borderColor: theme.borderColor,
-    shadowColor: mode === 'dark' ? '#000' : '#5A6476',
+    shadowColor: theme.bgColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: mode === 'dark' ? 0.3 : 0.1,
     shadowRadius: 8,
     elevation: 6,
   },
   docCardSelected: {
-    borderColor: '#47b16a',
-    shadowColor: '#47b16a',
+    borderColor: theme.themeColor,
+    shadowColor: theme.themeColor,
     shadowOpacity: mode === 'dark' ? 0.5 : 0.3,
     shadowRadius: 10,
     elevation: 10,
@@ -3171,4 +3234,31 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginBottom: scaledSize(12),
     paddingHorizontal: scaledSize(10),
   },
+
+  multiHeader: {
+    height: scaledSize(52),
+    backgroundColor: theme.bgColor,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    paddingHorizontal: scaledSize(10),
+
+  },
+  iconBtn: {
+    height: scaledSize(34),
+    paddingHorizontal: scaledSize(7),
+    borderRadius: scaledSize(5),
+    backgroundColor: theme.buttonBGColor,   // dark filled background
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: scaledSize(4),
+  },
+  iconLabel: {
+    fontSize: scaledSize(10),
+    fontWeight: '700',
+    color: theme.primaryTextColor,             // white text on dark bg
+    letterSpacing: 0.5,
+  },
+
 });
