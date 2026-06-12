@@ -110,6 +110,7 @@ export const DocumentScan = () => {
   const [backupProgressPercentage, setBackupProgressPercentage] = useState(0);
   const [backupFilesProcessedCount, setBackupFilesProcessedCount] = useState(0);
   const [backupFilesProcessedList, setBackupFilesProcessedList] = useState<any[]>([]);
+  const [backupDestinationPath, setBackupDestinationPath] = useState('');
   const [isShowCreateBackupConfirmation, setIsShowCreateBackupConfirmation] = useState(false);
   const [isShowImportConfirmation, setIsShowImportConfirmation] = useState(false);
   const [backupFileToImport, setBackupFileToImport] = useState<string | null>(null);
@@ -1803,6 +1804,7 @@ export const DocumentScan = () => {
       setBackupProgressPercentage(100);
 
       setIsBackupCompleted(true);
+      setBackupDestinationPath(finalZipPath);
 
       CustomSuccessToast(`Backup created: ${backupFileName}`);
     } catch (error) {
@@ -1907,9 +1909,8 @@ export const DocumentScan = () => {
 
       // 7. Refresh UI
       const folders = await FolderLocalService.getActiveFolders();
-      const tags = await tagLocalService.getTags();
+      // const files = await FileLocalService.getAllFiles();
       setData(folders);
-      setUserTags(tags)
       // setLocalFiles(files);
 
       CustomSuccessToast('Backup restored successfully!');
@@ -2484,6 +2485,7 @@ export const DocumentScan = () => {
             progress={backupProgressPercentage}
             title={isBackupCompleted ? "Backup Successful!" : "Creating Backup..."}
             filesFound={backupFilesProcessedCount}
+            destinationPath={backupDestinationPath}
             foundFiles={backupFilesProcessedList}
             onContinue={() => setIsBackupStarted(false)}
             onRescan={() => setIsBackupStarted(false)}

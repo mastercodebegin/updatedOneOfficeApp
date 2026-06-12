@@ -11,6 +11,8 @@ import CustomSpinner from './CustomSpinner';
 interface CustomProgressBarProps {
     progress: number;
     title?: string;
+    subtitle?: string;
+    destinationPath?: string; // New prop for backup path
     filesFound?: number;
     foundFiles?: { name: string }[];
     onRescan?: () => void;
@@ -20,8 +22,8 @@ interface CustomProgressBarProps {
 const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const isComplete = props.progress === 100;
-    const { onRescan, onContinue, progress, filesFound, foundFiles, title } = props;
+    const isComplete = props.progress === 100; // Check if progress is 100
+    const { onRescan, onContinue, progress, filesFound, foundFiles, title, subtitle, destinationPath } = props;
     const isBackup = title?.includes('Backup');
 
     const getFileIcon = (fileName: string) => {
@@ -55,8 +57,10 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
         <View style={[styles.box, isComplete && styles.glow]}>
             <View style={styles.progressContent}>
                 <View style={styles.headerSection}>
-                    <MaterialCommunityIcons name={title?.includes('Backup') ? "cloud-upload-outline" : "file-search-outline"} size={scaledSize(28)} color={theme.primaryTextColor} />
+                    <MaterialCommunityIcons name={title?.includes('Backup') || title?.includes('Import') ? "cloud-upload-outline" : "file-search-outline"} size={scaledSize(28)} color={theme.primaryTextColor} />
                     <Text style={styles.progressTitle}>{title || 'Scanning Files...'}</Text>
+                    {subtitle && <Text style={styles.descriptiveText}>{subtitle}</Text>}
+                    {isBackup && destinationPath && isComplete && <Text style={styles.destinationPathText}>Saved to: {destinationPath.split('/').slice(-2).join('/')}</Text>}
                 </View>
 
                 <View style={styles.divider} />
@@ -249,6 +253,14 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         fontSize: scaledSize(14),
         fontWeight: '500',
         marginRight: scaledSize(8),
+    },
+    destinationPathText: {
+        fontSize: scaledSize(11),
+        color: theme.secondaryTextColor,
+        fontFamily: Fonts.regular,
+        marginTop: scaledSize(8),
+        textAlign: 'center',
+        paddingHorizontal: scaledSize(10),
     },
 });
 

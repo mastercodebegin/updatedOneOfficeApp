@@ -270,24 +270,24 @@ export const getFilesFromPhoneByFileExtention = async (data?: any, onProgress?: 
         }
         else if (item.name.toLowerCase().endsWith('.docx')) {
           wordFiles.push(item);
-          filesFound++;
+          // filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.doc')) {
           wordFiles.push(item);
-          filesFound++;
+          // filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xlsx')) {
           xlsxFiles.push(item);
-          filesFound++;
+          // filesFound++;
         }
         else if (item.name.toLowerCase().endsWith('.xls')) {
           xlsxFiles.push(item);
-          filesFound++;
+          // filesFound++;
         }
 
         else if (item.name.toLowerCase().endsWith('.pptx')) {
           pptFiles.push(item);
-          filesFound++;
+          // filesFound++;
         }
         else if (item.isDirectory()) {
           // console.log(`Entering directory: ${item.path}`);
