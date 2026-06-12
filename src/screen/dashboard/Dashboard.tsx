@@ -447,6 +447,28 @@ function Dashboard({ navigation, route }) {
   const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
   const webViewRef = React.useRef(null);
 
+  useEffect(() => {
+    const loadPreferences = () => {
+      const savedViewMode = getLocalData(asyncStorageKeyName.VIEW_MODE);
+      if (savedViewMode === 'list' || savedViewMode === 'folder') {
+        setViewMode(savedViewMode);
+      }
+      const savedSortType = getLocalData(asyncStorageKeyName.SORT_TYPE);
+      if (savedSortType) {
+        setSelectedSort(savedSortType);
+      }
+    };
+    loadPreferences();
+  }, []);
+
+  useEffect(() => {
+    setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    setLocalData(asyncStorageKeyName.SORT_TYPE, selectedSort);
+  }, [selectedSort]);
+
   const handleLogin = async () => {
     try {
       const res = await signIn();
