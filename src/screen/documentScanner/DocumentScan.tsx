@@ -128,6 +128,11 @@ export const DocumentScan = () => {
   // const toggleSwitch = toggleTheme()
   const sortOptions = [
     {
+      id: 'favorites',
+      name: 'Favorites',
+      icon: 'star-outline',
+    },
+    {
       id: 'latest',
       name: 'Latest First',
       icon: 'time-outline',
@@ -148,6 +153,20 @@ export const DocumentScan = () => {
       icon: 'swap-vertical-outline',
     },
   ];
+
+const toggleIsFavoriteHandler = async (folder: any) => {
+  try {
+    await FolderLocalService.updateFolderById({
+      id: folder.id,
+      isFavorite: folder.isFavorite ? 0 : 1,
+    });
+
+    const folders = await FolderLocalService.getActiveFolders();
+    setData(folders);
+  } catch (error) {
+    console.log('Error toggling favorite:', error);
+  }
+};
 
 
   // const theme =useSelector((state:any)=>state.ThemeSlice)
@@ -282,19 +301,17 @@ export const DocumentScan = () => {
         const folders = await FolderLocalService.getActiveFolders();
         const tags = await tagLocalService.getTags();
 
-
         setData(folders);
         setUserTags(tags);
 
         setIsLocalDataFetch(true);
-        getfiles()
       } catch (error) {
         console.log('fetch error:', error);
       }
     };
 
     fetchData();
-  }, []);
+  }, [isFocused]);
 
   const fullReset = async () => {
     try {
@@ -558,7 +575,7 @@ export const DocumentScan = () => {
       // );
       const folder = await FolderLocalService.createFolder
         ('', selectedFolderTag?.id, folderDisplayName,
-          null, '', '', 0, 0)
+          null, '', '', 0, Date.now(), 0)
       console.log('created', folder);
 
 
@@ -1190,7 +1207,7 @@ export const DocumentScan = () => {
   const renderParentItem = ({ item }) => {
     const isSelected = checkisFolderSelected(item.id);
     const stats = folderStats[item.id] || { count: 0, size: 0 };
-    const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
+    // const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
 
     return (
       <TouchableOpacity
@@ -1215,28 +1232,23 @@ export const DocumentScan = () => {
         </View>
 
         <View style={styles.docContent}>
-          <Text style={styles.docTitle} numberOfLines={1}>
-            {Utility.string.getFirstLetterCapitalize(item?.name || '')}
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Text style={styles.docTitle} numberOfLines={1}>
+              {Utility.string.getFirstLetterCapitalize(item?.name || '')}
+            </Text>
+            <TouchableOpacity style={{ paddingLeft: 8, paddingTop: 2 }}
+              disabled={isMultiDelete}
+              onPress={() => toggleIsFavoriteHandler(item)}>
+              <Ionicons name={item.isFavorite ? "star" : "star-outline"}
+                size={scaledSize(18)}
+                color={item.isFavorite ? theme.themeColor : theme.iconColor} />
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.docMetadata}>
             <Text style={styles.docMetaText}>{Utility.date.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}</Text>
-            <Text style={styles.docMetaSeparator}>•</Text>
             <Text style={styles.docMetaText}>{stats.count} files</Text>
-            <Text style={styles.docMetaSeparator}>•</Text>
             <Text style={styles.docMetaText}>{getTagByIdHandler(item.tagId)}</Text>
-          </View>
-
-          <View style={styles.storageInfo}>
-            <View style={styles.storageBar}>
-              <LinearGradient
-                colors={[theme.themeColor, theme.themeColor]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.storageBarFill, { width: `${sizePercentage}%` }]}
-              />
-            </View>
-            <Text style={styles.storageText}>{formatBytes(stats.size)}</Text>
           </View>
         </View>
 
@@ -1874,6 +1886,7 @@ export const DocumentScan = () => {
             folder.driveFolderId ?? '',
             0,
             Date.now(),
+            folder.isFavorite || 0
           );
         }
       }
@@ -1985,6 +1998,13 @@ export const DocumentScan = () => {
   const onApplySortHandler = (sortType: string, sorted: any[]) => {
 
     switch (sortType) {
+      case 'favorites':
+        return sorted.sort((a, b) => {
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return b.createdAt - a.createdAt; // secondary sort by latest
+        });
+
       case 'latest':
 
         return sorted.sort(
@@ -2547,9 +2567,10 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   docContent: {
     flex: 1,
     marginLeft: scaledSize(14),
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     height: '100%',
     paddingVertical: scaledSize(2),
+    gap: scaledSize(6),
   },
   docTitle: {
     fontSize: scaledSize(15),
@@ -2558,40 +2579,13 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     fontFamily: Fonts.bold,
   },
   docMetadata: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginTop: scaledSize(4),
   },
   docMetaText: {
     fontSize: scaledSize(11),
     color: theme.secondaryTextColor,
     fontFamily: Fonts.regular,
-  },
-  docMetaSeparator: {
-    marginHorizontal: scaledSize(5),
-    fontSize: scaledSize(11),
-    color: theme.secondaryTextColor,
-  },
-  storageInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 'auto',
-  },
-  storageBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: theme.buttonBGColor,
-    borderRadius: 3,
-    marginRight: scaledSize(8),
-  },
-  storageBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  storageText: {
-    fontSize: scaledSize(10),
-    color: theme.secondaryTextColor,
-    fontFamily: Fonts.regular,
+    lineHeight: scaledSize(16),
   },
   docActions: {
     flexDirection: 'column',

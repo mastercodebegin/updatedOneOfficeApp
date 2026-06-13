@@ -78,45 +78,32 @@ export const FolderLocalService = {
 
   // ✅ GET ALL
 async getAllFolders() {
-  const db =
-    await getDB();
+  const db = await getDB();
 
-  const res =
-    await db.executeSql(`
-      SELECT
-        folders.*,
-
-        tags.id AS tag_db_id,
-
-        tags.name AS tag_name,
-
-        tags.color AS tag_color
-
-      FROM folders
-
-      LEFT JOIN tags
-
+  const res = await db.executeSql(`
+    SELECT
+      folders.*,
+      tags.id AS tag_db_id,
+      tags.name AS tag_name,
+      tags.color AS tag_color
+    FROM folders
+    LEFT JOIN tags
       ON folders.tagId = tags.id
-    `);
+    ORDER BY
+      folders.isFavorite DESC,
+      folders.createdAt DESC
+  `);
 
-  return res[0].rows
-    .raw()
-    .map(item => ({
-      ...item,
-
-      tag: item.tag_db_id
-        ? {
-            id:
-              item.tag_db_id,
-
-            name:
-              item.tag_name,
-
-            color:
-              item.tag_color,
-          }
-        : null,
-    }));
+  return res[0].rows.raw().map(item => ({
+    ...item,
+    tag: item.tag_db_id
+      ? {
+          id: item.tag_db_id,
+          name: item.tag_name,
+          color: item.tag_color,
+        }
+      : null,
+  }));
 },
   // ✅ CHECK EXISTS (by firebaseId)
   async isFolderExists(firebaseId: string) {
@@ -183,14 +170,16 @@ async getAllFolders() {
     tagId,
     isDeleted,
     driveFolderId,
-    coverUri
+    coverUri,
+    isFavorite,
   }: {
     id: number;
     name?: string;
-    tagId?:number,
+    tagId?: number;
     isDeleted?: number;
     driveFolderId?: string;
     coverUri?: string;
+    isFavorite?: number;
   }) {
     try {
       const db = await getDB();
@@ -218,9 +207,13 @@ async getAllFolders() {
         updates.push('isDeleted = ?');
         values.push(isDeleted);
       }
-        if (tagId !== undefined) {
+      if (tagId !== undefined) {
         updates.push('tagId = ?');
         values.push(tagId);
+      }
+      if (isFavorite !== undefined) {
+        updates.push('isFavorite = ?');
+        values.push(isFavorite);
       }
 
       // 🔹 mark unsynced (local change)
@@ -252,29 +245,31 @@ async getAllFolders() {
   },
 
 
-  async getActiveFolders() {
-    try {
-      const db = await getDB();
+async getActiveFolders() {
+  try {
+    const db = await getDB();
 
-      const result = await db.executeSql(
-        `SELECT * FROM folders WHERE isDeleted = 0`
-      );
+    const result = await db.executeSql(`
+      SELECT *
+      FROM folders
+      WHERE isDeleted = 0
+      ORDER BY
+        isFavorite DESC,
+        createdAt DESC
+    `);
 
-      const rows = result[0].rows;
-      const data = [];
+    const rows = result[0].rows;
+    const data = [];
 
-      for (let i = 0; i < rows.length; i++) {
-        data.push(rows.item(i));
-      }
-
-      return data;
-
-    } catch (error) {
-
-      console.log('getActiveFolders error:', error);
-      // throw error;
+    for (let i = 0; i < rows.length; i++) {
+      data.push(rows.item(i));
     }
-  },
+
+    return data;
+  } catch (error) {
+    console.log('getActiveFolders error:', error);
+  }
+},
 
   async updateFirebaseId(localId: number, firebaseId: string, userId: string) {
     const db = await getDB();
@@ -415,6 +410,7 @@ CREATE TABLE IF NOT EXISTS folders (
     isSynced INTEGER DEFAULT 0,
 
     isDeleted INTEGER DEFAULT 0,
+    isFavorite INTEGER DEFAULT 0,
 
     updatedAt INTEGER,
 

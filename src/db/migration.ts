@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS folders (
     firebaseId TEXT UNIQUE,
 
     driveFolderId TEXT,
+    isFavorite INTEGER DEFAULT 0,
 
     isSynced INTEGER DEFAULT 0,
 
