@@ -4,7 +4,10 @@ import { Button } from 'react-native';
 
 const rewardedInterstitial = RewardedInterstitialAd.createForAdRequest(TestIds.REWARDED_INTERSTITIAL);
 
-export default function VideoBannerAd() {
+interface S{
+  count:number
+}
+export default function VideoBannerAd(props:S) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {

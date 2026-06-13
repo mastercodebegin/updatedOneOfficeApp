@@ -396,11 +396,10 @@ const renderBackButton = () => {
 
   const renderItem = ({ item, index }: { item: any; index: number }) => {
 
-    if (
-      viewMode === 'folder' &&
-      !selectedFolder
-    ) {
-
+    console.log('selectedfol======',selectedFolder)
+    console.log('viewMode======',viewMode)
+    if (viewMode === 'folder' && !selectedFolder) 
+      {
       return renderFolder({
         item,
       });
@@ -418,34 +417,16 @@ const renderBackButton = () => {
         backgroundColor: theme.bgContainor,
       }}>
 
-      {selectedFolder && 
-
-
-        renderBackButton()
-
-      }
+      {selectedFolder && renderBackButton()}
 
       <FlatList
         data={data}
-
         renderItem={renderItem}
-
         keyExtractor={(item, index) =>
-
           item.id?.toString()
-
-          ||
-
-          item.folder
-
-          ||
-
-          index.toString()
-
-        }
+          || item.folder || index.toString()  }
 
         showsVerticalScrollIndicator={false}
-
         contentContainerStyle={{
           paddingTop:
             selectedFolder

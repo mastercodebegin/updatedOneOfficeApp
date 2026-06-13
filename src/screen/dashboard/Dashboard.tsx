@@ -380,7 +380,34 @@ function Dashboard({ navigation, route }) {
   });
   const readPdfFileRef = React.useRef(null)
   const [isShowSortModal, setIsShowSortModal] = useState(false)
-  const [selectedSort, setSelectedSort] = useState('latest')
+  const [convertedFiles, setConvertedFiles] = useState([]);
+  const layout = useWindowDimensions();
+  const [randomNumber, setRandomNumber] = useState(1)
+  const [count, setCount] = useState(0)
+  const [isUserBack, setIsUserBack] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const isFocused = useIsFocused();
+  const [fileScanProgress, setFileScanProgress] = useState(0);
+  const [filesFound, setFilesFound] = useState(0);
+  const [foundFilesList, setFoundFilesList] = useState([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const onChangeSearch = query => setSearchQuery(query);
+  const [uniqueNumber, setUniqueNumber] = React.useState(0)
+  const [index, setIndex] = React.useState(0);
+  const [screeName, setScreenName] = React.useState('Pdf')
+  const toast = useToast();
+  const dispatch = useDispatch();
+  const response = useSelector((state) => state.FileSlice);
+  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
+  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('')
+  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
+  const { theme, mode, toggleTheme } = useTheme();
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('');
+    const [selectedSort, setSelectedSort] = useState('latest')
   const sortOptions = [
     {
       id: 'latest',
@@ -408,66 +435,40 @@ function Dashboard({ navigation, route }) {
       icon: 'swap-vertical-outline',
     },
   ];
-
-  const [convertedFiles, setConvertedFiles] = useState(
-    []);
-
-  const layout = useWindowDimensions();
-  const [randomNumber, setRandomNumber] = useState(1)
-  const [count, setCount] = useState('')
-  const [isUserBack, setIsUserBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const isFocused = useIsFocused();
-  const [fileScanProgress, setFileScanProgress] = useState(0);
-  const [filesFound, setFilesFound] = useState(0);
-  const [foundFilesList, setFoundFilesList] = useState([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const onChangeSearch = query => setSearchQuery(query);
-  const [uniqueNumber, setUniqueNumber] = React.useState(0)
-  const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
+    const [routes] = React.useState([
     { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
     // { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
     // { key: asyncStorageKeyName.XLSX_FILES, title: 'Excel' },
     // { key: asyncStorageKeyName.PPT_FILES, title: 'Ppt' },
 
   ]);
-  const [screeName, setScreenName] = React.useState('Pdf')
-  const toast = useToast();
-  const dispatch = useDispatch();
-  const response = useSelector((state) => state.FileSlice);
-  const [isShowErrorModal, setIsShowErrorModal] = useState(false)
-  const [isShowEditPdfModal, setIsShowEditPdfModal] = useState(false)
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('')
-  const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
-  const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
   const webViewRef = React.useRef(null);
 
   useEffect(() => {
     const loadPreferences = () => {
       const savedViewMode = getLocalData(asyncStorageKeyName.VIEW_MODE);
-      if (savedViewMode === 'list' || savedViewMode === 'folder') {
-        setViewMode(savedViewMode);
+      console.log('savedViewMode', savedViewMode);
+      
+      if (!savedViewMode) {
+        setViewMode('folder');
       }
       const savedSortType = getLocalData(asyncStorageKeyName.SORT_TYPE);
-      if (savedSortType) {
-        setSelectedSort(savedSortType);
+            console.log('savedSortType', savedSortType);
+
+      if (!savedSortType) {
+        setSelectedSort('latest');
       }
     };
     loadPreferences();
   }, []);
 
-  useEffect(() => {
-    setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode);
-  }, [viewMode]);
+  // useEffect(() => {
+  //   setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode);
+  // }, [viewMode]);
 
-  useEffect(() => {
-    setLocalData(asyncStorageKeyName.SORT_TYPE, selectedSort);
-  }, [selectedSort]);
+  // useEffect(() => {
+  //   setLocalData(asyncStorageKeyName.SORT_TYPE, selectedSort);
+  // }, [selectedSort]);
 
   const handleLogin = async () => {
     try {
@@ -807,6 +808,16 @@ function Dashboard({ navigation, route }) {
     }
   }
 
+  const onPressViewMode = () => {
+    setViewMode(viewMode === 'list' ? 'folder' : 'list');
+    setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode === 'list' ? 'folder' : 'list');
+  }
+  const onPressSort = (sort:string) => {
+    setIsShowSortModal(false)
+    setSelectedSort(sort)
+    setLocalData(asyncStorageKeyName.SORT_TYPE, sort);
+  }
+
   const renderHeaderIcons = () => {
     const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
 
@@ -832,7 +843,7 @@ function Dashboard({ navigation, route }) {
         </TouchableOpacity>
         }
 
-        <TouchableOpacity onPress={() => setViewMode(prev => prev === 'list' ? 'folder' : 'list')}>
+        <TouchableOpacity onPress={() => onPressViewMode()}>
           <MaterialCommunityIcons
             name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
             size={scaledSize(24)}
@@ -1065,16 +1076,17 @@ function Dashboard({ navigation, route }) {
         
       </View>
 
-      {isShowErrorModal && <CustomErrorMsgModal errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />}
+       <CustomErrorMsgModal isVisible={isShowErrorModal} errorMessage={errorMsg} onPressClose={() => setIsShowErrorModal(false)} />
       {count >= 8 ? <VideoAddMob count={randomNumber} /> : null}
       <CustomSortModal
         data={sortOptions}
         isvisible={isShowSortModal}
         onPressClear={() => {
+          setSelectedSort('latest');
+          setLocalData(asyncStorageKeyName.SORT_TYPE, 'latest');
           setIsShowSortModal(false);
-          setSelectedSort('');
-        }}
-        onPressApply={(sort) => { setSelectedSort(sort), setIsShowSortModal(false) }}
+        } }
+        onPressApply={(sort) =>  onPressSort(sort)}
         onPressClose={() => setIsShowSortModal(false)}
       />
     </SafeAreaView>
