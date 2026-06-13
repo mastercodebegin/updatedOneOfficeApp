@@ -406,7 +406,7 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('');
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
     const [selectedSort, setSelectedSort] = useState('latest')
   const sortOptions = [
     {
@@ -447,28 +447,26 @@ function Dashboard({ navigation, route }) {
   useEffect(() => {
     const loadPreferences = () => {
       const savedViewMode = getLocalData(asyncStorageKeyName.VIEW_MODE);
-      console.log('savedViewMode', savedViewMode);
-      
-      if (!savedViewMode) {
-        setViewMode('folder');
+      if (savedViewMode === 'list' || savedViewMode === 'folder') {
+        setViewMode(savedViewMode);
       }
       const savedSortType = getLocalData(asyncStorageKeyName.SORT_TYPE);
-            console.log('savedSortType', savedSortType);
-
-      if (!savedSortType) {
+      if (savedSortType) {
+        setSelectedSort(savedSortType);
+      } else {
         setSelectedSort('latest');
       }
     };
     loadPreferences();
   }, []);
 
-  // useEffect(() => {
-  //   setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode);
-  // }, [viewMode]);
+  useEffect(() => {
+    if (viewMode) setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode);
+  }, [viewMode]);
 
-  // useEffect(() => {
-  //   setLocalData(asyncStorageKeyName.SORT_TYPE, selectedSort);
-  // }, [selectedSort]);
+  useEffect(() => {
+    if (selectedSort) setLocalData(asyncStorageKeyName.SORT_TYPE, selectedSort);
+  }, [selectedSort]);
 
   const handleLogin = async () => {
     try {
@@ -810,12 +808,10 @@ function Dashboard({ navigation, route }) {
 
   const onPressViewMode = () => {
     setViewMode(viewMode === 'list' ? 'folder' : 'list');
-    setLocalData(asyncStorageKeyName.VIEW_MODE, viewMode === 'list' ? 'folder' : 'list');
   }
   const onPressSort = (sort:string) => {
     setIsShowSortModal(false)
     setSelectedSort(sort)
-    setLocalData(asyncStorageKeyName.SORT_TYPE, sort);
   }
 
   const renderHeaderIcons = () => {

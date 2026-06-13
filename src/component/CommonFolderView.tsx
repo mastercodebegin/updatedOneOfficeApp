@@ -53,7 +53,7 @@ const CommonFolderView = (props: Props) => {
   const { theme } = useTheme();
 
   const [selectedFolder, setSelectedFolder] =
-    useState<FolderGroup | []>([]);
+    useState<FolderGroup | null>(null);
 
 const getFolderByFileName = (filename: string='') => {
   const name = filename.toLowerCase();
