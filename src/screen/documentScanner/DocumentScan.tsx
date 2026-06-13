@@ -68,6 +68,7 @@ import CustomGoogleBtn from '../../component/CustomGoogleBtn';
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import CustomProgressBar from '../../component/CustomProgressBar';
 // import { getAuth } from '@react-native-firebase/auth';
+import { CameraIcon } from 'lucide-react';
 
 
 
@@ -672,7 +673,8 @@ const toggleIsFavoriteHandler = async (folder: any) => {
   const renameFolder = async () => {
 
     if (folderName.length == 0) {
-      alert('Folder name cannot be empty')
+      setIsShowErrorModal(true);
+      setErrorMessage('Please enter a folder name.');
       return
     }
     await FolderLocalService.updateFolderById({ id: folderId, name: folderName, isDeleted: 0 })
@@ -1142,17 +1144,12 @@ const toggleIsFavoriteHandler = async (folder: any) => {
             </View>
           </View>
 
-          <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
+          {/* <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
             <LinearGradient colors={[theme.buttonBGColor, theme.buttonBGColor]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.uploadButton}>
 
-              {/* <Ionicons
-                name={iconName}
-                size={scaledSize(18)}
-                color={mode === 'light' ? 'white' : color}
-              /> */}
               <Text style={{
                 color: theme.iconColor,
                 letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
@@ -1164,7 +1161,7 @@ const toggleIsFavoriteHandler = async (folder: any) => {
                 setUserTags(t)
               }}>AK</Text>
             </LinearGradient>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Search + Filter */}
@@ -1232,16 +1229,20 @@ const toggleIsFavoriteHandler = async (folder: any) => {
         </View>
 
         <View style={styles.docContent}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View style={{ flexDirection: 'row',  alignItems: 'flex-start' }}>
             <Text style={styles.docTitle} numberOfLines={1}>
               {Utility.string.getFirstLetterCapitalize(item?.name || '')}
             </Text>
             <TouchableOpacity style={{ paddingLeft: 8, paddingTop: 2 }}
               disabled={isMultiDelete}
               onPress={() => toggleIsFavoriteHandler(item)}>
-              <Ionicons name={item.isFavorite ? "star" : "star-outline"}
+              {/* <Ionicons name={item.isFavorite ? "star" : "star-outline"}
                 size={scaledSize(18)}
-                color={item.isFavorite ? theme.themeColor : theme.iconColor} />
+                color={item.isFavorite ? 'gold' : theme.iconColor} /> */}
+                <CustomVectorIcon iconLibrary='Octicons' iconName='star-fill' 
+                style={{color:item.isFavorite ? theme.favColor : theme.iconColor,left:scaledSize(6),
+                  fontSize:scaledSize(18)}}
+                 onPress={() => toggleIsFavoriteHandler(item)}/>
             </TouchableOpacity>
           </View>
 

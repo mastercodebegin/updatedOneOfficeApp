@@ -35,7 +35,7 @@ export default function CustomFAB(props: S) {
 
 
             <LinearGradient
-                colors={mode === 'light' ? [theme.themeColor, theme.themeSecondaryColor] :
+                colors={mode === 'light' ? [theme.themeColor, theme.themeColor] :
                     [theme.buttonBGColor, theme.buttonBGColor]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}

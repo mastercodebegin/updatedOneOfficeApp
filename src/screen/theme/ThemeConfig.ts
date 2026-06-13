@@ -14,12 +14,14 @@ export type Theme = {
   secondaryButtonBGColor?: string; // optional for future use
   themeSecondaryColor:string,
   buttonTextColor:string,
-  deleteIconColor:string
+  deleteIconColor:string,
+  favColor?:string
 };
 
 const commonThemeProperties = {
   themeColor: '#0081A7',
-  deleteIconColor: '#FF3B5C'
+  deleteIconColor: '#FF3B5C',
+  favColor:'#F4C542'
 }
 // export const lightTheme: Theme = {
 //   ...commonThemeProperties,
