@@ -61,9 +61,9 @@ const generateUniqueNumber = () => {
 };
 
 interface S {
-  isMultipleSelection?: boolean,
-  fileTypes?: Array<any>
-  isBase64?: boolean
+  isMultipleSelection?: boolean;
+  fileTypes?: Array<(typeof types)[keyof typeof types]>;
+  isBase64?: boolean;
 }
 
 export const VECTOR_ICON_LIBRARIES = {
@@ -511,14 +511,16 @@ const getImageUriByOS = (uri: string) => {
 
 const DocumentPicker = async (props: S) => {
   const { isMultipleSelection = false, fileTypes = [], isBase64 = false } = props
+console.log('filetype',fileTypes);
 
   try {
     const res = await pick({
       allowMultiSelection: isMultipleSelection,
-      type: fileTypes,
-      mode: 'open', // 👈 important
-      copyTo: 'cachesDirectory', // 👈 BEST FIX
+      type: fileTypes.length==0?types.allFiles:fileTypes,
+      mode: 'open', 
+      copyTo: 'cachesDirectory', 
     });
+console.log('res====',res);
 
     const localFiles = await keepLocalCopy({
       destination: 'cachesDirectory',
@@ -529,7 +531,7 @@ const DocumentPicker = async (props: S) => {
     });
 
     console.log('📂 Local files:', localFiles);
-    // console.log('res pick===', res);
+    console.log('res pick===', res);
 
     const allValid = res.every(file => file.hasRequestedType);
 
@@ -542,9 +544,9 @@ const DocumentPicker = async (props: S) => {
   }
   catch (err) {
     console.log('error====', err);
-
-
   }
+
+
 }
 
 const createImagesToPdf = async (images: Array<{path:string}>,name:string) => {

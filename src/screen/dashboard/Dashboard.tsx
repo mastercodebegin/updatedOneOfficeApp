@@ -877,10 +877,8 @@ function Dashboard({ navigation, route }) {
         />
 
         <TouchableOpacity onPress={openFile}>
-
-          {/* <TouchableOpacity onPress={()=>{getAndCreateData(false,'bol')}}> */}
           <Feather name="folder" size={scaledSize(24)}
-            color={theme.themeColor} />
+            color={theme.themeColor}  />
         </TouchableOpacity>
 
         {/* <CustomMenu
@@ -914,7 +912,7 @@ function Dashboard({ navigation, route }) {
 
 
     try {
-      const res: any = await Utility.images.DocumentPicker({ isMultipleSelection: false })
+      const res: any = await Utility.images.DocumentPicker({ isMultipleSelection: false,fileTypes:[types.pdf] })
       let fileExtension = ''
       let uri = ''
 
