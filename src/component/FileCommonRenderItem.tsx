@@ -32,15 +32,15 @@ interface S {
   onPressItem: Function;
   onLongPress: any;
   isShowEditBtn?: boolean;
-  actionButtonContainerStyle?:StyleProp<ViewStyle>
-  leftIconStyle?:StyleProp<ViewStyle>
+  actionButtonContainerStyle?: StyleProp<ViewStyle>
+  leftIconStyle?: StyleProp<ViewStyle>
   onPressEditFile?: (item: any) => void;
   index: number;
 }
 
 
 export const FileCommonRenderItem = (props: S) => {
-  
+
   const {
     item,
     icon,
@@ -51,12 +51,12 @@ export const FileCommonRenderItem = (props: S) => {
     actionButtonContainerStyle,
     isShowEditBtn = false,
     leftIconStyle,
-    onPressEditFile = () => {},
+    onPressEditFile = () => { },
     index,
   } = props;
-  
-  const { selectedFiles,selectedItems } = useSelector((state: any) => state.FileSlice,
-  );  const { theme, mode } =useTheme();
+
+  const { selectedFiles, selectedItems } = useSelector((state: any) => state.FileSlice,
+  ); const { theme, mode } = useTheme();
 
   const styles = useMemo(() => {
     return createStyles(theme, mode)
@@ -73,7 +73,7 @@ export const FileCommonRenderItem = (props: S) => {
     setIsShowDeleteConfirmation,
   ] = useState(false);
 
- 
+
   const openFile = (
     item: any,
   ) => {
@@ -159,18 +159,18 @@ export const FileCommonRenderItem = (props: S) => {
             marginTop:
               index === 0
                 ? scaledSize(
-                    20,
-                  )
+                  20,
+                )
                 : 0,
           },
 
           checkisFolderSelected(item.id) &&
-            styles.selectedCard,
-        ]} onLongPress={()=>onLongPress(
-              item,
-            )}
-            onPress={onPressItemHandler}
-            >
+          styles.selectedCard,
+        ]} onLongPress={() => onLongPress(
+          item,
+        )}
+        onPress={onPressItemHandler}
+      >
 
         {/* selection ui */}
 
@@ -201,7 +201,7 @@ export const FileCommonRenderItem = (props: S) => {
 
         {/* icon */}
 
-        <View style={[styles.iconContainer,leftIconStyle]}>
+        <View style={[styles.iconContainer, leftIconStyle]}>
 
           <Image
             source={icon}
@@ -211,26 +211,9 @@ export const FileCommonRenderItem = (props: S) => {
         </View>
 
         {/* content */}
+        <View style={{  flex: 1,flexDirection:'column' }}>
 
-        <TouchableOpacity
-          style={
-            styles.touchable
-          }
-          onPress={
-            onPressItemHandler
-          }
-          // onLongPress={() =>
-          //   onLongPress(
-          //     item,
-          //   )
-          // }
-          >
-
-          <View
-            style={
-              styles.fileNameParentView
-            }>
-
+          <View style={{  flex: 1 }}>
             <Text
               numberOfLines={1}
               style={
@@ -240,42 +223,64 @@ export const FileCommonRenderItem = (props: S) => {
               {item?.name}
 
             </Text>
+          </View>
 
-            <View style={styles.dateAndSizeParentView}>
+          <View style={{flexDirection:'row',flex:1}}>
+          <TouchableOpacity
+            style={
+              [styles.touchable, {  }]
+            }
+            onPress={
+              onPressItemHandler
+            }
+            onLongPress={() =>
+              onLongPress(
+                item,
+              )
+            }
+          >
 
-              <View style={styles.metaRow}>
-                <MaterialIcons
-                  name="calendar-today"
-                  size={scaledSize(13)}
-                  color={theme.iconColor}
-                />
+            <View
+              style={
+                [styles.fileNameParentView,]
+              }>
 
-                <Text style={styles.metaText}>
-                  {Utility.date.getDateByMomentFormat(
-                    item.mtime,
-                  )}
-                </Text>
-              </View>
 
-              <View style={styles.metaRow}>
-                <MaterialIcons
-                  name="insert-drive-file"
-                  size={scaledSize(14)}
-                  color={theme.iconColor}
-                />
+              <View style={styles.dateAndSizeParentView}>
 
-                <Text style={styles.metaText}>
-                  {getFileSize(
-                    item?.size,
-                  )}
-                </Text>
+                <View style={styles.metaRow}>
+                  <MaterialIcons
+                    name="calendar-today"
+                    size={scaledSize(13)}
+                    color={theme.iconColor}
+                  />
+
+                  <Text style={styles.metaText}>
+                    {Utility.date.getDateByMomentFormat(
+                      item.mtime,
+                    )}
+                  </Text>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <MaterialIcons
+                    name="insert-drive-file"
+                    size={scaledSize(14)}
+                    color={theme.iconColor}
+                  />
+
+                  <Text style={styles.metaText}>
+                    {getFileSize(
+                      item?.size,
+                    )}
+                  </Text>
+                </View>
+
               </View>
 
             </View>
 
-          </View>
-
-        </TouchableOpacity>
+          </TouchableOpacity>
 
         {/* actions hidden during selection */}
 
@@ -283,7 +288,7 @@ export const FileCommonRenderItem = (props: S) => {
 
           <View
             style={
-              [styles.actionContainer,actionButtonContainerStyle]
+              [styles.actionContainer, actionButtonContainerStyle]
             }>
 
             {isShowEditBtn && (
@@ -355,7 +360,8 @@ export const FileCommonRenderItem = (props: S) => {
           </View>
 
         )}
-
+        </View>
+          </View>
       </TouchableOpacity>
 
       <ConfirmationDialog

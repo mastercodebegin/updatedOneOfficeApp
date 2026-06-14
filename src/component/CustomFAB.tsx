@@ -2,7 +2,7 @@ import { ButtonProps, StyleProp, StyleSheet, View, ViewProps, ViewStyle, } from 
 import React from 'react'
 import { TouchableOpacity } from 'react-native'
 import { scaledSize } from '../utilies/Utilities'
-import Octicons from 'react-native-vector-icons/Octicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS } from '../utilies/GlobalColors';
 import { useTheme } from '../screen/theme/useTheme';
@@ -52,7 +52,9 @@ export default function CustomFAB(props: S) {
                 }}
                     onPress={() => onPress()}
                 >
-                    {icon ? icon : <Octicons name='plus' size={scaledSize(20)} color={theme.iconColor} />}
+                    {icon ? icon : <Ionicons name='camera-outline'
+                     color={mode === 'light' ? 'white' : theme.iconColor}  size={scaledSize(20)}
+                    />}
                 </TouchableOpacity>
             </LinearGradient>
         </View >
