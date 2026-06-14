@@ -56,6 +56,7 @@ const ImagesToPdfConverter = () => {
   const [pdfName, setPdfName] = useState('')
   const [pdfImagesArr, setPdfImagesArr] = useState<any>([])
   const [images, setImages] = useState<any>([])
+  const [isShowCreatePdfConfirmation, setIsShowCreatePdfConfirmation] = useState(false);
   const [pdfQuality, setPdfQuality] = useState(0)
   const [isShowCreatePdfModalWindow, setIsShowCreatePdfModalWindow] = useState(false)
 
@@ -186,17 +187,7 @@ const ImagesToPdfConverter = () => {
   };
 
   const createImagesToPdfHandler = async () => {
-    console.log('images>>>>>>>>', images);
-    if (images.length === 0) {
-      setErrorMessage('Please select at least one image to create a PDF.');
-      setIsShowErrorModal(true);
-      return;
-    }
-    if (pdfName.length == 0) {
-      setErrorMessage('Please enter a PDF name before proceeding.');
-      setIsShowErrorModal(true);
-      return
-    }
+    setIsShowCreatePdfConfirmation(false);
     const imagePaths = images.map((image: any) => (
       Utility.images.getImageUriByOS(image.path)));
     console.log('imagePaths', imagePaths)
@@ -206,6 +197,20 @@ const ImagesToPdfConverter = () => {
     saveFileinPhoneStorage(createdPdfPath)
 
   }
+
+  const handleProceedPress = () => {
+    if (images.length === 0) {
+      setErrorMessage('Please select at least one image to create a PDF.');
+      setIsShowErrorModal(true);
+      return;
+    }
+    if (pdfName.trim().length === 0) {
+      setErrorMessage('Please enter a PDF name before proceeding.');
+      setIsShowErrorModal(true);
+      return;
+    }
+    setIsShowCreatePdfConfirmation(true);
+  };
 
   const saveFileinPhoneStorage = async (filePath: string) => {
     const date = Date.now();
@@ -577,7 +582,7 @@ const ImagesToPdfConverter = () => {
           {renderPdfQuality()}
 
           <TouchableOpacity activeOpacity={0.85} style={{ marginTop: scaledSize(36), alignSelf: 'center' }}
-            onPress={() => { createImagesToPdfHandler() }}
+            onPress={handleProceedPress}
           >
             <LinearGradient
               colors={[theme.themeColor, theme.themeSecondaryColor]}
@@ -614,6 +619,12 @@ const ImagesToPdfConverter = () => {
         </View>
       </Overlay>
 
+      <ConfirmationDialog
+        visible={isShowCreatePdfConfirmation}
+        onCancel={() => setIsShowCreatePdfConfirmation(false)}
+        onSubmit={createImagesToPdfHandler}
+        message="Are you sure you want to create a PDF with the selected images?"
+      />
      <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
         onSubmit={() => deleteFileHandler()} visible={isDeleted} />
       {customPermissionMessageModal()}
