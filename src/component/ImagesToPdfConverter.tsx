@@ -8,7 +8,7 @@ import RNFS from 'react-native-fs';
 import { createPdf } from 'react-native-images-to-pdf';
 import ModalViewForPdfName from './ModalViewForPdfName'
 import RNFetchBlob from 'rn-fetch-blob';
-import {  deleteFile,  getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
+import { deleteFile, getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
 import CustomMenu from './Menu';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -47,6 +47,7 @@ import CustomErrorMsgModal from './CustomErrorMsgModal';
 import CustomSortModal from './CustomSortModal';
 import RNBlobUtil from 'react-native-blob-util';
 import { convertedPdfLocalService } from '../db/convertedPdfLocalService';
+import CustomEmptyState from './CustomEmptyState';
 
 // const RNImageToPdf = createPdf
 
@@ -62,7 +63,7 @@ const ImagesToPdfConverter = () => {
 
   const [isDeleted, setIsDeleted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [filePath, setFilePath] = useState()
+  const [selectedFile, setSelectedFile] = useState({})
   const [randomNumber, setRandomNumber] = useState(1)
   const [searchValue, setSearchValue] = useState('')
   const navigation = useNavigation()
@@ -120,7 +121,6 @@ const ImagesToPdfConverter = () => {
 
 
   const fetchConvertedPdfs = async () => {
-    setIsLoading(true);
     const files = await convertedPdfLocalService.getAllConvertedPdfs();
     setPdfData(files);
     setIsLoading(false);
@@ -186,77 +186,79 @@ const ImagesToPdfConverter = () => {
   };
 
   const createImagesToPdfHandler = async () => {
-    console.log('images>>>>>>>>',images);
+    console.log('images>>>>>>>>', images);
     if (images.length === 0) {
       setErrorMessage('Please select at least one image to create a PDF.');
       setIsShowErrorModal(true);
       return;
     }
-    if (pdfName.length == 0)
-    {
+    if (pdfName.length == 0) {
       setErrorMessage('Please enter a PDF name before proceeding.');
       setIsShowErrorModal(true);
       return
     }
     const imagePaths = images.map((image: any) => (
       Utility.images.getImageUriByOS(image.path)));
-    console.log('imagePaths',imagePaths)
-    
-   const createdPdfPath = await Utility.images.createImagesToPdf(imagePaths, pdfName)
-   console.log('createdPdfPath',createdPdfPath);
-   saveFileinPhoneStorage(createdPdfPath)
-   
+    console.log('imagePaths', imagePaths)
+
+    const createdPdfPath = await Utility.images.createImagesToPdf(imagePaths, pdfName)
+    console.log('createdPdfPath', createdPdfPath);
+    saveFileinPhoneStorage(createdPdfPath)
+
   }
 
   const saveFileinPhoneStorage = async (filePath: string) => {
     const date = Date.now();
-  
+
     console.log('filePath====', filePath);
-  
-  // Android fix (remove file:// if exists)
-  const sourcePath =
-    Platform.OS === 'android'
-      ? filePath.replace('file://', '')
-      : `file://${filePath}`;
 
-  try {
-    await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH);
-  } catch (error) {
-    // Directory already exists
-  }
+    // Android fix (remove file:// if exists)
+    const sourcePath =
+      Platform.OS === 'android'
+        ? filePath.replace('file://', '')
+        : `file://${filePath}`;
 
-  const destinationPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${pdfName}.pdf`;
+    try {
+      await RNFS.mkdir(CONSTANT.SAVED_CONVERTED_PDF_PATH);
+    } catch (error) {
+      // Directory already exists
+    }
 
-  try {
-    await RNFS.copyFile(sourcePath, destinationPath);
-    console.log('File copied successfully to:', destinationPath);
-    await deleteFile(sourcePath); // Clean up temp file
-  } catch (err) {
-    console.log('Error copying file:', err.message);
-    return;
-  }
+    const destinationPath = `${CONSTANT.SAVED_CONVERTED_PDF_PATH}/${pdfName}.pdf`;
 
-  try {
-    const state = await RNFS.stat(destinationPath);
-    const newPdf = {
-      name: `${pdfName}.pdf`,
-      path: destinationPath,
-      size: state.size,
-      createdAt: date,
-    };
+    try {
+      await RNFS.copyFile(sourcePath, destinationPath);
+      console.log('File copied successfully to:', destinationPath);
+      await deleteFile(sourcePath); // Clean up temp file
+      setIsLoading(false)
 
-    await convertedPdfLocalService.createConvertedPdf(newPdf);
+    } catch (err) {
+      console.log('Error copying file:', err.message);
+      setIsLoading(false)
+      return;
+    }
 
-    // Refresh list
-    fetchConvertedPdfs();
+    try {
+      const state = await RNFS.stat(destinationPath);
+      const newPdf = {
+        name: `${pdfName}.pdf`,
+        path: destinationPath,
+        size: state.size,
+        createdAt: date,
+      };
 
-    setImages([]);
-    setPdfName('');
-    setIsShowCreatePdfModalWindow(false);
-  } catch (dbError) {
-    console.log('Error saving to DB:', dbError);
-  }
-};
+      await convertedPdfLocalService.createConvertedPdf(newPdf);
+
+      // Refresh list
+      fetchConvertedPdfs();
+
+      setImages([]);
+      setPdfName('');
+      setIsShowCreatePdfModalWindow(false);
+    } catch (dbError) {
+      console.log('Error saving to DB:', dbError);
+    }
+  };
 
 
 
@@ -281,14 +283,14 @@ const ImagesToPdfConverter = () => {
         setNewFileName(file.name.replace(/\.[^/.]+$/, '')); // Set name without extension
         setIsShowRenameModal(true);
       }}
-      onPressDeleteFile={() => { setIsDeleted(true), setFilePath(item) }}
+      onPressDeleteFile={() => { setIsDeleted(true),setSelectedFile(item) }}
       screenName='PdfViewer'
       onPressItem={() => navigation.navigate('PdfViewer', { uri: item.path })}
-      onLongPress={() => {}}
+      onLongPress={() => { }}
       // isItemSelected={false}
       // selectedItems={[]}
-      actionButtonContainerStyle={{left:scaledSize(10)}}
-      leftIconStyle={{width:scaledSize(46),height:scaledSize(46)}}
+      actionButtonContainerStyle={{ left: scaledSize(10) }}
+      leftIconStyle={{ width: scaledSize(46), height: scaledSize(46) }}
       index={index}
     />
   )
@@ -349,14 +351,17 @@ const ImagesToPdfConverter = () => {
   }
 
 
-  const deleteFileHandler = async (item) => {
+  const deleteFileHandler = async () => {
     try {
-      setIsDeleted(false);
-      await deleteFile(item.path);
-      await convertedPdfLocalService.deleteConvertedPdf(item.id);
+      console.log('selected file===',selectedFile);
+      setIsLoading(true);
+
+      await deleteFile(selectedFile.path);
+      await convertedPdfLocalService.deleteConvertedPdf(selectedFile.id);
 
       // Refresh list
       fetchConvertedPdfs();
+      setIsDeleted(false);
     }
     catch (err) {
       console.log('delete error-----', err);
@@ -537,7 +542,7 @@ const ImagesToPdfConverter = () => {
         ) : (
           <>
             {isLoading ? <CustomSpinner isLoading={isLoading} /> : <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text>No files</Text>
+              <CustomEmptyState onPressReload={()=>{}}/>
 
 
             </View>}
@@ -552,24 +557,28 @@ const ImagesToPdfConverter = () => {
         <CustomFAB onPress={() => showSelectImagesModal()} />
       </View>
 
-      <Overlay isVisible={isShowCreatePdfModalWindow} transparent 
-      overlayStyle={{borderRadius:scaledSize(26),
-       backgroundColor: theme.bgColor}} >
+      <Overlay isVisible={isShowCreatePdfModalWindow} transparent
+        overlayStyle={{
+          borderRadius: scaledSize(26),
+          backgroundColor: theme.bgColor
+        }} >
         <View style={{ height: heightFromPercentage(54), width: widthFromPercentage(90), backgroundColor: theme.bgColor, alignSelf: 'flex-end' }}>
-          <View style={{ height: heightFromPercentage(20), width: widthFromPercentage(90),
-             alignSelf: 'flex-end' }}>
+          <View style={{
+            height: heightFromPercentage(20), width: widthFromPercentage(90),
+            alignSelf: 'flex-end'
+          }}>
             <CustomPhotoOrCameraSelectOption
               onPressClose={() => { setIsShowCreatePdfModalWindow(false) }}
               images={images}
               multipleImageSelection={true}
-              onSelectImages={(arr: any) => { setImages(arr) }} />
+              onSelectImages={(arr: any) => {  setImages(arr) }} />
           </View>
           {renderInputFileName()}
           {renderPdfQuality()}
 
           <TouchableOpacity activeOpacity={0.85} style={{ marginTop: scaledSize(36), alignSelf: 'center' }}
             onPress={() => { createImagesToPdfHandler() }}
-          > 
+          >
             <LinearGradient
               colors={[theme.themeColor, theme.themeSecondaryColor]}
               start={{ x: 0, y: 0 }}
@@ -605,8 +614,8 @@ const ImagesToPdfConverter = () => {
         </View>
       </Overlay>
 
-      {isDeleted ? <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
-        onSubmit={() => deleteFileHandler(filePath)} visible={isDeleted} /> : null}
+     <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
+        onSubmit={() => deleteFileHandler()} visible={isDeleted} />
       {customPermissionMessageModal()}
       <CustomSortModal
         data={sortOptions}

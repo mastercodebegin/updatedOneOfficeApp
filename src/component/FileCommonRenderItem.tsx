@@ -321,8 +321,11 @@ export const FileCommonRenderItem = (props: S) => {
                 styles.deleteButton,
               ]}
               onPress={() =>
-                setIsShowDeleteConfirmation(
-                  true,
+                // setIsShowDeleteConfirmation(
+                //   true,
+                // )
+                onPressDeleteFile(
+                  item,
                 )
               }>
 
@@ -364,7 +367,7 @@ export const FileCommonRenderItem = (props: S) => {
           </View>
       </TouchableOpacity>
 
-      <ConfirmationDialog
+      {/* <ConfirmationDialog
         visible={
           isShowDeleteConfirmation
         }
@@ -384,7 +387,7 @@ export const FileCommonRenderItem = (props: S) => {
           );
         }}
         mode="delete"
-      />
+      /> */}
 
     </>
   );

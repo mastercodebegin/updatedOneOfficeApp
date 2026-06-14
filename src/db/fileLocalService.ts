@@ -329,7 +329,18 @@ return {success: true};
 
     return res[0].rows.raw();
   },
+async getFilesCountByFolderId(folderId: number) {
+  const db = await getDB();
 
+  const res = await db.executeSql(
+    `SELECT COUNT(*) as count
+     FROM files
+     WHERE folderId = ? AND isDeleted = 0`,
+    [folderId]
+  );
+
+  return res[0].rows.item(0).count;
+},
   // 📂 FILES BY FIREBASE FOLDER (SYNC USE)
   async getFilesByFirebaseFolderId(firebaseId: string) {
     const db = await getDB();

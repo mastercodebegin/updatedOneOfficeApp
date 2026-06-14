@@ -82,9 +82,9 @@ const createStyles = (theme: Theme, mode: string) =>
       right: scaledSize(30),
     },
     title: {
-      fontSize: scaledSize(20),
+      fontSize: scaledSize(16),
       letterSpacing:1,
-      fontFamily: Fonts.PTSerifBold,
+      fontFamily: Fonts.regular,
       color: theme.primaryTextColor,
       textAlign: 'center',
       marginBottom: scaledSize(16),
@@ -106,7 +106,7 @@ const createStyles = (theme: Theme, mode: string) =>
       height: scaledSize(46),
       width: scaledSize(140),
       borderRadius: scaledSize(10),
-      borderWidth: .5,
+      // borderWidth: .5,
       borderColor: theme.themeColor,
     },
     buttonText: {

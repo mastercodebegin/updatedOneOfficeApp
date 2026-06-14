@@ -155,19 +155,19 @@ export const DocumentScan = () => {
     },
   ];
 
-const toggleIsFavoriteHandler = async (folder: any) => {
-  try {
-    await FolderLocalService.updateFolderById({
-      id: folder.id,
-      isFavorite: folder.isFavorite ? 0 : 1,
-    });
+  const toggleIsFavoriteHandler = async (folder: any) => {
+    try {
+      await FolderLocalService.updateFolderById({
+        id: folder.id,
+        isFavorite: folder.isFavorite ? 0 : 1,
+      });
 
-    const folders = await FolderLocalService.getActiveFolders();
-    setData(folders);
-  } catch (error) {
-    console.log('Error toggling favorite:', error);
-  }
-};
+      const folders = await FolderLocalService.getActiveFolders();
+      setData(folders);
+    } catch (error) {
+      console.log('Error toggling favorite:', error);
+    }
+  };
 
 
   // const theme =useSelector((state:any)=>state.ThemeSlice)
@@ -177,36 +177,28 @@ const toggleIsFavoriteHandler = async (folder: any) => {
     return createStyles(theme, mode)
   }, [theme])
 
-  const formatBytes = (bytes, decimals = 2) => {
-    if (!+bytes) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-  };
 
-  useEffect(() => {
-    if (data.length > 0 && localFiles.length > 0) {
-      const stats = {};
-      let max = 0;
-      data.forEach(folder => {
-        const filesInFolder = localFiles.filter(file => file.folderId === folder.id);
-        const count = filesInFolder.length;
-        const size = filesInFolder.reduce((acc, file) => acc + (file.size || 0), 0);
-        stats[folder.id] = { count, size };
-        if (size > max) {
-          max = size;
-        }
-      });
-      setFolderStats(stats);
-      setMaxFolderSize(max);
-    } else {
-      // Reset stats if there's no data
-      setFolderStats({});
-      setMaxFolderSize(0);
-    }
-  }, [data, localFiles]);
+
+  // useEffect(() => {
+  //   if (data.length > 0 && localFiles.length > 0) {
+  //     const stats = {};
+  //     let max = 0;
+  //     data.forEach(folder => {
+  //       const filesInFolder = localFiles.filter(file => file.folderId === folder.id);
+  //       const count = filesInFolder.length;
+  //       const size = filesInFolder.reduce((acc, file) => acc + (file.size || 0), 0);
+  //       stats[folder.id] = { count, size };
+  //       if (size > max) {
+  //         max = size;
+  //       }
+  //     });
+  //     setFolderStats(stats);
+  //     setMaxFolderSize(max);
+  //   } else {
+  //     setFolderStats({});
+  //     setMaxFolderSize(0);
+  //   }
+  // }, [data, localFiles]);
 
   useEffect(() => {
     // console.log('ThemeSlice', theme);
@@ -1201,7 +1193,15 @@ const toggleIsFavoriteHandler = async (folder: any) => {
     return tag ? tag.name : '';
 
   }
-  const renderParentItem = ({ item }) => {
+  const getFileCount=async(id:number)=>{
+const files = await FileLocalService.getFilesByFolder(id);
+return files
+}
+
+const renderParentItem = ({ item }) => {
+    console.log('item>>>>>>>>',item);
+   
+
     const isSelected = checkisFolderSelected(item.id);
     const stats = folderStats[item.id] || { count: 0, size: 0 };
     // const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
@@ -1229,7 +1229,7 @@ const toggleIsFavoriteHandler = async (folder: any) => {
         </View>
 
         <View style={styles.docContent}>
-          <View style={{ flexDirection: 'row',  alignItems: 'flex-start' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
             <Text style={styles.docTitle} numberOfLines={1}>
               {Utility.string.getFirstLetterCapitalize(item?.name || '')}
             </Text>
@@ -1239,18 +1239,21 @@ const toggleIsFavoriteHandler = async (folder: any) => {
               {/* <Ionicons name={item.isFavorite ? "star" : "star-outline"}
                 size={scaledSize(18)}
                 color={item.isFavorite ? 'gold' : theme.iconColor} /> */}
-                <CustomVectorIcon iconLibrary='Octicons' iconName='star-fill' 
-                style={{color:item.isFavorite ? theme.favColor : theme.iconColor,left:scaledSize(6),
-                  fontSize:scaledSize(18)}}
-                 onPress={() => toggleIsFavoriteHandler(item)}/>
+              <CustomVectorIcon iconLibrary='Octicons' iconName='star-fill'
+                style={{
+                  color: item.isFavorite ? theme.favColor : theme.iconColor, left: scaledSize(6),
+                  fontSize: scaledSize(18)
+                }}
+                onPress={() => toggleIsFavoriteHandler(item)} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.docMetadata}>
             <Text style={styles.docMetaText}>{Utility.date.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}</Text>
-            <Text style={styles.docMetaText}>{stats.count} files</Text>
+            <Text style={styles.docMetaText}>{item?.filesCount} files</Text>
             <Text style={styles.docMetaText}>{getTagByIdHandler(item.tagId)}</Text>
           </View>
+
         </View>
 
         <View style={styles.docActions}>
@@ -2000,11 +2003,9 @@ const toggleIsFavoriteHandler = async (folder: any) => {
 
     switch (sortType) {
       case 'favorites':
-        return sorted.sort((a, b) => {
-          if (a.isFavorite && !b.isFavorite) return -1;
-          if (!a.isFavorite && b.isFavorite) return 1;
-          return b.createdAt - a.createdAt; // secondary sort by latest
-        });
+        return sorted.filter(
+          item => Number(item.isFavorite) === 1
+        );
 
       case 'latest':
 
@@ -2491,7 +2492,8 @@ const toggleIsFavoriteHandler = async (folder: any) => {
         onSubmit={deleteMultipleTagsHandler}
       />
       <ConfirmationDialog visible={isShowFolderDeleteConfirmation} mode='delete'
-        onCancel={() => setIsFolderDeleteConfirmation(false)}
+        onCancel={() => {setIsFolderDeleteConfirmation(false),
+          setSelectedFoldersId([])}}
         onSubmit={() => deleteFolder()} />
       <ConfirmationDialog
         visible={isShowCreateBackupConfirmation}

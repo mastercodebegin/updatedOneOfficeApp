@@ -250,12 +250,18 @@ async getActiveFolders() {
     const db = await getDB();
 
     const result = await db.executeSql(`
-      SELECT *
+      SELECT
+        folders.*,
+        COUNT(files.id) AS filesCount
       FROM folders
-      WHERE isDeleted = 0
+      LEFT JOIN files
+        ON files.folderId = folders.id
+        AND files.isDeleted = 0
+      WHERE folders.isDeleted = 0
+      GROUP BY folders.id
       ORDER BY
-        isFavorite DESC,
-        createdAt DESC
+        folders.isFavorite DESC,
+        folders.createdAt DESC
     `);
 
     const rows = result[0].rows;
