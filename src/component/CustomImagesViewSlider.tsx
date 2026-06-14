@@ -11,8 +11,8 @@ interface S {
     imageUrls: Array<string>
     onPressBack: Function
     onShare: Function
-    currentImageUri: Function
-    title: any;
+    currentImageUri?: Function
+    title?: any;
     isBackIconHide?: boolean;
     isCloseIconShow?: boolean;
     isHeaderTransparent?: boolean
@@ -32,9 +32,7 @@ export default function CustomImagesViewSlider(props: S) {
 
 
     return (
-        <Modal visible={isVisible} style={{ flex: 1, }}
-            contentContainerStyle={{ backgroundColor: 'red' }}
-        >
+        <Modal visible={isVisible} style={{ flex: 1,margin:0,padding:0 }}>
             {/* <SafeAreaView style={{
           height: scaledSize(800), width: '100%',
 
@@ -42,9 +40,9 @@ export default function CustomImagesViewSlider(props: S) {
             <View style={{
                 height: scaledSize(60), width: '100%', backgroundColor: 'black',
                 justifyContent: 'space-between', alignItems: 'center',
-                flexDirection: 'row', marginTop: scaledSize(0), borderBottomWidth: 1,
+                flexDirection: 'row', borderBottomWidth: 1,
             }}>
-                <CustomHeader isHeaderTransparent={true}
+                <CustomHeader 
                     onPressBack={() => onPressBack()} title={imageUrls.length>0?title.length>0?title:imageUrls[0].displayName:''} isShareIconShow={isShareIconShow}
                     isCloseIconShow={isCloseIconShow}
                     isBackIconHide={isBackIconHide} onShare={() => onShare(imagePath)} />

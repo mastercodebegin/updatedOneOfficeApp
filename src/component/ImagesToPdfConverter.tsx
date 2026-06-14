@@ -1,17 +1,13 @@
 
 import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform, SafeAreaView } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import FloatingButton from './FloatingButton'
-import DocumentPicker from 'react-native-document-picker';
+
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
-import { createPdf } from 'react-native-images-to-pdf';
-import ModalViewForPdfName from './ModalViewForPdfName'
+
 import RNFetchBlob from 'rn-fetch-blob';
 import { deleteFile, getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
-import CustomMenu from './Menu';
-import Icon from 'react-native-vector-icons/Ionicons';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import CustomBannerAdd from './admob/CustomBannerAdd';
@@ -20,25 +16,14 @@ import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomSpinner from './CustomSpinner';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../utilies/Constants';
 import { useDispatch, useSelector } from 'react-redux'
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Searchbar } from 'react-native-paper'
-import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import { Button, Overlay } from 'react-native-elements';
 import { useToast } from "react-native-toast-notifications";
-import Toast from 'react-native-toast-message';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
-import Ionicons from 'react-native-vector-icons/Ionicons'
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS } from '../utilies/GlobalColors';
-import CustomLinearGradientView from './CustomLinearGradientView';
 import CustomFAB from './CustomFAB';
-import { ErrorToast } from './CustomToast';
-import CustomBackIcon from './CustomBackIcon';
-import CustomHeaderGradient from './CustomHeaderGradient';
 import CustomPermissionMessage from './CustomPermissionMessage';
 import { CustomPhotoOrCameraSelectOption } from './CustomPhotoOrCameraSelectOption';
-import CustomInput from './CustomInput';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
 import CustomVectorIcon from './CustomVectorIcon';
@@ -191,7 +176,16 @@ const ImagesToPdfConverter = () => {
     const imagePaths = images.map((image: any) => (
       Utility.images.getImageUriByOS(image.path)));
     console.log('imagePaths', imagePaths)
+for (const path of imagePaths) {
+  const stat = await RNFS.stat(path);
 
+  console.log('Path:', path);
+  console.log('Bytes:', stat.size);
+  console.log(
+    'MB:',
+    (Number(stat.size) / (1024 * 1024)).toFixed(2)
+  );
+}
     const createdPdfPath = await Utility.images.createImagesToPdf(imagePaths, pdfName)
     console.log('createdPdfPath', createdPdfPath);
     saveFileinPhoneStorage(createdPdfPath)

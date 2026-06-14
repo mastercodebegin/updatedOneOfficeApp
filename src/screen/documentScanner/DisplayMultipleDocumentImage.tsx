@@ -1034,14 +1034,14 @@ const renderHeaderNoSelection = () => {
           contentContainerStyle={layoutMode === 'grid' ? styles.gridListContent : undefined}
           columnWrapperStyle={layoutMode === 'grid' ? styles.gridColumnWrapper : undefined}
         />
-        <Switch
+        {/* <Switch
           trackColor={{ false: '#767577', true: 'green' }}
           thumbColor={mode == 'dark' ? 'green' : '#f4f3f4'}
           ios_backgroundColor="#3e3e3e"
           onValueChange={() => toggleTheme()}
           value={mode == 'dark' ? true : false}
 
-        />
+        /> */}
         {/* <LinearGradient colors={['#0081A7', '#00AFB9']}
         style={{ height: scaledSize(60), width: scaledSize(60), borderRadius: scaledSize(60), position: 'absolute', bottom: 100, right: 20 }}>
         <TouchableOpacity style={{

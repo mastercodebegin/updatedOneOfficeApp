@@ -67,8 +67,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: '100%',
-    backgroundColor: theme.bgColor,
+    flex:1,
+    // backgroundColor: theme.bgColor,
     paddingHorizontal: scaledSize(8),
   },
   sideContainer: {

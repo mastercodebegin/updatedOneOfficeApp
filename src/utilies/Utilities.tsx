@@ -12,7 +12,6 @@ import Share from 'react-native-share';
 import { createPdf } from 'react-native-images-to-pdf';
 
 import { keepLocalCopy, pick, PredefinedFileTypes, types } from '@react-native-documents/picker'
-const RNImageToPdf = createPdf
 import { Platform } from 'react-native';
 
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -411,29 +410,7 @@ export const getConvertedPdfFileFromPhoneStorage = async () => {
   return arr;
 };
 
-// export const createImagesToPdf = async (imagesPath: Array<string>, name: string) => {
 
-//   try {
-//     const options = {
-//       imagePaths: imagesPath,
-//       name: name,
-//       maxSize: { // optional maximum image dimension - larger images will be resized
-//         width: 900,
-//         height: Math.round(Dimensions.get('window').height / Dimensions.get('window').width * 900),
-//       },
-//       quality: 1,
-//     };
-//     console.log('options', options);
-
-//     const pdf = await RNImageToPdf.createPDFbyImages(options);
-
-//     console.log('typeof>>>>>>>>>>', pdf.filePath);
-//     return pdf.filePath
-
-//   } catch (e) {
-//     console.log('error-----', e);
-//   }
-// }
 
  const shareApp = () => {
   Platform.OS == 'android' ?
@@ -578,7 +555,6 @@ const createImagesToPdf = async (images: Array<{path:string}>,name:string) => {
     console.log('options', options);
 
     const createdPdfPath = await createPdf(options);
-    // saveFileinPhoneStorage(pdf)
     console.log('pdf', createdPdfPath);
     return createdPdfPath
 
