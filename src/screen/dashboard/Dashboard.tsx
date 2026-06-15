@@ -72,6 +72,7 @@ import { AuthService } from '../../service/AuthService';
 
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
+import ManageExternalStorage from 'react-native-manage-external-storage';
 
 const { PdfCacheModule } = NativeModules;
 
@@ -386,7 +387,6 @@ function Dashboard({ navigation, route }) {
   const [count, setCount] = useState(0)
   const [isUserBack, setIsUserBack] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const isFocused = useIsFocused();
   const [fileScanProgress, setFileScanProgress] = useState(0);
   const [filesFound, setFilesFound] = useState(0);
   const [foundFilesList, setFoundFilesList] = useState([]);
@@ -408,6 +408,8 @@ function Dashboard({ navigation, route }) {
   const { theme, mode, toggleTheme } = useTheme();
   const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
     const [selectedSort, setSelectedSort] = useState('latest')
+      const isFocused = useIsFocused();
+
   const sortOptions = [
     {
       id: 'latest',
@@ -484,20 +486,19 @@ function Dashboard({ navigation, route }) {
 
 
 
-  useEffect(() => {
-    const obj = getLocalData(asyncStorageKeyName.ALL_FILES);
-    console.log('obj', obj);
-    console.log('obj type of >>>>>>>', typeof obj);
-    if (obj?.pdfFiles?.length > 0) {
+  // useEffect(() => {
+  //   const obj = getLocalData(asyncStorageKeyName.ALL_FILES);
+  //   console.log('obj', obj);
+  //   console.log('obj type of >>>>>>>', typeof obj);
+  //   if (obj?.pdfFiles?.length > 0) {
 
-      setDocuments(obj);
-    }
-    else {
+  //     setDocuments(obj);
+  //   }
+  //   else {
 
-      console.log('No  files found, Please allow storage permission and click on refresh button to load files')
-      // readPdfFiles()
-    }
-  }, [])
+  //     console.log('No  files found, Please allow storage permission and click on refresh button to load files')
+  //   }
+  // }, [])
 
   const readPdfFiles = React.useCallback(async () => {
 
@@ -524,22 +525,56 @@ function Dashboard({ navigation, route }) {
     setUniqueNumber(Utility.generateUniqueNumber())
   }, []);
 
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        if (documents.pdfFiles.length == 0) {
-          readPdfFiles();
-        }
+
+
+
+const checkAndReadFiles = () => {
+const files = getLocalData(asyncStorageKeyName.ALL_FILES);
+
+const hasFiles =
+  files &&
+  (
+    files.pdfFiles?.length > 0 ||
+    files.wordFiles?.length > 0 ||
+    files.xlsxFiles?.length > 0 ||
+    files.pptFiles?.length > 0
+  );
+console.log('hashfiles===',hasFiles);
+
+if (!hasFiles && documents.pdfFiles.length === 0) {
+  readPdfFiles();
+}
+else{
+  setDocuments(files)
+}
+};
+
+useEffect(() => {
+  if (isFocused) {
+    checkAndReadFiles();
+  }
+}, [isFocused]);
+
+useEffect(() => {
+  const subscription = AppState.addEventListener(
+    'change',
+    nextAppState => {
+      if (
+        appState.match(/inactive|background/) &&
+        nextAppState === 'active' &&
+        isFocused
+      ) {
+        checkAndReadFiles();
       }
+
       setAppState(nextAppState);
-    };
+    },
+  );
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [appState, readPdfFiles]);
+  return () => {
+    subscription.remove();
+  };
+}, [appState, isFocused, documents.pdfFiles.length]);
 
 
 

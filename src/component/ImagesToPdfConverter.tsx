@@ -1,5 +1,5 @@
 
-import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform, SafeAreaView } from 'react-native'
+import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform, SafeAreaView, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Share from 'react-native-share';
@@ -173,23 +173,24 @@ const ImagesToPdfConverter = () => {
 
   const createImagesToPdfHandler = async () => {
     setIsShowCreatePdfConfirmation(false);
+    setIsLoading(true)
     const imagePaths = images.map((image: any) => (
       Utility.images.getImageUriByOS(image.path)));
     console.log('imagePaths', imagePaths)
-for (const path of imagePaths) {
-  const stat = await RNFS.stat(path);
+    for (const path of imagePaths) {
+      const stat = await RNFS.stat(path);
 
-  console.log('Path:', path);
-  console.log('Bytes:', stat.size);
-  console.log(
-    'MB:',
-    (Number(stat.size) / (1024 * 1024)).toFixed(2)
-  );
-}
+      console.log('Path:', path);
+      console.log('Bytes:', stat.size);
+      console.log(
+        'MB:',
+        (Number(stat.size) / (1024 * 1024)).toFixed(2)
+      );
+    }
     const createdPdfPath = await Utility.images.createImagesToPdf(imagePaths, pdfName)
     console.log('createdPdfPath', createdPdfPath);
     saveFileinPhoneStorage(createdPdfPath)
-
+    setIsLoading(false)
   }
 
   const handleProceedPress = () => {
@@ -282,7 +283,7 @@ for (const path of imagePaths) {
         setNewFileName(file.name.replace(/\.[^/.]+$/, '')); // Set name without extension
         setIsShowRenameModal(true);
       }}
-      onPressDeleteFile={() => { setIsDeleted(true),setSelectedFile(item) }}
+      onPressDeleteFile={() => { setIsDeleted(true), setSelectedFile(item) }}
       screenName='PdfViewer'
       onPressItem={() => navigation.navigate('PdfViewer', { uri: item.path })}
       onLongPress={() => { }}
@@ -352,7 +353,7 @@ for (const path of imagePaths) {
 
   const deleteFileHandler = async () => {
     try {
-      console.log('selected file===',selectedFile);
+      console.log('selected file===', selectedFile);
       setIsLoading(true);
 
       await deleteFile(selectedFile.path);
@@ -541,7 +542,7 @@ for (const path of imagePaths) {
         ) : (
           <>
             {isLoading ? <CustomSpinner isLoading={isLoading} /> : <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <CustomEmptyState onPressReload={()=>{}}/>
+              <CustomEmptyState onPressReload={() => { }} />
 
 
             </View>}
@@ -570,7 +571,7 @@ for (const path of imagePaths) {
               onPressClose={() => { setIsShowCreatePdfModalWindow(false) }}
               images={images}
               multipleImageSelection={true}
-              onSelectImages={(arr: any) => {  setImages(arr) }} />
+              onSelectImages={(arr: any) => { setImages(arr) }} />
           </View>
           {renderInputFileName()}
           {renderPdfQuality()}
@@ -609,7 +610,7 @@ for (const path of imagePaths) {
               </Text>
             </LinearGradient>
           </TouchableOpacity>
-
+<CustomSpinner isLoading={isLoading} />
         </View>
       </Overlay>
 
@@ -619,7 +620,7 @@ for (const path of imagePaths) {
         onSubmit={createImagesToPdfHandler}
         message="Are you sure you want to create a PDF with the selected images?"
       />
-     <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
+      <ConfirmationDialog onCancel={() => setIsDeleted(false)} mode='delete'
         onSubmit={() => deleteFileHandler()} visible={isDeleted} />
       {customPermissionMessageModal()}
       <CustomSortModal

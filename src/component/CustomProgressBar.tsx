@@ -101,7 +101,7 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                 {isComplete && onContinue && onRescan && (
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity style={styles.secondaryButton} onPress={onRescan}>
-                            <MaterialCommunityIcons name={isBackup ? "close" : "refresh"} size={scaledSize(isBackup ? 20 : 18)} color="#A1A1AA" />
+                            <MaterialCommunityIcons name={isBackup ? "close" : "refresh"} size={scaledSize(isBackup ? 20 : 18)} color={theme.themeColor} />
                             <Text style={styles.secondaryButtonText}>{isBackup ? "Close" : "Rescan"}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -225,15 +225,17 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         height: scaledSize(48),
-        backgroundColor: theme.buttonBGColor,
+        // backgroundColor: theme.buttonBGColor,
         borderRadius: scaledSize(14),
         marginRight: scaledSize(8),
-        borderWidth: 1,
+        // borderWidth: 1,
         borderColor: theme.borderColor
     },
     secondaryButtonText: {
-        color: '#A1A1AA',
+        color: theme.primaryTextColor,
         fontSize: scaledSize(14),
+        fontFamily:Fonts.regular,
+        letterSpacing:.5,
         // fontWeight: '500',
         marginLeft: scaledSize(8),
     },
@@ -243,15 +245,17 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         height: scaledSize(48),
-        borderWidth: 1.5,
+        // borderWidth: 1.5,
         borderColor: theme.themeColor,
-        borderRadius: scaledSize(14),
+        borderRadius: scaledSize(10),
         marginLeft: scaledSize(8),
     },
     primaryButtonText: {
-        color: theme.themeColor,
+        color: theme.primaryTextColor,
         fontSize: scaledSize(14),
-        fontWeight: '500',
+        // fontWeight: '500',
+        letterSpacing:.5,
+        fontFamily: Fonts.regular,
         marginRight: scaledSize(8),
     },
     destinationPathText: {

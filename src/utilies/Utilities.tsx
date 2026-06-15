@@ -35,6 +35,7 @@ import ReactNativeBlobUtil from 'react-native-blob-util';
 import { getFirstLetterCapitalize } from './StringUtilitiy';
 import { getDateByMomentFormat, getDateFromString, getFirebaseTimeStampByMillis, getMillis } from './DateUtility';
 import { getLocalData, removeAllLocalData, removeLocalData, setLocalData } from './storageUtility';
+import ImageResizer from 'react-native-image-resizer';
 
 let { width, height, scale: deviceScale, fontScale } = Dimensions.get('window');
 const baseWidth = 360;
@@ -526,43 +527,52 @@ console.log('res====',res);
 
 }
 
-const createImagesToPdf = async (images: Array<{path:string}>,name:string) => {
-  console.log('images to convert in pdf>>>>>>', images);
 
+const createImagesToPdf = async (
+  images: Array<{ path: string }>,
+  name: string,
+) => {
+
+  console.log('images////',images)
   try {
-    if (!images || images.length === 0) {
-      console.log('No images found');
-      alert('No images found');
+    if (!images?.length) {
       return;
     }
 
-    // const imagePaths: string[] = images.map((item: any) =>
-    //   Platform.OS === 'ios'
-    //     ? (typeof item === 'string' ? item : item.path)
-    //     : (typeof item === 'string'
-    //       ? item.replace('file://', '')
-    //       : item.path.replace('file://', ''))
-    // );
+    // Compress images first
+    const compressedPages = await Promise.all(
+      images.map(async (path) => {
+        const resized = await ImageResizer.createResizedImage(
+          path,
+          2000, // max width
+          2000, // max height
+          'JPEG',
+          30,   // quality 0-100
+          0,
+        );
 
-    const pages = images.map(path => ({
-      imagePath:  path
-    }));
+        return {
+          imagePath: resized.path || resized.uri.replace('file://', ''),
+        };
+      }),
+    );
 
     const options = {
-      pages: pages,
-      outputPath: `file://${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${name}.pdf`,
+      pages: compressedPages,
+      outputPath: `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/${name}.pdf`,
     };
-    console.log('options', options);
+
+    console.log('PDF options', options);
 
     const createdPdfPath = await createPdf(options);
-    console.log('pdf', createdPdfPath);
-    return createdPdfPath
 
+    console.log('createdPdfPath', createdPdfPath);
 
+    return createdPdfPath;
   } catch (e) {
     console.log('error-----', e);
   }
-}
+};
 
 export const sortFiles = (sortType: string, files: any[]) => {
   // Create a shallow copy to avoid mutating the original array

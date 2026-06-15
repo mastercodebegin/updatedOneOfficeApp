@@ -55,6 +55,7 @@
     "react-native-gesture-handler": "^2.30.0",
     "react-native-google-mobile-ads": "^14.8.1",
     "react-native-image-crop-picker": "^0.51.1",
+    "react-native-image-resizer": "^1.4.5",
     "react-native-image-zoom-viewer": "^3.0.1",
     "react-native-images-to-pdf": "^0.2.1",
     "react-native-linear-gradient": "^2.8.3",
