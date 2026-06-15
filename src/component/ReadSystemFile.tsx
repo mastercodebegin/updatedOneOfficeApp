@@ -40,7 +40,7 @@ interface S {
   isLoading: boolean;
   pdfFiles: Array<any>;
   selectedSort: string;
-  viewMode: 'list' | 'folder';
+  viewMode: 'list' | 'folder' | 'singleline';
 }
 
 const ReadSystemFile = forwardRef((props: S, ref) => {
@@ -72,7 +72,15 @@ const ReadSystemFile = forwardRef((props: S, ref) => {
 
   useEffect(() => {
     setPdfData(pdfFiles);
+    console.log('viewmode',viewMode);
+    
   }, [pdfFiles]);
+
+  useEffect(() => {
+
+    console.log('viewmode>>>>>>>>>>>>',viewMode);
+    
+  }, );
 
   const sanitizeFilesForRedux = file => {
     return {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   StyleSheet,
   Image,
@@ -24,6 +24,7 @@ import { Theme } from "../screen/theme/ThemeConfig";
 import ConfirmationDialog from "./ConfirmationDialog";
 import FileSlice from "../screen/dashboard/FileSlice";
 import { useSelector } from "react-redux";
+import CustomMenu from "./Menu";
 interface S {
   item: any;
   icon: any;
@@ -36,6 +37,7 @@ interface S {
   leftIconStyle?: StyleProp<ViewStyle>
   onPressEditFile?: (item: any) => void;
   index: number;
+  viewMode?: 'list' | 'folder' | 'singleline';
 }
 
 
@@ -53,6 +55,7 @@ export const FileCommonRenderItem = (props: S) => {
     leftIconStyle,
     onPressEditFile = () => { },
     index,
+    viewMode,
   } = props;
 
   const { selectedFiles, selectedItems } = useSelector((state: any) => state.FileSlice,
@@ -73,7 +76,10 @@ export const FileCommonRenderItem = (props: S) => {
     setIsShowDeleteConfirmation,
   ] = useState(false);
 
+  useEffect(() => {
+    console.log('viewmode////', viewMode);
 
+  })
   const openFile = (
     item: any,
   ) => {
@@ -134,19 +140,81 @@ export const FileCommonRenderItem = (props: S) => {
 
   const onPressItemHandler =
     () => {
-
-      if (
-        selectedFiles?.length >
-        0
-      ) {
-
+      if (selectedFiles?.length > 0) {
         onPressItem(item);
-
       } else {
-
         openFile(item);
       }
     };
+
+  if (viewMode === 'singleline') {
+    const menuOptions = [];
+    if (isShowEditBtn) {
+      menuOptions.push({
+        label: 'Rename',
+        onSelect: () => onPressEditFile(item),
+      });
+    }
+    menuOptions.push({
+      label: 'Share',
+      onSelect: () => Utility.fileShare(item.path),
+    });
+    menuOptions.push({
+      label: 'Delete',
+      onSelect: () => onPressDeleteFile(item),
+    });
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.singleLineCard,
+          checkisFolderSelected(item.id) && styles.selectedCard,
+        ]}
+        onLongPress={() => onLongPress(item)}
+        onPress={onPressItemHandler}
+        activeOpacity={0.9}
+      >
+        {checkisFolderSelected(item.id) && (
+          <>
+            <View style={styles.leftAccent} />
+            <View style={styles.checkBadge}>
+              <MaterialIcons name="check" size={16} color="#FFF" />
+            </View>
+          </>
+        )}
+
+        <View style={[styles.iconContainer, { width: scaledSize(42), height: scaledSize(42), marginRight: scaledSize(12) }]}>
+          <Image source={icon} style={[styles.icon, { width: scaledSize(32), height: scaledSize(32) }]} />
+        </View>
+
+        <View style={{ flex: 1, justifyContent: 'center', gap: scaledSize(4) }}>
+          <Text numberOfLines={1} style={styles.fileName}>
+            {item?.name}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scaledSize(8) }}>
+            <Text style={styles.metaText}>
+              {Utility.date.getDateByMomentFormat(item.mtime)}
+            </Text>
+            <Text style={styles.metaSeparator}>•</Text>
+            <Text style={styles.metaText}>
+              {getFileSize(item?.size)}
+            </Text>
+          </View>
+        </View>
+
+        {!checkisFolderSelected(item.id) && (
+          <CustomMenu
+            Icon={
+              <View style={{ padding: scaledSize(8) }}>
+                <MaterialIcons name="more-vert" size={scaledSize(22)} color={theme.iconColor} />
+              </View>
+            }
+            menuOption={menuOptions}
+          />
+        )}
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <>
@@ -211,9 +279,9 @@ export const FileCommonRenderItem = (props: S) => {
         </View>
 
         {/* content */}
-        <View style={{  flex: 1,flexDirection:'column' }}>
+        <View style={{ flex: 1, flexDirection: 'column' }}>
 
-          <View style={{  flex: 1 }}>
+          <View style={{ flex: 1 }}>
             <Text
               numberOfLines={1}
               style={
@@ -225,146 +293,146 @@ export const FileCommonRenderItem = (props: S) => {
             </Text>
           </View>
 
-          <View style={{flexDirection:'row',flex:1}}>
-          <TouchableOpacity
-            style={
-              [styles.touchable, {  }]
-            }
-            onPress={
-              onPressItemHandler
-            }
-            onLongPress={() =>
-              onLongPress(
-                item,
-              )
-            }
-          >
-
-            <View
+          <View style={{ flexDirection: 'row', flex: 1 }}>
+            <TouchableOpacity
               style={
-                [styles.fileNameParentView,]
-              }>
+                [styles.touchable, {}]
+              }
+              onPress={
+                onPressItemHandler
+              }
+              onLongPress={() =>
+                onLongPress(
+                  item,
+                )
+              }
+            >
+
+              <View
+                style={
+                  [styles.fileNameParentView,]
+                }>
 
 
-              <View style={styles.dateAndSizeParentView}>
+                <View style={styles.dateAndSizeParentView}>
 
-                <View style={styles.metaRow}>
-                  <MaterialIcons
-                    name="calendar-today"
-                    size={scaledSize(13)}
-                    color={theme.iconColor}
-                  />
+                  <View style={styles.metaRow}>
+                    <MaterialIcons
+                      name="calendar-today"
+                      size={scaledSize(13)}
+                      color={theme.iconColor}
+                    />
 
-                  <Text style={styles.metaText}>
-                    {Utility.date.getDateByMomentFormat(
-                      item.mtime,
-                    )}
-                  </Text>
-                </View>
+                    <Text style={styles.metaText}>
+                      {Utility.date.getDateByMomentFormat(
+                        item.mtime,
+                      )}
+                    </Text>
+                  </View>
 
-                <View style={styles.metaRow}>
-                  <MaterialIcons
-                    name="insert-drive-file"
-                    size={scaledSize(14)}
-                    color={theme.iconColor}
-                  />
+                  <View style={styles.metaRow}>
+                    <MaterialIcons
+                      name="insert-drive-file"
+                      size={scaledSize(14)}
+                      color={theme.iconColor}
+                    />
 
-                  <Text style={styles.metaText}>
-                    {getFileSize(
-                      item?.size,
-                    )}
-                  </Text>
+                    <Text style={styles.metaText}>
+                      {getFileSize(
+                        item?.size,
+                      )}
+                    </Text>
+                  </View>
+
                 </View>
 
               </View>
 
-            </View>
+            </TouchableOpacity>
 
-          </TouchableOpacity>
+            {/* actions hidden during selection */}
 
-        {/* actions hidden during selection */}
+            {!checkisFolderSelected(item.id) && (
 
-        {!checkisFolderSelected(item.id) && (
-
-          <View
-            style={
-              [styles.actionContainer, actionButtonContainerStyle]
-            }>
-
-            {isShowEditBtn && (
-
-              <TouchableOpacity
+              <View
                 style={
-                  styles.actionButton
-                }
-                onPress={() =>
-                  onPressEditFile(
-                    item,
-                  )
+                  [styles.actionContainer, actionButtonContainerStyle]
                 }>
 
-                <MaterialIcons
-                  name="edit"
-                  size={scaledSize(20)}
-                  color={
-                    theme.iconColor
-                  }
-                />
+                {isShowEditBtn && (
 
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={
+                      styles.actionButton
+                    }
+                    onPress={() =>
+                      onPressEditFile(
+                        item,
+                      )
+                    }>
+
+                    <MaterialIcons
+                      name="edit"
+                      size={scaledSize(20)}
+                      color={
+                        theme.iconColor
+                      }
+                    />
+
+                  </TouchableOpacity>
+
+                )}
+
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.deleteButton,
+                  ]}
+                  onPress={() =>
+                    // setIsShowDeleteConfirmation(
+                    //   true,
+                    // )
+                    onPressDeleteFile(
+                      item,
+                    )
+                  }>
+
+                  <MaterialIcons
+                    name="delete"
+                    size={scaledSize(20)}
+                    color={
+                      theme.deleteIconColor
+                    }
+                  />
+
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.shareButton,
+                  ]}
+                  onPress={() =>
+                    Utility.fileShare(
+                      item.path,
+                    )
+                  }>
+
+                  <MaterialIcons
+                    name="share"
+                    size={scaledSize(20)}
+                    color={
+                      theme.themeColor
+                    }
+                  />
+
+                </TouchableOpacity>
+
+              </View>
 
             )}
-
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.deleteButton,
-              ]}
-              onPress={() =>
-                // setIsShowDeleteConfirmation(
-                //   true,
-                // )
-                onPressDeleteFile(
-                  item,
-                )
-              }>
-
-              <MaterialIcons
-                name="delete"
-                size={scaledSize(20)}
-                color={
-                  theme.deleteIconColor
-                }
-              />
-
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.shareButton,
-              ]}
-              onPress={() =>
-                Utility.fileShare(
-                  item.path,
-                )
-              }>
-
-              <MaterialIcons
-                name="share"
-                size={scaledSize(20)}
-                color={
-                  theme.themeColor
-                }
-              />
-
-            </TouchableOpacity>
-
           </View>
-
-        )}
         </View>
-          </View>
       </TouchableOpacity>
 
       {/* <ConfirmationDialog
@@ -398,6 +466,29 @@ const createStyles = (
   mode: string,
 ) =>
   StyleSheet.create({
+    metaSeparator: {
+      color: theme.secondaryTextColor,
+      fontSize: scaledSize(12),
+    },
+    singleLineCard: {
+      minHeight: scaledSize(60),
+      marginHorizontal: scaledSize(16),
+      marginBottom: scaledSize(12),
+      paddingVertical: scaledSize(10),
+      paddingHorizontal: scaledSize(12),
+      borderRadius: scaledSize(14),
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: mode === "dark" ? theme.bgColor : "#FFFFFF",
+      borderWidth: mode === "dark" ? 1 : 0,
+      borderColor: theme.borderColor,
+      overflow: "hidden",
+      shadowColor: "#9CA3AF",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: mode === "dark" ? 0 : 0.1,
+      shadowRadius: 8,
+      elevation: mode === "dark" ? 0 : 2,
+    },
 
     card: {
       minHeight:

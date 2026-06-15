@@ -6,19 +6,25 @@ import { Theme } from '../../src/screen/theme/ThemeConfig';
 
 
 interface CustomSortModalProps {
-    data:Array<any>,
-    isvisible: boolean;  // You can add props here if needed, such as:
-    onPressApply: (sort: string) => void; // visible: boolean;
-    onPressClear: () => void; // onClose: () => void;
-    onPressClose: () => void; // onApply: (selectedSort: string) => void;
+    data: Array<any>,
+    isvisible: boolean;
+    onPressApply: (sort: string) => void;
+    onPressClear: () => void;
+    onPressClose: () => void;
+    title?: string;
+    selectedValue?: string;
 }
 
 
 export default function CustomSortModal(props: CustomSortModalProps) {
-    const { isvisible,data, onPressApply, onPressClear, onPressClose } = props;
-    const [isShowSortModal, setIsShowSortModal] = React.useState(false);
-    const [selectedSort, setSelectedSort] = React.useState('');
+    const { isvisible, data, onPressApply, onPressClear, onPressClose, title, selectedValue } = props;
+    const [selectedOption, setSelectedOption] = React.useState(selectedValue);
     const { mode, theme } = useTheme();
+
+    React.useEffect(() => {
+        if (isvisible)
+            setSelectedOption(selectedValue);
+    }, [isvisible, selectedValue])
 
     const styles = useMemo(() => {
         return createStyles(theme, mode)
@@ -41,7 +47,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                     <View style={styles.headerRow}>
 
                         <Text style={styles.sortTitle}>
-                            Sort by
+                            {title || 'Sort by'}
                         </Text>
 
                         <TouchableOpacity
@@ -63,21 +69,15 @@ export default function CustomSortModal(props: CustomSortModalProps) {
 
                     {/* Options */}
                     {data.map(item => {
-                        const isSelected =
-                            selectedSort === item.id;
+                        const isSelected = selectedOption === item.id;
 
                         return (
                             <TouchableOpacity
                                 key={item.id}
                                 activeOpacity={0.85}
                                 onPress={() => {
-                                    setSelectedSort(
-                                        item.id,
-                                    );
+                                    setSelectedOption(item.id);
                                     onPressApply(item.id)
-                                    setIsShowSortModal(
-                                        false,
-                                    );
                                 }}
                                 style={styles.sortRow}>
 
@@ -115,7 +115,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                         <TouchableOpacity
                             activeOpacity={0.85}
                             onPress={() => {
-                                setSelectedSort('');
+                                setSelectedOption('');
                                 onPressClear();
                             }}
                             style={styles.clearButton}>
@@ -128,7 +128,7 @@ export default function CustomSortModal(props: CustomSortModalProps) {
                         {/* <TouchableOpacity
                             activeOpacity={0.85}
                             onPress={() =>
-                                onPressApply(selectedSort)
+                                onPressApply(selectedOption)
                             }
                             style={styles.applyButton}>
 

@@ -406,7 +406,8 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('folder');
+  const [viewMode, setViewMode] = useState<'list' | 'folder' | 'singleline'>('folder');
+  const [isShowViewModeModal, setIsShowViewModeModal] = useState(false);
     const [selectedSort, setSelectedSort] = useState('latest')
       const isFocused = useIsFocused();
 
@@ -437,6 +438,25 @@ function Dashboard({ navigation, route }) {
       icon: 'swap-vertical-outline',
     },
   ];
+
+  const viewModeOptions = [
+    {
+      id: 'folder',
+      name: 'Grid View',
+      icon: 'view-grid-outline',
+    },
+    {
+      id: 'list',
+      name: 'List View',
+      icon: 'view-list-outline',
+    },
+    {
+      id: 'singleline',
+      name: 'Single Line View',
+      icon: 'view-headline',
+    },
+  ];
+
     const [routes] = React.useState([
     { key: asyncStorageKeyName.PDF_FILES, title: 'PDF', },
     // { key: asyncStorageKeyName.WORD_FILES, title: 'WORD' },
@@ -842,12 +862,17 @@ useEffect(() => {
   }
 
   const onPressViewMode = () => {
-    setViewMode(viewMode === 'list' ? 'folder' : 'list');
+    setIsShowViewModeModal(true);
   }
   const onPressSort = (sort:string) => {
     setIsShowSortModal(false)
     setSelectedSort(sort)
   }
+
+  const onPressViewModeApply = (mode: 'list' | 'folder' | 'singleline') => {
+    setViewMode(mode);
+    setIsShowViewModeModal(false);
+  };
 
   const renderHeaderIcons = () => {
     const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
@@ -876,7 +901,13 @@ useEffect(() => {
 
         <TouchableOpacity onPress={() => onPressViewMode()}>
           <MaterialCommunityIcons
-            name={viewMode === 'list' ? "view-grid-outline" : "view-list-outline"}
+            name={
+              viewMode === 'folder'
+                ? 'view-grid-outline'
+                : viewMode === 'list'
+                ? 'view-list-outline'
+                : 'view-headline'
+            }
             size={scaledSize(24)}
             color={headerIconColor}
           />
@@ -1110,6 +1141,7 @@ useEffect(() => {
       <CustomSortModal
         data={sortOptions}
         isvisible={isShowSortModal}
+        title="Sort by"
         onPressClear={() => {
           setSelectedSort('latest');
           setLocalData(asyncStorageKeyName.SORT_TYPE, 'latest');
@@ -1117,6 +1149,19 @@ useEffect(() => {
         } }
         onPressApply={(sort) =>  onPressSort(sort)}
         onPressClose={() => setIsShowSortModal(false)}
+        selectedValue={selectedSort}
+      />
+      <CustomSortModal
+        title="View Mode"
+        data={viewModeOptions}
+        isvisible={isShowViewModeModal}
+        onPressApply={(mode) => onPressViewModeApply(mode as any)}
+        onPressClear={() => {
+          setViewMode('folder');
+          setIsShowViewModeModal(false);
+        }}
+        onPressClose={() => setIsShowViewModeModal(false)}
+        selectedValue={viewMode}
       />
     </SafeAreaView>
   );

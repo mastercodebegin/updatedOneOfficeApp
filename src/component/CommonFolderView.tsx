@@ -22,7 +22,7 @@ import CustomHeader from './CustomHeader';
 
 interface Props {
   files: any[];
-  viewMode: 'list' | 'folder';
+  viewMode: 'list' | 'folder'|'singleline';
   searchValue: string;
   selectedSort: string;
   icon: any;
@@ -260,6 +260,7 @@ if (
         onPressDeleteFile={onPressDeleteFile}
         screenName={screenName}
         index={index}
+        viewMode={viewMode}
       />
     );
   };
