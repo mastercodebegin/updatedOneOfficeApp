@@ -109,9 +109,9 @@ const MultiplePdfView = (props: S) => {
         backgroundColor: theme.bgContainor,
         overflow: 'hidden'
       }}>
-        <Animated.View style={{
+        {/* <Animated.View style={{
           transform: [{ translateY: headerTranslateY }],
-        }}>
+        }}> */}
           <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
             <CustomVectorIcon
               iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
@@ -122,7 +122,7 @@ const MultiplePdfView = (props: S) => {
               }}
               onPress={() => { setIsMultiView(!isMultiView) }} />
           } />
-        </Animated.View>
+        {/* </Animated.View> */}
       </Animated.View>
     )
   }
