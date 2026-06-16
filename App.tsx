@@ -61,9 +61,9 @@ export default function App(props) {
   const [result, setResult] = React.useState(false);
   const size = scaledSize(24)
   const screensData = [
-    { name: 'Documents', component: Dashboard, focus: (color) => <Ionicons name='documents' color={color} size={size} />, unFocus: (color) => <Ionicons name='documents-outline' color={color} size={size} /> },
+    { name: 'Files', component: Dashboard, focus: (color) => <Ionicons name='documents' color={color} size={size} />, unFocus: (color) => <Ionicons name='documents-outline' color={color} size={size} /> },
     {
-      name: 'Scan', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color}
+      name: 'Document', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color}
       size={size + 4} style={{ marginBottom: scaledSize(4) }} />
     },
     { name: 'Converter', component: ImagesToPdfConverter, focus: (color) => <Ionicons name='swap-horizontal' color={color} size={size} />, unFocus: (color) => <Ionicons name='swap-horizontal-outline' color={color} size={size} /> },
@@ -196,7 +196,8 @@ export default function App(props) {
                 {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
               </View>),
               tabBarLabel: ({ focused }) => (
-                <></>
+                <Text style={{color:theme.primaryTextColor,
+                  fontSize:scaledSize(8),letterSpacing:1,top:scaledSize(2)}}>{item.name}</Text>
               ),
             }}
           />)}

@@ -19,7 +19,7 @@ export type Theme = {
 };
 
 const commonThemeProperties = {
-  themeColor: '#0081A7',
+  themeColor: '#079bdc',
   deleteIconColor: '#FF3B5C',
   favColor:'#F4C542'
 }
@@ -55,7 +55,7 @@ export const darkTheme: Theme = {
   bgContainor: '#0E1015',
 
   // Text
-  primaryTextColor: '#F5F5F7',
+  primaryTextColor: '#898d95',
   secondaryTextColor: '#8E8E93',
 
   // Icons
