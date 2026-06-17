@@ -17,7 +17,7 @@ import { useColorScheme } from 'react-native';
 import PdfViewer from './src/component/PdfView';
 import ReadSystemFile from './src/component/ReadSystemFile';
 
-import ManageExternalStorage from 'react-native-manage-external-storage';
+// import ManageExternalStorage from 'react-native-manage-external-storage';
 import MultiplePdfView from './src/component/MultiplePdfView';
 import ContactUs from './src/screen/contactus/ContactUs';
 import WordReader from './src/screen/wordFileReader/WordReader';
@@ -108,33 +108,14 @@ export default function App(props) {
 
 
 
-  // React.useEffect(() => {
-  //   const setupDB = async () => {
-  //     await initDB();
-  //   };
-
-  //   setupDB();
-  //   if (Platform.OS === 'android') {
-  //     async function AskPermission() {
-  //       await ManageExternalStorage.checkAndGrantPermission(
-  //         err => {
-  //           setResult(false)
-  //         },
-  //         res => {
-  //           setResult(true)
-  //         },
-  //       )
-  //     }
-
-  //     AskPermission()
-  //   }
-  // }, []);
-
 React.useEffect(() => {
   (async () => {
     await initDB();
 
     if (Platform.OS === 'android') {
+      const ManageExternalStorage =
+        require('react-native-manage-external-storage').default;
+
       ManageExternalStorage.checkAndGrantPermission(
         () => setResult(false),
         () => setResult(true),
@@ -142,6 +123,22 @@ React.useEffect(() => {
     }
   })();
 }, []);
+// React.useEffect(() => {
+//   (async () => {
+//     console.log('Platform:', Platform.OS);
+
+//     await initDB();
+
+//     if (Platform.OS === 'android') {
+//       console.log('Android code running');
+
+//       ManageExternalStorage.checkAndGrantPermission(
+//         () => setResult(false),
+//         () => setResult(true),
+//       );
+//     }
+//   })();
+// }, []);
 
 
   function MyTabs() {
