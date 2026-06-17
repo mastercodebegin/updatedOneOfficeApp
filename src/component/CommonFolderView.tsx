@@ -272,23 +272,75 @@ if (
         ? groupedFiles
         : filteredFiles;
 
-const FOLDER_COLORS = [
-  {bg: '#E6F1FB', icon: '#185FA5'},
-  {bg: '#E1F5EE', icon: '#0F6E56'},
-  {bg: '#FAEEDA', icon: '#854F0B'},
-  {bg: '#EEEDFE', icon: '#3C3489'},
-  {bg: '#FAECE7', icon: '#993C1D'},
-];
+// const FOLDER_COLORS = [
+//   {bg: '#E6F1FB', icon: '#185FA5'},
+//   {bg: '#E1F5EE', icon: '#0F6E56'},
+//   {bg: '#FAEEDA', icon: '#854F0B'},
+//   {bg: '#EEEDFE', icon: '#3C3489'},
+//   {bg: '#FAECE7', icon: '#993C1D'},
+// ];
 
-const getFolderColor = (name: string) => {
-  const index =
-    name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) %
-    FOLDER_COLORS.length;
-  return FOLDER_COLORS[index];
+ const FOLDER_COLORS = {
+  Banking: {
+    bg: '#E1F5EE',
+    icon: '#0F6E56',
+  },
+  Legal: {
+    bg: '#FAECE7',
+    icon: '#993C1D',
+  },
+  Finance: {
+    bg: '#E6F1FB',
+    icon: '#185FA5',
+  },
+  Identity: {
+    bg: '#EEEDFE',
+    icon: '#3C3489',
+  },
+  Insurance: {
+    bg: '#FFF4D6',
+    icon: '#9A6700',
+  },
+  Medical: {
+    bg: '#FFE8EC',
+    icon: '#C2255C',
+  },
+  Education: {
+    bg: '#E7F5FF',
+    icon: '#1971C2',
+  },
+  Career: {
+    bg: '#F3F0FF',
+    icon: '#6741D9',
+  },
+  Travel: {
+    bg: '#E6FCF5',
+    icon: '#087F5B',
+  },
+  Others: {
+    bg: '#F1F3F5',
+    icon: '#495057',
+  },
+} as const;
+
+// const getFolderColor = (name: string) => {
+//   const index =
+//     name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) %
+//     FOLDER_COLORS.length;
+//   return FOLDER_COLORS[index];
+// };
+
+ const getFolderColors = (folderName: string) => {
+  console.log('folder name ===',folderName);
+  
+  return (
+    FOLDER_COLORS[folderName as keyof typeof FOLDER_COLORS] ??
+    FOLDER_COLORS.Others
+  );
 };
-
 const renderFolder = ({item, index}: {item: FolderGroup; index: number}) => {
-  const folderColor = getFolderColor(item.folder);
+  const folderName = item.folder;
+  const folderColor = getFolderColors(folderName);
   const fileCount = item.files.length;
 
   return (
