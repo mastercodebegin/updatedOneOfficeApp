@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo,useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { pick } from '@react-native-documents/picker';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 import RNFS from 'react-native-fs';
 import { Platform } from 'react-native';
 import { Alert } from 'react-native';

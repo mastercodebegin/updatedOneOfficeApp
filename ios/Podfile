@@ -6,7 +6,7 @@ require Pod::Executable.execute_command('node', ['-p',
   )', __dir__]).strip
 
 platform :ios, '15.5'
-use_modular_headers!
+use_frameworks! :linkage => :static
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']

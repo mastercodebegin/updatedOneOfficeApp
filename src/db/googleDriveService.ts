@@ -5,7 +5,7 @@ import { AuthService } from "../service/AuthService";
 import axios from 'axios'
 import { FolderLocalService } from "./folderLocalService";
 import { getImageUriByOS, Utility } from "../../src/utilies/Utilities";
-import RNFetchBlob from "rn-fetch-blob";
+import RNFetchBlob from "react-native-blob-util";
 
 
 export const GoogleDriveService = {

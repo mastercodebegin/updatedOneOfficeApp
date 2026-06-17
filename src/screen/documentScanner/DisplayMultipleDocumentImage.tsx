@@ -20,7 +20,7 @@ import CustomInputBox from '../../component/CustomInputBox';
 import RNFS from 'react-native-fs';
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import ImageViewer from 'react-native-image-zoom-viewer';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 import Share from 'react-native-share';
 import CustomLinearGradientView from '../../component/CustomLinearGradientView';
 import LinearGradient from 'react-native-linear-gradient';

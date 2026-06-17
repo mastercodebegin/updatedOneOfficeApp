@@ -11,7 +11,7 @@ import {
 import { scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon } from '../assets/GlobalImages';
 import RootView from './RootView';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';

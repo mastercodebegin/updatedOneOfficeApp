@@ -9,7 +9,7 @@ import { Text, StyleSheet,
 import { scaledSize, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon } from '../assets/GlobalImages';
 import RootView from './RootView';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 
 // import Icon from 'react-native-vector-icons/AntDesign';
 // import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';

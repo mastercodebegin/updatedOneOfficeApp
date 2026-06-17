@@ -37,7 +37,7 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { CustomErrorToast, CustomSuccessToast } from '../../component/CustomToast';
 import CustomPermissionMessage from '../../component/CustomPermissionMessage';
 import CustomBannerAdd from '../../component/admob/CustomBannerAdd';
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 import Share from 'react-native-share';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';

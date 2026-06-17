@@ -46,10 +46,10 @@ import { initDB } from './src/db/migration';
 
 import { useTheme } from './src/screen/theme/useTheme';
 import { getLocalData, removeLocalData, setLocalData } from './src/utilies/storageUtility';
-import { asyncStorageKeyName } from './src/utilies/Constants';
+import { asyncStorageKeyName, CONSTANT } from './src/utilies/Constants';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
-// import { checkForUpdate } from './src/utilies/InAppUpdates'
+import { checkForUpdate } from './src/utilies/InAppUpdates'
 
 // import VersionCheck from 'react-native-version-check';
 
@@ -64,7 +64,7 @@ export default function App(props) {
     { name: 'Files', component: Dashboard, focus: (color) => <Ionicons name='documents' color={color} size={size} />, unFocus: (color) => <Ionicons name='documents-outline' color={color} size={size} /> },
     {
       name: 'Document', component: DocumentScan, focus: (color) => <MaterialCommunityIcons name='line-scan' color={color} size={size + 4} style={{ marginBottom: scaledSize(4) }} />, unFocus: (color) => <MaterialCommunityIcons name='line-scan' color={color}
-      size={size + 4} style={{ marginBottom: scaledSize(4) }} />
+        size={size + 4} style={{ marginBottom: scaledSize(4) }} />
     },
     { name: 'Converter', component: ImagesToPdfConverter, focus: (color) => <Ionicons name='swap-horizontal' color={color} size={size} />, unFocus: (color) => <Ionicons name='swap-horizontal-outline' color={color} size={size} /> },
     { name: 'Settings', component: SettingsScreen, focus: (color) => <Ionicons name='settings' color={color} size={size} />, unFocus: (color) => <Ionicons name='settings-outline' color={color} size={size} /> },
@@ -76,66 +76,72 @@ export default function App(props) {
 
   // }, [])
 
-  // const checkForUpdate = async () => {
-  //   const latestVersion = await VersionCheck.getLatestVersion(); 
-  //   const currentVersion = VersionCheck.getCurrentVersion();   
-  //   console.log('Current Version:', currentVersion);
-  //   console.log('Latest Version:', latestVersion);
+  const checkForUpdate = async () => {
+    const latestVersion = await VersionCheck.getLatestVersion(); 
+    const currentVersion = VersionCheck.getCurrentVersion();   
+    console.log('Current Version:', currentVersion);
+    console.log('Latest Version:', latestVersion);
 
-  //   const updateInfo = await VersionCheck.needUpdate({
-  //     currentVersion,
-  //     latestVersion,
-  //   });
+    const updateInfo = await VersionCheck.needUpdate({
+      currentVersion,
+      latestVersion,
+    });
 
-  //   if (updateInfo?.isNeeded) {
-  //     Alert.alert(
-  //       "Update Available",
-  //       "A new version is available. Would you like to update now?",
-  //       [
-  //         { text: "Update Now", onPress: () => Linking.openURL(CONSTANT.ANDROID_SHARE_LINK) },
-  //         { text: "Later", style: "cancel" },
-  //       ]
-  //     );
-  //     console.log('🚨 Update available!');
-  //   } else {
+    if (updateInfo?.isNeeded) {
+      Alert.alert(
+        "Update Available",
+        "A new version is available. Would you like to update now?",
+        [
+          { text: "Update Now", onPress: () => Linking.openURL(CONSTANT.ANDROID_SHARE_LINK) },
+          { text: "Later", style: "cancel" },
+        ]
+      );
+      console.log('🚨 Update available!');
+    } else {
 
-  //     console.log('✅ App is up to date.');
-  //   }
-  // };
+      console.log('✅ App is up to date.');
+    }
+  };
+
+
+
+
+
 
   // React.useEffect(() => {
-  //   const sub = AppState.addEventListener('change', (state) => {
-  //     if (state === 'active') {
-  //       syncAll();
-  //     }
-  //   });
+  //   const setupDB = async () => {
+  //     await initDB();
+  //   };
 
-  //   return () => sub.remove();
+  //   setupDB();
+  //   if (Platform.OS === 'android') {
+  //     async function AskPermission() {
+  //       await ManageExternalStorage.checkAndGrantPermission(
+  //         err => {
+  //           setResult(false)
+  //         },
+  //         res => {
+  //           setResult(true)
+  //         },
+  //       )
+  //     }
+
+  //     AskPermission()
+  //   }
   // }, []);
 
+React.useEffect(() => {
+  (async () => {
+    await initDB();
 
-
-
-  React.useEffect(() => {
-    const setupDB = async () => {
-      await initDB();
-    };
-
-    setupDB();
-    async function AskPermission() {
-      await ManageExternalStorage.checkAndGrantPermission(
-        err => {
-          setResult(false)
-        },
-        res => {
-          setResult(true)
-        },
-      )
+    if (Platform.OS === 'android') {
+      ManageExternalStorage.checkAndGrantPermission(
+        () => setResult(false),
+        () => setResult(true),
+      );
     }
-    AskPermission()
-  }, []);
-
-
+  })();
+}, []);
 
 
   function MyTabs() {
@@ -145,8 +151,8 @@ export default function App(props) {
     React.useEffect(() => {
       const savedTheme = getLocalData(asyncStorageKeyName.THEME_MODE);
       // On first launch, if no theme is saved, sync with OS theme.
-      console.log('colorsec',colorScheme,'savedthm',savedTheme);
-      
+      console.log('colorsec', colorScheme, 'savedthm', savedTheme);
+
       if (savedTheme == null && colorScheme) {
         if (mode !== colorScheme) {
           // This should handle state update and storage persistence.
@@ -163,7 +169,7 @@ export default function App(props) {
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: mode =='dark' ? theme.bgColor : '#FFFFFF',
+          backgroundColor: mode == 'dark' ? theme.bgColor : '#FFFFFF',
           height: heightFromPercentage(8),
           borderTopWidth: 1,
           position: 'absolute',
@@ -196,8 +202,10 @@ export default function App(props) {
                 {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
               </View>),
               tabBarLabel: ({ focused }) => (
-                <Text style={{color:theme.primaryTextColor,
-                  fontSize:scaledSize(8),letterSpacing:1,top:scaledSize(2)}}>{item.name}</Text>
+                <Text style={{
+                  color: theme.primaryTextColor,
+                  fontSize: scaledSize(8), letterSpacing: 1, top: scaledSize(2)
+                }}>{item.name}</Text>
               ),
             }}
           />)}

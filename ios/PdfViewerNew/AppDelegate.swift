@@ -1,4 +1,5 @@
 import UIKit
+import Firebase
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
@@ -14,6 +15,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+
+    FirebaseApp.configure()
+
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -34,15 +38,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     self.bundleURL()
   }
 
   override func bundleURL() -> URL? {
 #if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
 #else
-    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }

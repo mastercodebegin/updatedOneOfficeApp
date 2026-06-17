@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 import { deleteFile, getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
 import ConfirmationDialog from './ConfirmationDialog';

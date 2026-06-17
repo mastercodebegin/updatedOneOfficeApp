@@ -1,6 +1,6 @@
 import React from 'react'
 import { Dimensions, PixelRatio } from 'react-native'
-import RNFetchBlob from 'rn-fetch-blob';
+import RNFetchBlob from 'react-native-blob-util';
 // import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
