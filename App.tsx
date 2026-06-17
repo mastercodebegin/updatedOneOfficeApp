@@ -54,7 +54,7 @@ import { checkForUpdate } from './src/utilies/InAppUpdates'
 // import VersionCheck from 'react-native-version-check';
 
 // import { CONSTANT } from './src/utilies/Constants';
-
+import {NotificationService} from './src/service/NotificationService'
 export default function App(props) {
   const Stack = createNativeStackNavigator();
   const [uri, setUri] = React.useState()
@@ -122,6 +122,8 @@ React.useEffect(() => {
       );
     }
   })();
+  NotificationService.requestUserPermission()
+  NotificationService.showNotification()
 }, []);
 // React.useEffect(() => {
 //   (async () => {
