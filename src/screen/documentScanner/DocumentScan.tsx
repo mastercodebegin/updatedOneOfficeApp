@@ -6,7 +6,7 @@ import { Button, Overlay } from 'react-native-elements';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import { ConfirmPopup, deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
+import {  deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 // import Elevations from 'react-native-elevation'

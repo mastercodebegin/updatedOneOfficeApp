@@ -446,28 +446,7 @@ function navigateToBack() {
   }
 }
 
-export const ConfirmPopup = (callBack: Function) => {
-  Popup.show({
-    type: 'confirm',
-    title: 'Delete!',
-    textBody: 'Do you want to delete file ',
-    buttonText: 'Proceed',
-    okButtonStyle: { backgroundColor: '#E50046' }, // Changes the "Ok" button color
-    confirmButtonStyle: { backgroundColor: '#d3d3d3' }, // Changes the "Cancel" button color
 
-    confirmText: 'Cancel',
-    // icon:<MaterialCommunityIcons name='information-outline' color={'red'} size={20}/>,
-    callback: () => {
-      // alert('Okey Callback && hidden');
-      callBack()
-      Popup.hide();
-    },
-    cancelCallback: () => {
-      // alert('Cancel Callback && hidden');
-      Popup.hide();
-    },
-  })
-}
 
 export const toastForDeleteFile = (toast: any, message: string) => {
   toast.show(message, {

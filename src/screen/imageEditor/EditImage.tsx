@@ -30,7 +30,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import CustomBottomSheet from '../../component/CustomBottomSheet';
 import RangeSlider from 'rn-range-slider';
 import { COLORS } from '../../utilies/GlobalColors';
-import SignatureScreen from "react-native-signature-canvas";
+// import SignatureScreen from "react-native-signature-canvas";
 import CustomBackIcon from '../../component/CustomBackIcon';
 import RNPhotoManipulator from 'react-native-photo-manipulator';
 // import ImageResizer from '@bam.tech/react-native-image-resizer';
@@ -481,9 +481,8 @@ const ImageOverlay = (props: S) => {
                             height: scaledSize(150), backgroundColor: 'yellow',
                             justifyContent: 'center', alignItems: 'center', borderBottomWidth: 0
                         }}>
-                            <SignatureScreen
+                            {/* <SignatureScreen
                                 ref={ref}
-                                // backgroundColor='white'
                                 penColor={penColor}
                                 onOK={handleOK}
                                 minWidth={penSize}
@@ -491,7 +490,7 @@ const ImageOverlay = (props: S) => {
                                 onGetData={handleData}
                                 autoClear={true}
                                 descriptionText={'write your signature here...'}
-                            />
+                            /> */}
                         </View>
                         <View style={{
                             height: scaledSize(30), flexDirection: 'row',

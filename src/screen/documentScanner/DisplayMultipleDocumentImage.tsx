@@ -2,7 +2,7 @@ import { View, Text, FlatList, TouchableOpacity, Dimensions, ActivityIndicator, 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mediumBG, MSExcel, MSOffice, MSPowerPoint, smallBG } from '../../assets/GlobalImages'
 import { asyncStorageKeyName, CONSTANT } from '../../utilies/Constants'
-import { capitalizeFirstLetter, ConfirmPopup, deleteFile, fileShareMultiple, generateUniqueNumber, heightFromPercentage, navigateToBack, RNImageToPdf, scaledSize, Utility } from '../../utilies/Utilities';
+import {  deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -263,12 +263,7 @@ export default function DisplayMultipleDocumentImage(props: any) {
   };
 
 
-  const deleteFoldersConfirmationForMultipleItem = () => {
-    ConfirmPopup(() => deleteMultipleFolder());
-  };
-  const deleteFoldersConfirmationForSingleItem = (item: any) => {
-    ConfirmPopup(() => deleteSingleFile(item));
-  };
+
 
   const closeDeleteConfirmation = () => {
     setIsShowDeleteImageConfirmation(false)

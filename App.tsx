@@ -11,7 +11,6 @@ import Splashscreen from './src/screen/splash/Splashscreen';
 import { Provider, useDispatch } from 'react-redux';
 import Store from './src/redux/Store';
 import { heightFromPercentage, navigationRef, scaledSize, scaleRatio, setNavigator } from './src/utilies/Utilities';
-import { Root as PopupRootProvider } from '@sekizlipenguen/react-native-popup-confirm-toast';
 import { useColorScheme } from 'react-native';
 // import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import PdfViewer from './src/component/PdfView';
@@ -215,7 +214,6 @@ React.useEffect(() => {
     // <ToastProvider>
     <GestureHandlerRootView style={{ flex: 1 }}>{/* for gesture handler */}
       <BottomSheetModalProvider>
-        <PopupRootProvider>
 
           <MenuProvider>
             <Provider store={Store}>
@@ -244,7 +242,6 @@ React.useEffect(() => {
               </NavigationContainer>
             </Provider>
           </MenuProvider>
-        </PopupRootProvider>
         {/* <Toast config={toastConfig} /> */}
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
