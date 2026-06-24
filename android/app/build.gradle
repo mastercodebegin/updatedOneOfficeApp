@@ -105,9 +105,23 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), 
+            "proguard-rules.pro"
+             minifyEnabled true
+            shrinkResources true
+   
         }
     }
+         applicationVariants.all { variant ->
+        variant.outputs.all {
+
+            def timestamp = new Date().format("yyyy-MM-dd_hh-mm-a")
+
+            outputFileName =
+                    "M-doc-v${defaultConfig.versionName}-${timestamp}-${variant.buildType.name}.apk"
+        }
+    }
+
 }
 
 dependencies {
