@@ -20,23 +20,23 @@ import ReadSystemFile from './src/component/ReadSystemFile';
 // import ManageExternalStorage from 'react-native-manage-external-storage';
 import MultiplePdfView from './src/component/MultiplePdfView';
 import ContactUs from './src/screen/contactus/ContactUs';
-import WordReader from './src/screen/wordFileReader/WordReader';
-import WordFilesList from './src/screen/wordFileReader/WordFilesList';
-import { ToastProvider } from 'react-native-toast-notifications'
-import { Book, Converter, Home, MSExcel } from './src/assets/GlobalImages';
-import XslxFilesList from './src/screen/XlsxFilReader/XslxFilesList';
-import XslxReader from './src/screen/XlsxFilReader/XslxReader';
-import PPTReader from './src/screen/PPTFilReader/PPTReader';
-import PPTFilesList from './src/screen/PPTFilReader/PPTFilesList';
-import EditImage from './src/screen/imageEditor/EditImage';
-import MultipleDocumentImageView from './src/screen/documentScanner/DisplayMultipleDocumentImage';
+// import WordReader from './src/screen/wordFileReader/WordReader';
+// import WordFilesList from './src/screen/wordFileReader/WordFilesList';
+// import { ToastProvider } from 'react-native-toast-notifications'
+// import { Book, Converter, Home, MSExcel } from './src/assets/GlobalImages';
+// import XslxFilesList from './src/screen/XlsxFilReader/XslxFilesList';
+// import XslxReader from './src/screen/XlsxFilReader/XslxReader';
+// import PPTReader from './src/screen/PPTFilReader/PPTReader';
+// import PPTFilesList from './src/screen/PPTFilReader/PPTFilesList';
+// import EditImage from './src/screen/imageEditor/EditImage';
+// import MultipleDocumentImageView from './src/screen/documentScanner/DisplayMultipleDocumentImage';
 import DisplayMultipleDocumentImage from './src/screen/documentScanner/DisplayMultipleDocumentImage';
 import DocumentScan from './src/screen/documentScanner/DocumentScan';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { COLORS, FONTS } from './src/utilies/GlobalColors';
-import FontAwesome from 'react-native-vector-icons/FontAwesome'
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
+// import FontAwesome from 'react-native-vector-icons/FontAwesome'
+// import FontAwesome5 from 'react-native-vector-icons/FontAwesome5'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import SaveUserCardDetails from './src/screen/dashboard/SaveUserCardDetails';
@@ -224,20 +224,20 @@ React.useEffect(() => {
                   {/* <Stack.Screen name="Splashscreen" component={Splashscreen} /> */}
                   <Stack.Screen name="Home" component={MyTabs} />
                   <Stack.Screen name="Dashboard" component={Dashboard} />
-                  <Stack.Screen name="EditImage" component={EditImage} />
+                  {/* <Stack.Screen name="EditImage" component={EditImage} /> */}
                   <Stack.Screen name="ReadSystemFile" component={ReadSystemFile} />
                   <Stack.Screen name="PdfViewer" component={PdfViewer} />
                   <Stack.Screen name="MultiplePdfView" component={MultiplePdfView} />
-                  <Stack.Screen name="WordReader" component={WordReader} />
-                  <Stack.Screen name="XslxReader" component={XslxReader} />
-                  <Stack.Screen name="PPTReader" component={PPTReader} />
-                  <Stack.Screen name="WordFilesList" component={WordFilesList} />
+                  {/* <Stack.Screen name="WordReader" component={WordReader} /> */}
+                  {/* <Stack.Screen name="XslxReader" component={XslxReader} /> */}
+                  {/* <Stack.Screen name="PPTReader" component={PPTReader} /> */}
+                  {/* <Stack.Screen name="WordFilesList" component={WordFilesList} /> */}
                   <Stack.Screen name="DocumentScan" component={DocumentScan} />
                   <Stack.Screen name="DisplayMultipleDocumentImage" component={DisplayMultipleDocumentImage} />
-                  <Stack.Screen name="XslxFilesList" component={XslxFilesList} />
+                  {/* <Stack.Screen name="XslxFilesList" component={XslxFilesList} /> */}
                   <Stack.Screen name="Settings" component={SettingsScreen} />
                   <Stack.Screen name="SaveUserCardDetails" component={SaveUserCardDetails} />
-                  <Stack.Screen name="PPTFilesList" component={PPTFilesList} />
+                  {/* <Stack.Screen name="PPTFilesList" component={PPTFilesList} /> */}
                   <Stack.Screen name="ImagesToPdfConverter" component={ImagesToPdfConverter} />
                   <Stack.Screen name="contactus" component={ContactUs} />
                 </Stack.Navigator>
