@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 import moment from "moment"
 import ImagePicker from "react-native-image-crop-picker";
 import { cameraIcon, gallery } from '../assets/GlobalImages';
+import { Modal,Portal } from 'react-native-paper';
 import { Overlay } from 'react-native-elements';
 import { scaledSize } from '../utilies/Utilities';
 import { useTheme } from '../screen/theme/useTheme';
@@ -100,7 +101,10 @@ export const CustomPhotoOrCameraSelectOption = (props: S) => {
 
 const MediaOption=()=>{
   return(
-    <Overlay isVisible={isShowPhotoOptionsModal} animationType='fade' overlayStyle={{backgroundColor: 'transparent'}}>
+    <Portal>
+
+    <Modal visible={isShowPhotoOptionsModal} 
+    style={{backgroundColor:'transparent',justifyContent:'center',alignItems:'center'}} transparent    >
       <View style={styles.mediaOptionContainer}>
         <View style={{ flex: .4 }}>
           <Text style={styles.mediaOptionTitle}>Select File</Text>
@@ -128,7 +132,9 @@ const MediaOption=()=>{
           </Text>
         </TouchableOpacity>
       </View>
-    </Overlay>
+    </Modal>
+        </Portal>
+
   )
 }
 const header=()=>{
@@ -331,6 +337,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       width: scaledSize(280),
       justifyContent: 'center',
       alignItems: 'center',
+      alignSelf: 'center',
       backgroundColor: theme.bgColor,
       borderRadius: scaledSize(14),
     },

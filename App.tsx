@@ -49,11 +49,12 @@ import { asyncStorageKeyName, CONSTANT } from './src/utilies/Constants';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';  // Import the Toast component
 // import { Fonts } from './src/assets/fonts/GlobalFonts';
 import { checkForUpdate } from './src/utilies/InAppUpdates'
+import { Provider as PaperProvider } from 'react-native-paper';
 
 // import VersionCheck from 'react-native-version-check';
 
 // import { CONSTANT } from './src/utilies/Constants';
-import {NotificationService} from './src/service/NotificationService'
+import { NotificationService } from './src/service/NotificationService'
 export default function App(props) {
   const Stack = createNativeStackNavigator();
   const [uri, setUri] = React.useState()
@@ -76,8 +77,8 @@ export default function App(props) {
   // }, [])
 
   const checkForUpdate = async () => {
-    const latestVersion = await VersionCheck.getLatestVersion(); 
-    const currentVersion = VersionCheck.getCurrentVersion();   
+    const latestVersion = await VersionCheck.getLatestVersion();
+    const currentVersion = VersionCheck.getCurrentVersion();
     console.log('Current Version:', currentVersion);
     console.log('Latest Version:', latestVersion);
 
@@ -107,39 +108,39 @@ export default function App(props) {
 
 
 
-React.useEffect(() => {
-  (async () => {
-    await initDB();
+  React.useEffect(() => {
+    (async () => {
+      await initDB();
 
-    if (Platform.OS === 'android') {
-      const ManageExternalStorage =
-        require('react-native-manage-external-storage').default;
+      if (Platform.OS === 'android') {
+        const ManageExternalStorage =
+          require('react-native-manage-external-storage').default;
 
-      ManageExternalStorage.checkAndGrantPermission(
-        () => setResult(false),
-        () => setResult(true),
-      );
-    }
-  })();
-  NotificationService.requestUserPermission()
-  NotificationService.showNotification()
-}, []);
-// React.useEffect(() => {
-//   (async () => {
-//     console.log('Platform:', Platform.OS);
+        ManageExternalStorage.checkAndGrantPermission(
+          () => setResult(false),
+          () => setResult(true),
+        );
+      }
+    })();
+    NotificationService.requestUserPermission()
+    NotificationService.showNotification()
+  }, []);
+  // React.useEffect(() => {
+  //   (async () => {
+  //     console.log('Platform:', Platform.OS);
 
-//     await initDB();
+  //     await initDB();
 
-//     if (Platform.OS === 'android') {
-//       console.log('Android code running');
+  //     if (Platform.OS === 'android') {
+  //       console.log('Android code running');
 
-//       ManageExternalStorage.checkAndGrantPermission(
-//         () => setResult(false),
-//         () => setResult(true),
-//       );
-//     }
-//   })();
-// }, []);
+  //       ManageExternalStorage.checkAndGrantPermission(
+  //         () => setResult(false),
+  //         () => setResult(true),
+  //       );
+  //     }
+  //   })();
+  // }, []);
 
 
   function MyTabs() {
@@ -211,9 +212,9 @@ React.useEffect(() => {
     );
   }
   return (
-    // <ToastProvider>
-    <GestureHandlerRootView style={{ flex: 1 }}>{/* for gesture handler */}
-      <BottomSheetModalProvider>
+    <PaperProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>{/* for gesture handler */}
+        <BottomSheetModalProvider>
 
           <MenuProvider>
             <Provider store={Store}>
@@ -242,13 +243,9 @@ React.useEffect(() => {
               </NavigationContainer>
             </Provider>
           </MenuProvider>
-        {/* <Toast config={toastConfig} /> */}
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
-
-
-
-
-
+          {/* <Toast config={toastConfig} /> */}
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    </PaperProvider>
   );
 }

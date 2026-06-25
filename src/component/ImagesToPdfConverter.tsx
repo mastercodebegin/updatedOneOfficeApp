@@ -1,5 +1,5 @@
 
-import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, Modal, TextInput, Platform, SafeAreaView, ActivityIndicator } from 'react-native'
+import { View, Text, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, PermissionsAndroid, Linking, TextInput, Platform, SafeAreaView, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import Share from 'react-native-share';
@@ -16,8 +16,7 @@ import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomSpinner from './CustomSpinner';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../utilies/Constants';
 import { useDispatch, useSelector } from 'react-redux'
-import { Searchbar } from 'react-native-paper'
-import { Button, Overlay } from 'react-native-elements';
+import { Searchbar,Modal } from 'react-native-paper'
 import { useToast } from "react-native-toast-notifications";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import LinearGradient from 'react-native-linear-gradient';
@@ -557,14 +556,19 @@ const ImagesToPdfConverter = () => {
         <CustomFAB onPress={() => showSelectImagesModal()} />
       </View>
 
-      <Overlay isVisible={isShowCreatePdfModalWindow} transparent
-        overlayStyle={{
+      <Modal visible={isShowCreatePdfModalWindow} 
+        style={{
           borderRadius: scaledSize(26),
-          backgroundColor: theme.bgColor
+          backgroundColor: 'transparent',
+          justifyContent:'center',
+          alignItems:'center'
         }} >
-        <View style={{ height: heightFromPercentage(54), width: widthFromPercentage(90), backgroundColor: theme.bgColor, alignSelf: 'flex-end' }}>
+        <View style={{ height: heightFromPercentage(54), 
+          width: widthFromPercentage(90),borderRadius:scaledSize(20),
+           backgroundColor: theme.bgColor,  }}>
           <View style={{
-            height: heightFromPercentage(20), width: widthFromPercentage(90),
+            height: heightFromPercentage(20),
+             width: widthFromPercentage(90),
             alignSelf: 'flex-end'
           }}>
             <CustomPhotoOrCameraSelectOption
@@ -612,7 +616,7 @@ const ImagesToPdfConverter = () => {
           </TouchableOpacity>
 <CustomSpinner isLoading={isLoading} />
         </View>
-      </Overlay>
+      </Modal>
 
       <ConfirmationDialog
         visible={isShowCreatePdfConfirmation}

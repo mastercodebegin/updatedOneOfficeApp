@@ -45,7 +45,7 @@ import DocxGenerator from './Xlsxgenerator';
 import {  scaledSize, Utility } from '../../utilies/Utilities';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import HeaderComponent from '../../component/CustomHeader';
-import { Button } from 'react-native-elements';
+import { Button } from 'react-native-paper';
 import { ErrorToast } from '../../component/CustomToast';
 import CustomSpinner from '../../component/CustomSpinner';
 

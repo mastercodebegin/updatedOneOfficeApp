@@ -58,10 +58,8 @@ import PPTFilesList from '../PPTFilReader/PPTFilesList';
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal';
 import CustomVectorIcon from '../../component/CustomVectorIcon';
 import { CustomPhotoOrCameraSelectOption } from '../../component/CustomPhotoOrCameraSelectOption';
-import { Overlay } from 'react-native-elements';
 import { pick, types } from '@react-native-documents/picker'
 import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
-import WebView from 'react-native-webview';
 import { getLocalData, setLocalData } from '../../utilies/storageUtility';
 import { FileLocalService } from '../../db/fileLocalService';
 import { resetFoldersTable } from '../../db/folderLocalService';

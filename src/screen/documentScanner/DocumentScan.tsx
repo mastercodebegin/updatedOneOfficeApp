@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, use, useMemo } from 'react'
 import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
-import { Button, Overlay } from 'react-native-elements';
+import { Button } from 'react-native-paper';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
@@ -17,22 +17,11 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Fonts } from '../../assets/fonts/GlobalFonts';
-import { RadioButton, Searchbar } from 'react-native-paper'
-import CustomInput from '../../component/CustomInput';
-import CustomInputBox from '../../component/CustomInputBox';
-import { folder } from 'jszip';
-import FloatingButton from '../../component/FloatingButton';
-import CustomeButton from '../../component/CustomButton';
-import ImageViewer from 'react-native-image-zoom-viewer';
 import LinearGradient from 'react-native-linear-gradient';
-import Spinner from 'react-native-loading-spinner-overlay';
 import { useIsFocused } from '@react-navigation/native';
 import CustomFAB from '../../component/CustomFAB';
 import { zip, unzip } from 'react-native-zip-archive';
 import { types } from '@react-native-documents/picker';
-import { animation_completed, backup_animation } from '../../assets/animation/AnimationAssets';
-import LottieView from 'lottie-react-native';
-import CustomCloseIcon from '../../component/CustomCloseIcon';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { CustomErrorToast, CustomSuccessToast } from '../../component/CustomToast';
 import CustomPermissionMessage from '../../component/CustomPermissionMessage';
@@ -57,7 +46,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../theme/ThemeSlice';
 import { useTheme } from '../theme/useTheme';
 import { Theme } from '../theme/ThemeConfig';
-import { color } from 'react-native-elements/dist/helpers';
 import { tagLocalService } from '../../../src/db/tagLocalService';
 import CustomVectorIcon from '../../../src/component/CustomVectorIcon';
 import ConfirmationDialog from '../../../src/component/ConfirmationDialog';

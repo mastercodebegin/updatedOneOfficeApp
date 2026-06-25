@@ -8,15 +8,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { COLORS, FONTS } from '../../utilies/GlobalColors';
-import { Overlay } from 'react-native-elements';
 // import i from '../../assets/images/microsoft-word.png'
 import { Image as RNImage } from 'react-native'; // Use React Native's Image component to resolve the URI
 import { ImageZoom } from '@likashefqet/react-native-image-zoom';
 import { Modal, Switch } from 'react-native-paper';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import CustomeButton from '../../component/CustomButton';
-import CustomInputBox from '../../component/CustomInputBox';
 import RNFS from 'react-native-fs';
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import ImageViewer from 'react-native-image-zoom-viewer';

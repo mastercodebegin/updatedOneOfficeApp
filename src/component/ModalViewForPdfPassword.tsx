@@ -13,10 +13,6 @@ import { Fonts } from "../assets/fonts/GlobalFonts";
 import { Axis, BOB, calendarIcon, clear, eye, eyeClosed, info, } from "../assets/GlobalImages";
 import Info from '../assets/images/pdfIcon.png'
 import { asyncStorageKeyName, BANK_LOGOS, banksName, BanksObject, } from "../utilies/Constants";
-import CustomCalendar from "./CustomCalendar";
-import CustomInput from "./CustomInput";
-import SvgImageDisplay from "../utilies/SvgImageDisplay";
-import SvgUri from "react-native-svg-uri";
 import CustomBannerAdd from "./admob/CustomBannerAdd";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RadioButton } from "react-native-paper";
@@ -24,7 +20,6 @@ import moment from 'moment';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import SaveUserCardDetails from "../screen/dashboard/SaveUserCardDetails";
 import CustomDropdown from "./CustomDropDown";
-import { Input } from "react-native-elements";
 import { useToast } from "react-native-toast-notifications";
 import CustomLinearGradientView from "./CustomLinearGradientView";
 import CustomErrorMsgModal from "./CustomErrorMsgModal";

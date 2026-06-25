@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, FlatList, Linking, StyleSheet, View } from 'react-native';
-import { Button } from 'react-native-elements';
+import { Button } from 'react-native-paper';
 import Pdf from 'react-native-pdf';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedFiles, updateFilesPassword } from '../screen/dashboard/FileSlice';
@@ -39,7 +39,7 @@ const MultiplePdfView = (props: S) => {
   // const [filePasswords, setFilePasswords] = useState([])
   const pdfArr = props?.route?.params
   const dispatch = useDispatch()
-  const { selectedFiles,filePasswords } = useSelector((state) => state.FileSlice);
+  const { selectedFiles, filePasswords } = useSelector((state) => state.FileSlice);
   // useEffect(() => {
   //   console.log('pdfArr======', response)
   //   setSelectedSheet(pdfArr[0])
@@ -109,42 +109,49 @@ const MultiplePdfView = (props: S) => {
         backgroundColor: theme.bgContainor,
         overflow: 'hidden'
       }}>
-  
-          <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
-            <CustomVectorIcon
-              iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
-              iconLibrary='MaterialCommunityIcons'
-              style={{
-                color: theme.themeColor, fontSize: scaledSize(20),
-                right: 30
-              }}
-              onPress={() => { setIsMultiView(!isMultiView) }} />
-          } />
+
+        <CustomHeader title='' onPressBack={onPressCloseHandler} rightSide={
+          <CustomVectorIcon
+            iconName={isMultiView ? 'phone-rotate-landscape' : 'screen-rotation'}
+            iconLibrary='MaterialCommunityIcons'
+            style={{
+              color: theme.themeColor, fontSize: scaledSize(20),
+              right: 30
+            }}
+            onPress={() => { setIsMultiView(!isMultiView) }} />
+        } />
       </Animated.View>
     )
   }
 
+
   const renderItem = ({ item, index }) => {
     const isSelected = selectedSheet.name === item.name;
-    return (<Button
-      containerStyle={{ justifyContent: 'center', alignItems: 'center', }}
-      buttonStyle={{
-        backgroundColor: 'transparent',
-        paddingLeft: scaledSize(10), height: 40,
-        marginLeft: index == 0 ? 0 : scaledSize(10),
-        borderBottomWidth: isSelected ? 2 : .5,
-        borderColor: isSelected ? theme.themeColor : theme.borderColor,
-      }}
-      titleStyle={{ color: theme.primaryTextColor, textAlign: 'center' }}
-      key={Utility.generateUniqueNumber()}
-      title={item.name.slice(0, 15)}
-      onPress={() => {
-        console.log('sheetName')
-        setSelectedSheet(item);
-        previousPage1.current = 1;
-      }} />)
-  }
 
+    return (
+      <View
+        style={{
+          marginLeft: index === 0 ? 0 : scaledSize(10),
+          borderBottomWidth: isSelected ? 2 : 0.5,
+          borderBottomColor: isSelected
+            ? theme.themeColor
+            : theme.borderColor,
+        }}
+      >
+        <Button
+          mode="text"
+          contentStyle={{ height: 40 }}
+          labelStyle={{ color: theme.primaryTextColor }}
+          onPress={() => {
+            setSelectedSheet(item);
+            previousPage1.current = 1;
+          }}
+        >
+          {item.name.slice(0, 15)}
+        </Button>
+      </View>
+    );
+  };
   const handlePageChange1 = (page: number) => {
     if (page > previousPage1.current) {
       toggleHeader(false); // Scrolling down
@@ -171,15 +178,15 @@ const MultiplePdfView = (props: S) => {
     setIsShowPasswordModal(true);
   };
   const getPasswordForSelectedSheet = (currentFile) => {
-    console.log('selectedfile===',selectedFiles);
-    console.log('selectedSheet===',selectedSheet);
-    console.log('filePasswords===',filePasswords);
-    
+    console.log('selectedfile===', selectedFiles);
+    console.log('selectedSheet===', selectedSheet);
+    console.log('filePasswords===', filePasswords);
+
     const file = filePasswords.find((file) => file.id == currentFile?.id)
     const file2 = filePasswords.find((file) => file.id == selectedSheet?.id)
     console.log('file===', file);
 
-    return file?.pass || file2?.pass||''
+    return file?.pass || file2?.pass || ''
   }
   const renderMultiPdf = () => {
     return (
@@ -279,7 +286,7 @@ const MultiplePdfView = (props: S) => {
   return (
 
     <View style={[styles.container]}>
-      {headerComp()} 
+      {headerComp()}
 
       {selectedSheet?.path ? renderMultiPdf() : null}
       {isShowPasswordModal && (
@@ -288,10 +295,11 @@ const MultiplePdfView = (props: S) => {
           files={selectedFiles}
           onClose={() => setIsShowPasswordModal(false)}
           onSubmit={(v) => {
-            console.log('v==',v);
-            
+            console.log('v==', v);
+
             dispatch(updateFilesPassword(v)),
-            setIsShowPasswordModal(false)}}
+              setIsShowPasswordModal(false)
+          }}
           protectedFiles={protectedFiles}
         />
       )}
