@@ -9,7 +9,6 @@ import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constan
 import {  deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
-// import Elevations from 'react-native-elevation'
 import { COLORS, FONTS } from '../../utilies/GlobalColors';
 import CustomMenu from '../../component/Menu';
 import Icon from 'react-native-vector-icons/Feather';

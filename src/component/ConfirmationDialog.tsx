@@ -1,14 +1,4 @@
 import React from 'react';
-
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
-
-import Modal from 'react-native-modal';
-
 import {
   scaledSize,
   widthFromPercentage,
@@ -21,20 +11,30 @@ import CustomVectorIcon from './CustomVectorIcon';
 import { useTheme } from '../../src/screen/theme/useTheme';
 import { Theme } from 'src/screen/theme/ThemeConfig';
 
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Modal
+} from 'react-native';
+
+
+
 interface myProps {
   visible: boolean;
 
   onSubmit?: () => void;
 
   onCancel?: () => void;
-  message?:string
+  message?: string
   mode?: 'default' | 'delete';
 }
 
 const ConfirmationDialog = (
   props: myProps,
 ) => {
-  const {message}=props
+  const { message } = props
   const { theme } = useTheme();
 
   const styles = createStyles(theme);
@@ -42,103 +42,81 @@ const ConfirmationDialog = (
   const isDeleteMode =
     props?.mode === 'delete';
 
-  return (
-    <Modal
-      isVisible={props.visible}
-      hasBackdrop
-      backdropColor="#000"
-      backdropOpacity={0.45}
-      animationIn="zoomIn"
-      animationOut="zoomOut"
-      animationInTiming={350}
-      animationOutTiming={300}>
-      
-      <View style={styles.mainView}>
-        
-        <View style={styles.modalMainView}>
-          
-          {/* Icon */}
-          <View
-            style={[
-              styles.iconWrapper,
+return (
+  <Modal
+    visible={props.visible}
+    transparent
+    animationType="fade"
+    statusBarTranslucent
+    onRequestClose={props.onCancel}
+  >
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scaledSize(18),
+      }}
+    >
+      <View style={styles.modalMainView}>
+        {/* Icon */}
+        <View style={styles.iconWrapper}>
+          <CustomVectorIcon
+            iconLibrary="Feather"
+            iconName={isDeleteMode ? 'trash' : 'alert-triangle'}
+            style={{
+              color: isDeleteMode ? '#FF3B5C' : theme.themeColor,
+              bottom: scaledSize(0),
+            }}
+          />
+        </View>
 
-            //   {
-            //     backgroundColor:
-            //       isDeleteMode
-            //         ? 'rgba(255,59,92,0.12)'
-            //         : `${theme.themeColor}20`,
-            //   },
-            ]}>
-            
-            <CustomVectorIcon
-              iconLibrary="Feather"
-              iconName={
-                isDeleteMode
-                  ? 'trash'
-                  : 'alert-triangle'
-              }
-              style={{
-                color: isDeleteMode
+        {/* Heading */}
+        <Text style={styles.heading}>
+          {isDeleteMode ? 'Delete' : 'Alert'}
+        </Text>
+
+        {/* Message */}
+        <Text style={styles.subText}>
+          {message
+            ? message
+            : isDeleteMode
+            ? 'Are you sure you want to delete?'
+            : 'Do you want to continue?'}
+        </Text>
+
+        {/* Buttons */}
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={props.onCancel}
+            style={styles.cancelButton}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={props.onSubmit}
+            style={[
+              styles.confirmButton,
+              {
+                backgroundColor: isDeleteMode
                   ? '#FF3B5C'
                   : theme.themeColor,
-
-                bottom: scaledSize(0),
-              }}
-            />
-          </View>
-
-          {/* Heading */}
-          <Text style={styles.heading}>
-            {isDeleteMode
-              ? 'Delete'
-              : 'Alert'}
-          </Text>
-
-          {/* Message */}
-          <Text style={styles.subText}>
-            {message?message:isDeleteMode
-              ? 'Are you sure you want to delete?'
-              : 'Do you want to continue?'}
-          </Text>
-
-          {/* Buttons */}
-          <View style={styles.buttonRow}>
-            
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={props.onCancel}
-              style={styles.cancelButton}>
-              
-              <Text style={styles.cancelText}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={props.onSubmit}
-              style={[
-                styles.confirmButton,
-
-                {
-                  backgroundColor:
-                    isDeleteMode
-                      ? '#FF3B5C'
-                      : theme.themeColor,
-                },
-              ]}>
-              
-              <Text style={styles.confirmText}>
-                {isDeleteMode
-                  ? 'Delete'
-                  : 'Continue'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              },
+            ]}
+          >
+            <Text style={styles.confirmText}>
+              {isDeleteMode ? 'Delete' : 'Continue'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </Modal>
-  );
+    </View>
+  </Modal>
+);
 };
 
 const createStyles = (theme: Theme) =>
@@ -150,6 +128,11 @@ const createStyles = (theme: Theme) =>
 
       alignItems: 'center',
 
+      paddingHorizontal: scaledSize(18),
+    },
+    modalContainer: {
+      justifyContent: 'center',
+      alignItems: 'center',
       paddingHorizontal: scaledSize(18),
     },
 

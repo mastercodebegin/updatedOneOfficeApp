@@ -30,7 +30,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import Share from 'react-native-share';
-import { TabView, SceneMap, TabBar, SceneRendererProps } from 'react-native-tab-view';
+// import { TabView, SceneMap, TabBar, SceneRendererProps } from 'react-native-tab-view';
 import CustomSpinner from '../../component/CustomSpinner';
 import VideoAddMob from '../../component/admob/VideoAdd';
 import { useIsFocused } from '@react-navigation/native';
@@ -778,71 +778,71 @@ useEffect(() => {
     }
   }
 
-  const renderScene = ({
-    route,
-    jumpTo,
-  }: SceneRendererProps & {
-    route: { key: 'first' | 'second'; title: string };
-  }) => {
+  // const renderScene = ({
+  //   route,
+  //   jumpTo,
+  // }: SceneRendererProps & {
+  //   route: { key: 'first' | 'second'; title: string };
+  // }) => {
 
-    switch (route.key) {
-      case asyncStorageKeyName.PDF_FILES:
-        return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
-          ref={readPdfFileRef}
-          // pdfFiles={pdfs} 
-          pdfFiles={documents.pdfFiles}
-          selectedSort={selectedSort}
-          viewMode={viewMode}
-          onReLoad={readPdfFiles} isLoading={isLoading} />;
-      // case asyncStorageKeyName.WORD_FILES:
-      //   return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
-      //     selectedSort={selectedSort} viewMode={viewMode} />;
-      // case asyncStorageKeyName.XLSX_FILES:
-      //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
-      //   case asyncStorageKeyName.PPT_FILES:
-      // return <PPTFilesList key={uniqueNumber} searchValue={searchQuery} pptFiles={documents.pptFiles} onReLoad={readPdfFiles} isLoading={isLoading}/>;
-    }
-  };
-
-
-  const renderTabBar = (props: any) => (
-    <TabBar
-      {...props}
-      indicatorStyle={{
-        backgroundColor: theme.themeColor,
-        height: .5,
-      }}
-      style={{
-        backgroundColor: mode === 'dark' ? theme.bgContainor : '#FFFFFF',
-        elevation: 0,
-        shadowOpacity: 0,
-        borderBottomWidth: 1,
-        borderBottomColor: mode === 'dark' ? theme.borderColor : '#EEF0F4',
-      }}
-      tabStyle={{
-        height: scaledSize(62),
-      }}
-      activeColor={theme.themeColor}
-      inactiveColor={theme.iconColor}
-      lazy
-      lalazyPreloadDistance={1}
-      onTabPress={({
-        route,
-      }: {
-        route: { key: string; title: string };
-      }) => {
-        setScreenName(route.title);
+  //   switch (route.key) {
+  //     case asyncStorageKeyName.PDF_FILES:
+  //       return <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
+  //         ref={readPdfFileRef}
+  //         // pdfFiles={pdfs} 
+  //         pdfFiles={documents.pdfFiles}
+  //         selectedSort={selectedSort}
+  //         viewMode={viewMode}
+  //         onReLoad={readPdfFiles} isLoading={isLoading} />;
+  //     // case asyncStorageKeyName.WORD_FILES:
+  //     //   return <WordFilesList key={uniqueNumber} searchValue={searchQuery} wordFiles={documents.wordFiles} onReLoad={readPdfFiles} isLoading={isLoading}
+  //     //     selectedSort={selectedSort} viewMode={viewMode} />;
+  //     // case asyncStorageKeyName.XLSX_FILES:
+  //     //   return <XslxFilesList key={uniqueNumber} searchValue={searchQuery} xlsxFiles={documents.xlsxFiles} onReLoad={readPdfFiles} isLoading={isLoading} />;
+  //     //   case asyncStorageKeyName.PPT_FILES:
+  //     // return <PPTFilesList key={uniqueNumber} searchValue={searchQuery} pptFiles={documents.pptFiles} onReLoad={readPdfFiles} isLoading={isLoading}/>;
+  //   }
+  // };
 
 
-      }}
-      labelStyle={{
-        textTransform: 'uppercase',
-        fontSize: scaledSize(13),
-        fontFamily: Fonts.bold,
-      }}
+  // const renderTabBar = (props: any) => (
+  //   <TabBar
+  //     {...props}
+  //     indicatorStyle={{
+  //       backgroundColor: theme.themeColor,
+  //       height: .5,
+  //     }}
+  //     style={{
+  //       backgroundColor: mode === 'dark' ? theme.bgContainor : '#FFFFFF',
+  //       elevation: 0,
+  //       shadowOpacity: 0,
+  //       borderBottomWidth: 1,
+  //       borderBottomColor: mode === 'dark' ? theme.borderColor : '#EEF0F4',
+  //     }}
+  //     tabStyle={{
+  //       height: scaledSize(62),
+  //     }}
+  //     activeColor={theme.themeColor}
+  //     inactiveColor={theme.iconColor}
+  //     lazy
+  //     lalazyPreloadDistance={1}
+  //     onTabPress={({
+  //       route,
+  //     }: {
+  //       route: { key: string; title: string };
+  //     }) => {
+  //       setScreenName(route.title);
 
-    />
-  );
+
+  //     }}
+  //     labelStyle={{
+  //       textTransform: 'uppercase',
+  //       fontSize: scaledSize(13),
+  //       fontFamily: Fonts.bold,
+  //     }}
+
+  //   />
+  // );
 
 
 

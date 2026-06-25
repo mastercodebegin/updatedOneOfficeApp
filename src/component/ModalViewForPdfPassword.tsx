@@ -612,9 +612,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
 
     flex: 1,
     flexDirection: "row",
-    marginVertical: deviceBasedDynamicDimension(10, true, 1),
-    padding: deviceBasedDynamicDimension(15, true, 1),
-    borderRadius: deviceBasedDynamicDimension(20, true, 1),
+    marginVertical: scaledSize(10),
+    padding: scaledSize(15),
+    borderRadius: scaledSize(20),
     // backgroundColor: COLORS.white
   },
   passwordHintMainView: {
@@ -672,11 +672,10 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   cancelButton: {
     opacity: 1,
     // backgroundColor: "#54c0e8",
-    borderRadius: deviceBasedDynamicDimension(3, true, 1),
+    borderRadius: scaledSize(3),
     justifyContent: "center",
-    height: deviceBasedDynamicDimension(50, false, 1),
-    paddingHorizontal: deviceBasedDynamicDimension(2, true, 1),
-    //  marginRight:  deviceBasedDynamicDimension(10, true, 1),
+    height: scaledSize(50),
+    paddingHorizontal: scaledSize(2),
   },
   cancelButtonText: {
     margin: scaledSize(10),
@@ -688,10 +687,10 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   okButton: {
     // backgroundColor: "#e31d93",
-    borderRadius: deviceBasedDynamicDimension(3, true, 1),
+    borderRadius: scaledSize(4),
     justifyContent: "center",
-    height: deviceBasedDynamicDimension(50, false, 1),
-    paddingHorizontal: deviceBasedDynamicDimension(0, true, 1),
+    height: scaledSize(50),
+    paddingHorizontal: scaledSize(1),
   },
   okButtonText: {
     margin: scaledSize(10),

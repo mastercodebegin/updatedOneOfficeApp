@@ -32,9 +32,9 @@ import RangeSlider from 'rn-range-slider';
 import { COLORS } from '../../utilies/GlobalColors';
 // import SignatureScreen from "react-native-signature-canvas";
 import CustomBackIcon from '../../component/CustomBackIcon';
-import RNPhotoManipulator from 'react-native-photo-manipulator';
+// import RNPhotoManipulator from 'react-native-photo-manipulator';
 // import ImageResizer from '@bam.tech/react-native-image-resizer';
-import ColorPicker, { Panel1, Swatches, Preview, OpacitySlider, HueSlider } from 'reanimated-color-picker';
+// import ColorPicker, { Panel1, Swatches, Preview, OpacitySlider, HueSlider } from 'reanimated-color-picker';
 import CustomRangeSlider from '../../component/CustomRangeSlider';
 
 interface S {
@@ -129,7 +129,8 @@ const ImageOverlay = (props: S) => {
             console.log('resizedOverlay', overlayImage);
 
             // Step 2: Overlay the resized image on the background
-            const resultUri = await RNPhotoManipulator.overlayImage(editedImage, resizedOverlay.uri, position);
+            const resultUri = null;
+            // const resultUri = await RNPhotoManipulator.overlayImage(editedImage, resizedOverlay.uri, position);
 
             await RNFS.copyFile(resizedOverlay.uri, downloadPath1);
             await RNFS.copyFile(resultUri, downloadPath);
