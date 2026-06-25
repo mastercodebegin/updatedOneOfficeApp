@@ -16,7 +16,7 @@ interface S {
 }
 export default function CustomFAB(props: S) {
     const { onPress, height, icon, style } = props;
-    const hei = height ? height : scaledSize(50)
+    const hei = height ? height : scaledSize(60)
     const { mode, theme } = useTheme()
     return (
         <View style={[

@@ -964,6 +964,16 @@ useEffect(() => {
         )}
 
         {renderCircleAction(
+          'User',
+          <Feather
+            name="user"
+            size={scaledSize(25)}
+            color={headerIconColor}
+          />,
+          () => navigation.navigate('SaveUserCardDetails'),
+        )}
+
+        {renderCircleAction(
           'Sort',
           <MaterialCommunityIcons
             name="sort"

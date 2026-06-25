@@ -2322,7 +2322,7 @@ const renderParentItem = ({ item }) => {
               <View style={styles.backupContainer}>
                 {data.length == 0 && userTags.length == 0 && selectedTags.length == 0 ? (
                   <>
-                    <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file.</Text>
+                    <Text style={styles.backupInfoText}>No documents found. You can restore from a previous backup file. or create new document</Text>
                     <TouchableOpacity style={styles.backupButton} onPress={handleImportBackup}>
                       <MaterialCommunityIcons name="cloud-download-outline" size={22} color={theme.themeColor} />
                       <Text style={styles.backupButtonText}>Import Backup</Text>
@@ -2344,7 +2344,7 @@ const renderParentItem = ({ item }) => {
       </View>
 
       <View style={{
-        height: scaledSize(50), position: "absolute", left: scaledSize(270),
+        height: scaledSize(50), position: "absolute", left: scaledSize(300),
         top: heightFromPercentage(72)
       }}>
         <CustomFAB

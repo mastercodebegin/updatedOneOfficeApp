@@ -1377,7 +1377,7 @@ const renderAddCardDetails = () => {
       </View>
       {/* <View style={{ height: scaledSize(150), borderTopWidth: !userDetails.length > 1 ? .2 : 0, borderColor: '#d3d3d3' }}> */}
 
-        <View style={{ left: scaledSize(260), height: scaledSize(50), top: scaledSize(610),position:'absolute' }}>
+        <View style={{ left: scaledSize(300), height: scaledSize(50), top: scaledSize(710),position:'absolute' }}>
           <CustomFAB onPress={() => setIsShowAddUserDetailsModal(true)} />
         </View>
       {/* </View> */}
