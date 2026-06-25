@@ -492,16 +492,16 @@ const createStyles = (
 
     card: {
       minHeight:
-        scaledSize(126),
+        scaledSize(100),
 
       marginHorizontal:
-        scaledSize(20),
+        scaledSize(10),
 
       marginBottom:
         scaledSize(20),
 
       paddingVertical:
-        scaledSize(24),
+        scaledSize(20),
 
       paddingHorizontal:
         scaledSize(24),
@@ -601,8 +601,8 @@ const createStyles = (
     },
 
     icon: {
-      width: scaledSize(70),
-      height: scaledSize(70),
+      width: scaledSize(60),
+      height: scaledSize(60),
       resizeMode:
         "contain",
     },
@@ -619,7 +619,7 @@ const createStyles = (
       color:
         theme.primaryTextColor,
       fontSize:
-        scaledSize(18),
+        scaledSize(16),
       fontFamily:
         Fonts.regular,
       fontWeight:
@@ -646,7 +646,7 @@ const createStyles = (
       color:
         theme.primaryTextColor,
       fontSize:
-        scaledSize(15),
+        scaledSize(14),
       fontFamily:
         Fonts.regular,
     },

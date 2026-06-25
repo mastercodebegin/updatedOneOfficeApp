@@ -889,12 +889,13 @@ useEffect(() => {
       <View style={styles.headerActionCircle}>
         {icon}
       </View>
-      <Text style={styles.headerActionLabel}>{label}</Text>
+      <Text style={[styles.headerActionLabel,{color:theme.primaryTextColor}]}>{label}</Text>
     </TouchableOpacity>
   );
 
   const renderHeaderIcons = () => {
-    const headerIconColor = '#3B46C6';
+    const headerIconColor = mode === 'dark' ? '#FFFFFF' : 'black';
+    const fileOpenColor =  theme.themeColor;
 
     return (
       <View style={styles.headerTopRow}>
@@ -907,24 +908,50 @@ useEffect(() => {
         </TouchableOpacity>
 
         <View style={styles.headerActions}>
-        {response.selectedFiles.length > 0 && <TouchableOpacity
-          onPress={() => dispatch(clearSelectedFiles(true))}
-          style={styles.selectionClearButton}>
-          <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off'
-            style={{ color: 'red' }}
-            onPress={() => dispatch(clearSelectedFiles(true))} />
-          {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
-        </TouchableOpacity>
-        }
+        
+        
+        
+        {response.selectedFiles.length > 0 && 
+        renderCircleAction(
+          'Clear',
+          <MaterialCommunityIcons
+            name="select-off"
+            size={scaledSize(22)}
+            color={theme.deleteIconColor}
+          />
+        ,
+           ()=>dispatch(clearSelectedFiles(true),
+        ))
 
-        {response.selectedFiles.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
+        }
+        
+        {response.selectedFiles.length > 1 && 
+          renderCircleAction(
+          'View',
           <MaterialIcons
             name="picture-as-pdf"
             size={scaledSize(22)}
-            color={theme.themeColor}
+            color={headerIconColor}
           />
-          {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
-        </TouchableOpacity>}
+        ,
+           onPressMultiPdfViewer,
+        )
+        }
+         {response.selectedFiles.length ==0 && <>{renderCircleAction(
+          'View',
+          <MaterialCommunityIcons
+            name={
+              viewMode === 'folder'
+                ? 'view-grid-outline'
+                : viewMode === 'list'
+                ? 'view-list-outline'
+                : 'view-headline'
+            }
+            size={scaledSize(24)}
+            color={headerIconColor}
+          />,
+           onPressViewMode,
+        )}
 
         {renderCircleAction(
           'Scan',
@@ -947,30 +974,19 @@ useEffect(() => {
         )}
 
         {renderCircleAction(
-          'Folder',
+          'Open',
           <Feather
             name="folder"
             size={scaledSize(25)}
-            color={headerIconColor}
+            color={fileOpenColor}
           />,
           openFile,
         )}
 
-        {/* <CustomMenu
-          Icon={<Feather name="more-vertical" size={scaledSize(22)} color={theme.iconColor} />}
-          menuOptionstyle={{
-            padding: scaledSize(13),
-            width: scaledSize(150),
-            height: scaledSize(50),
-          }}
-          menuOption={[
-            { onSelect: () => shareApp(), label: 'Share' },
-            { onSelect: () => navigation.navigate('contactus'), label: 'Contact us' },
-          ]}
-        /> */}
-
+      </>}
         </View>
       </View>
+
     )
   }
   // const handleDownloadPress = () => {
@@ -1076,9 +1092,12 @@ useEffect(() => {
           <Text style={styles.heroSubtitle}></Text>
         </View>
 
+      </LinearGradient>
+      {/* =================================TabBar Started================================ */}
+      <View style={[styles.content, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]}>
+
         <View style={styles.searchWrap}>
           <View style={styles.searchInner}>
-
             <Searchbar
               placeholder="Search PDFs"
               style={[
@@ -1112,27 +1131,13 @@ useEffect(() => {
                   height: scaledSize(16), width: scaledSize(16),
 
                 }} />
-              </TouchableOpacity> : <></>
-              }
+              </TouchableOpacity> : <></>}
               value={searchQuery}
             />
-
-
           </View>
         </View>
-      </LinearGradient>
-      {/* =================================TabBar Started================================ */}
-      <View style={[styles.content, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]}>
+        <View style={{flex:1,bottom:scaledSize(40)}}>
 
-        {/* <TabView
-          renderTabBar={renderTabBar}
-
-          navigationState={{ index, routes }}
-          renderScene={renderScene}
-          onIndexChange={(i) => { setIndex(i), setSearchQuery('') }}
-          initialLayout={{ width: layout.width, height: '100%' }}
-
-        /> */}
         <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
           ref={readPdfFileRef}
           // pdfFiles={pdfs} 
@@ -1140,6 +1145,7 @@ useEffect(() => {
           selectedSort={selectedSort}
           viewMode={viewMode}
           onReLoad={readPdfFiles} isLoading={isLoading} />
+          </View>
         
       </View>
 
@@ -1182,7 +1188,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
   hero: {
     paddingTop: scaledSize(22),
     paddingHorizontal: scaledSize(20),
-    paddingBottom: scaledSize(46),
+    paddingBottom: scaledSize(56),
     borderBottomLeftRadius: scaledSize(22),
     borderBottomRightRadius: scaledSize(22),
     overflow: 'visible',
@@ -1231,7 +1237,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
   headerActionLabel: {
     marginTop: scaledSize(9),
     color: '#3B46C6',
-    fontSize: scaledSize(14),
+    fontSize: scaledSize(12),
     lineHeight: scaledSize(18),
     fontFamily: Fonts.regular,
     fontWeight: '700',
@@ -1261,8 +1267,9 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
     position: 'absolute',
     left: scaledSize(20),
     right: scaledSize(20),
-    bottom: scaledSize(-28),
+    top: scaledSize(-82),
     alignItems: 'center',
+    zIndex: 1,
   },
   searchInner: {
     width: '100%',
@@ -1279,7 +1286,7 @@ const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: scaledSize(48),
+    paddingTop: scaledSize(48), // This padding creates space for the search bar
   },
 
   loading: {
