@@ -19,7 +19,7 @@ export type Theme = {
 };
 
 const commonThemeProperties = {
-  themeColor: '#079bdc',
+  themeColor: '#3b50b1',
   deleteIconColor: '#FF3B5C',
   favColor:'#F4C542'
 }
@@ -37,14 +37,14 @@ const commonThemeProperties = {
 // };
 export const lightTheme: Theme = {
   ...commonThemeProperties,
-  bgColor: '#ECECEC',
-  bgContainor: '#F5F5F7',
-  primaryTextColor: '#000000',
+  bgColor: '#FFFFFF',
+  bgContainor: '#F8FAFC',
+  primaryTextColor: '#111827',
   secondaryTextColor: '#000000',
   iconColor: '#6B7280',
   borderColor: '#d3d3d3',
   // themeColor: '#47b16a',
-  buttonBGColor:'#F5F5F5',
+  buttonBGColor:'white',
   themeSecondaryColor:'#47b16a',
   buttonTextColor:'#000000'
 };

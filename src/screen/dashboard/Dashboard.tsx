@@ -873,7 +873,8 @@ useEffect(() => {
   };
 
   const renderHeaderIcons = () => {
-    const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
+    const headerIconColor = theme.themeColor;
+    // const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
 
     return (
       <View
@@ -929,7 +930,8 @@ useEffect(() => {
         </TouchableOpacity>
 
 
-        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')}>
+        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')} style={{height:50,width:50,
+          borderRadius:50,backgroundColor:'white',justifyContent:'center',alignItems:'center'}}>
           <Feather name="user" size={scaledSize(24)} color={headerIconColor} />
         </TouchableOpacity>
 
@@ -1051,7 +1053,7 @@ useEffect(() => {
       )}
       <LinearGradient
         colors={[
-          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : theme.themeColor,
           mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
         ]}
         style={{
@@ -1071,9 +1073,9 @@ useEffect(() => {
                 letterSpacing: 1,
                 height: scaledSize(44),
                 // backgroundColor: theme.bgColor,
-                backgroundColor: mode === 'dark' ? theme.bgColor : '#FFFFFF',
-                borderWidth: 1,
-                borderColor: theme.borderColor,
+                backgroundColor: mode !== 'dark' ? theme.bgColor : '#FFFFFF',
+                borderWidth: .5,
+                borderColor: theme.themeColor,
                 elevation: mode === 'dark' ? 0 : 5,
                 shadowColor: '#9CA3AF',
                 shadowOffset: { width: 0, height: 8 },

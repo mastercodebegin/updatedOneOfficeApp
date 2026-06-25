@@ -122,8 +122,8 @@ export default function App(props) {
         );
       }
     })();
-    NotificationService.requestUserPermission()
-    NotificationService.showNotification()
+    // NotificationService.requestUserPermission()
+    // NotificationService.showNotification()
   }, []);
   // React.useEffect(() => {
   //   (async () => {

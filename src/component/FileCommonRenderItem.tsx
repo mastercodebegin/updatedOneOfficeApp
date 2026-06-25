@@ -676,16 +676,21 @@ const createStyles = (
     },
 
     deleteButton: {
+            borderWidth:.5,
+      borderColor:theme.borderColor,
       backgroundColor:
-        mode === "dark"
-          ? theme.buttonBGColor
-          : "rgba(255, 59, 92, 0.1)",
+        // mode === "dark"
+          // ? 
+          theme.buttonBGColor
+          // : "rgba(255, 59, 92, 0.1)",
     },
 
     shareButton: {
+      borderWidth:.5,
+      borderColor:theme.borderColor,
       backgroundColor:
-        mode === "dark"
-          ? theme.buttonBGColor
-          : "rgba(0, 182, 204, 0.1)",
+        // mode === "dark"
+          // ? 
+          theme.buttonBGColor
     },
   });
