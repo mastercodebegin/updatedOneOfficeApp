@@ -169,19 +169,22 @@ export default function App(props) {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: mode == 'dark' ? theme.bgColor : '#FFFFFF',
-          height: heightFromPercentage(8),
-          borderTopWidth: 1,
+          height: heightFromPercentage(10.5),
+          borderTopWidth: 0,
           position: 'absolute',
-          borderTopColor: theme.borderColor,
           bottom: 0,
-          elevation: 8,
-          shadowColor: '#000',
+          left: 0,
+          right: 0,
+          borderTopLeftRadius: scaledSize(24),
+          borderTopRightRadius: scaledSize(24),
+          elevation: 12,
+          shadowColor: '#6B7280',
           shadowOffset: {
             width: 0,
-            height: -3,
+            height: -10,
           },
-          shadowOpacity: mode === 'dark' ? 0.2 : 0.05,
-          shadowRadius: 5,
+          shadowOpacity: mode === 'dark' ? 0.2 : 0.12,
+          shadowRadius: 18,
 
 
         }
@@ -197,13 +200,28 @@ export default function App(props) {
               },
             })}
             options={{
-              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(2) }}>
+              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(4), minWidth: scaledSize(54) }}>
+                {focused && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: scaledSize(-12),
+                      width: scaledSize(34),
+                      height: scaledSize(3),
+                      borderRadius: scaledSize(3),
+                      backgroundColor: theme.themeColor,
+                    }}
+                  />
+                )}
                 {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
               </View>),
               tabBarLabel: ({ focused }) => (
                 <Text style={{
-                  color: theme.primaryTextColor,
-                  fontSize: scaledSize(8), letterSpacing: 1, top: scaledSize(2)
+                  color: focused ? theme.themeColor : '#7A7A7A',
+                  fontSize: scaledSize(12),
+                  letterSpacing: 0,
+                  top: scaledSize(4),
+                  fontWeight: focused ? '700' : '400',
                 }}>{item.name}</Text>
               ),
             }}

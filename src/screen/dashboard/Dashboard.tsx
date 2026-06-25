@@ -71,6 +71,7 @@ import { AuthService } from '../../service/AuthService';
 import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
 import ManageExternalStorage from 'react-native-manage-external-storage';
+import { Theme } from '../theme/ThemeConfig';
 
 const { PdfCacheModule } = NativeModules;
 
@@ -404,10 +405,14 @@ function Dashboard({ navigation, route }) {
   const [errorMsg, setErrorMsg] = useState('')
   const { user, accessToken, signIn, signOut, loading, } = useGoogleAuth();
   const { theme, mode, toggleTheme } = useTheme();
-  const [viewMode, setViewMode] = useState<'list' | 'folder' | 'singleline'>('folder');
+  const [viewMode, setViewMode] = useState<'list' | 'folder' | 'singleline'>('list');
   const [isShowViewModeModal, setIsShowViewModeModal] = useState(false);
     const [selectedSort, setSelectedSort] = useState('latest')
       const isFocused = useIsFocused();
+
+        const styles = React.useMemo(() => {
+          return createStyles(theme, mode)
+        }, [theme])
 
   const sortOptions = [
     {
@@ -467,7 +472,7 @@ function Dashboard({ navigation, route }) {
   useEffect(() => {
     const loadPreferences = () => {
       const savedViewMode = getLocalData(asyncStorageKeyName.VIEW_MODE);
-      if (savedViewMode === 'list' || savedViewMode === 'folder') {
+      if (savedViewMode === 'list' || savedViewMode === 'folder' || savedViewMode === 'singleline') {
         setViewMode(savedViewMode);
       }
       const savedSortType = getLocalData(asyncStorageKeyName.SORT_TYPE);
@@ -872,46 +877,45 @@ useEffect(() => {
     setIsShowViewModeModal(false);
   };
 
+  const renderCircleAction = (
+    label: string,
+    icon: React.ReactNode,
+    onPress: () => void,
+  ) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={styles.headerAction}>
+      <View style={styles.headerActionCircle}>
+        {icon}
+      </View>
+      <Text style={styles.headerActionLabel}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   const renderHeaderIcons = () => {
-    const headerIconColor = theme.themeColor;
-    // const headerIconColor = mode === 'dark' ? theme.iconColor : '#030712';
+    const headerIconColor = '#3B46C6';
 
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: scaledSize(20),
-          paddingHorizontal: scaledSize(16),
-          minHeight: scaledSize(56),
-          alignSelf: 'flex-end'
-        }}
-      >
+      <View style={styles.headerTopRow}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.openDrawer?.()}
+          // style={styles.menuCircle}
+          >
+          {/* <Feather name="menu" size={scaledSize(20)} color={headerIconColor} /> */}
+        </TouchableOpacity>
+
+        <View style={styles.headerActions}>
         {response.selectedFiles.length > 0 && <TouchableOpacity
           onPress={() => dispatch(clearSelectedFiles(true))}
-          style={{ flexDirection: 'row' }}>
+          style={styles.selectionClearButton}>
           <CustomVectorIcon iconLibrary='MaterialCommunityIcons' iconName='select-off'
             style={{ color: 'red' }}
             onPress={() => dispatch(clearSelectedFiles(true))} />
           {/* <Text style={{  letterSpacing: .5, fontFamily: Fonts.bold,top:scaledSize(2) }}>Clear</Text> */}
         </TouchableOpacity>
         }
-
-        <TouchableOpacity onPress={() => onPressViewMode()}>
-          <MaterialCommunityIcons
-            name={
-              viewMode === 'folder'
-                ? 'view-grid-outline'
-                : viewMode === 'list'
-                ? 'view-list-outline'
-                : 'view-headline'
-            }
-            size={scaledSize(24)}
-            color={headerIconColor}
-          />
-        </TouchableOpacity>
-
 
         {response.selectedFiles.length > 1 && <TouchableOpacity onPress={onPressMultiPdfViewer}>
           <MaterialIcons
@@ -922,30 +926,35 @@ useEffect(() => {
           {/* <CustomVectorIcon iconLibrary='MaterialIcons' iconName='picture-as-pdf' style={{color:COLORS.THEME_COLOR}}/> */}
         </TouchableOpacity>}
 
+        {renderCircleAction(
+          'Scan',
+          <MaterialCommunityIcons
+            name="line-scan"
+            size={scaledSize(25)}
+            color={headerIconColor}
+          />,
+          () => navigation.navigate('Document'),
+        )}
 
-        <TouchableOpacity onPress={() => setIsShowSortModal(true)}>
+        {renderCircleAction(
+          'Sort',
           <MaterialCommunityIcons
             name="sort"
-            size={scaledSize(24)} color={headerIconColor} />
-        </TouchableOpacity>
+            size={scaledSize(25)}
+            color={headerIconColor}
+          />,
+          () => setIsShowSortModal(true),
+        )}
 
-
-        <TouchableOpacity onPress={() => navigation.navigate('SaveUserCardDetails')} style={{height:50,width:50,
-          borderRadius:50,backgroundColor:'white',justifyContent:'center',alignItems:'center'}}>
-          <Feather name="user" size={scaledSize(24)} color={headerIconColor} />
-        </TouchableOpacity>
-
-        <MaterialCommunityIcons
-          name="refresh"
-          size={scaledSize(25)}
-          color={headerIconColor}
-          onPress={() => readPdfFiles()}
-        />
-
-        <TouchableOpacity onPress={openFile}>
-          <Feather name="folder" size={scaledSize(24)}
-            color={theme.themeColor}  />
-        </TouchableOpacity>
+        {renderCircleAction(
+          'Folder',
+          <Feather
+            name="folder"
+            size={scaledSize(25)}
+            color={headerIconColor}
+          />,
+          openFile,
+        )}
 
         {/* <CustomMenu
           Icon={<Feather name="more-vertical" size={scaledSize(22)} color={theme.iconColor} />}
@@ -960,6 +969,7 @@ useEffect(() => {
           ]}
         /> */}
 
+        </View>
       </View>
     )
   }
@@ -1033,7 +1043,7 @@ useEffect(() => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgContainor }} >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]} >
 
       {isScanning ? (
         <Modal visible={isLoading} transparent animationType="fade">
@@ -1053,48 +1063,45 @@ useEffect(() => {
       )}
       <LinearGradient
         colors={[
-          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : theme.themeColor,
-          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#FFFFFF',
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#F1F3FF',
+          mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#E7F1FF',
         ]}
-        style={{
-          paddingTop: scaledSize(8),
-          paddingBottom: scaledSize(22),
-        }}>
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.hero}>
         {renderHeaderIcons()}
 
-        <View style={{ justifyContent: 'center', alignItems: 'center', marginTop: scaledSize(16) }}>
-          <View style={{ width: '92%', height: scaledSize(54), justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.titleBlock}>
+          {/* <Text style={styles.heroTitle}>My Documents</Text> */}
+          <Text style={styles.heroSubtitle}></Text>
+        </View>
+
+        <View style={styles.searchWrap}>
+          <View style={styles.searchInner}>
 
             <Searchbar
-              placeholder="Search"
-              style={{
-                width: '100%',
-                borderRadius: scaledSize(30),
-                letterSpacing: 1,
-                height: scaledSize(44),
-                // backgroundColor: theme.bgColor,
-                backgroundColor: mode !== 'dark' ? theme.bgColor : '#FFFFFF',
-                borderWidth: .5,
-                borderColor: theme.themeColor,
-                elevation: mode === 'dark' ? 0 : 5,
-                shadowColor: '#9CA3AF',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: mode === 'dark' ? 0 : 0.18,
-                shadowRadius: 18,
-              }}
+              placeholder="Search PDFs"
+              style={[
+                styles.searchBar,
+                {
+                  backgroundColor: mode !== 'dark' ? '#FFFFFF' : theme.bgColor,
+                  elevation: mode === 'dark' ? 0 : 8,
+                  shadowOpacity: mode === 'dark' ? 0 : 0.18,
+                },
+              ]}
               onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
               placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
               inputStyle={{
-                fontSize: scaledSize(15),
+                fontSize: scaledSize(18),
                 letterSpacing: 0,
                 alignSelf: 'center',
                 color: theme.primaryTextColor,
-                minHeight: scaledSize(40),
+                minHeight: scaledSize(54),
               }}
               loading={false}
               icon={() => <Image source={searchIcon} style={{
                 height: scaledSize(19), width: scaledSize(19),
-                tintColor: theme.borderColor
+                tintColor: '#737B8D'
               }}
 
               />}
@@ -1115,7 +1122,7 @@ useEffect(() => {
         </View>
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
-      <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
+      <View style={[styles.content, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]}>
 
         {/* <TabView
           renderTabBar={renderTabBar}
@@ -1167,8 +1174,113 @@ useEffect(() => {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
   ///
+  safeArea: {
+    flex: 1,
+  },
+  hero: {
+    paddingTop: scaledSize(22),
+    paddingHorizontal: scaledSize(20),
+    paddingBottom: scaledSize(46),
+    borderBottomLeftRadius: scaledSize(22),
+    borderBottomRightRadius: scaledSize(22),
+    overflow: 'visible',
+  },
+  headerTopRow: {
+    minHeight: scaledSize(76),
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  menuCircle: {
+    width: scaledSize(50),
+    height: scaledSize(50),
+    borderRadius: scaledSize(20),
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#9CA3AF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: scaledSize(18),
+  },
+  headerAction: {
+    alignItems: 'center',
+    width: scaledSize(58),
+  },
+  headerActionCircle: {
+    width: scaledSize(50),
+    height: scaledSize(50),
+    borderRadius: scaledSize(24),
+    backgroundColor: theme.bgColor,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#9CA3AF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  headerActionLabel: {
+    marginTop: scaledSize(9),
+    color: '#3B46C6',
+    fontSize: scaledSize(14),
+    lineHeight: scaledSize(18),
+    fontFamily: Fonts.regular,
+    fontWeight: '700',
+  },
+  selectionClearButton: {
+    height: scaledSize(58),
+    justifyContent: 'center',
+  },
+  titleBlock: {
+    marginTop: scaledSize(18),
+  },
+  heroTitle: {
+    color: '#0D1B4C',
+    fontSize: scaledSize(29),
+    lineHeight: scaledSize(35),
+    fontFamily: Fonts.regular,
+    fontWeight: '800',
+  },
+  heroSubtitle: {
+    marginTop: scaledSize(12),
+    color: '#67718B',
+    fontSize: scaledSize(17),
+    lineHeight: scaledSize(23),
+    fontFamily: Fonts.regular,
+  },
+  searchWrap: {
+    position: 'absolute',
+    left: scaledSize(20),
+    right: scaledSize(20),
+    bottom: scaledSize(-28),
+    alignItems: 'center',
+  },
+  searchInner: {
+    width: '100%',
+    height: scaledSize(64),
+    justifyContent: 'center',
+  },
+  searchBar: {
+    width: '100%',
+    height: scaledSize(60),
+    borderRadius: scaledSize(32),
+    shadowColor: '#75809A',
+    shadowOffset: { width: 0, height: 14 },
+    shadowRadius: 24,
+  },
+  content: {
+    flex: 1,
+    paddingTop: scaledSize(48),
+  },
 
   loading: {
     flex: 1,

@@ -492,22 +492,22 @@ const createStyles = (
 
     card: {
       minHeight:
-        scaledSize(100),
+        scaledSize(126),
 
       marginHorizontal:
-        scaledSize(16),
-
-      marginBottom:
-        scaledSize(16),
-
-      paddingVertical:
-        scaledSize(22),
-
-      paddingHorizontal:
         scaledSize(20),
 
+      marginBottom:
+        scaledSize(20),
+
+      paddingVertical:
+        scaledSize(24),
+
+      paddingHorizontal:
+        scaledSize(24),
+
       borderRadius:
-        scaledSize(14),
+        scaledSize(24),
 
       flexDirection:
         "row",
@@ -536,17 +536,17 @@ const createStyles = (
 
       shadowOffset: {
         width: 0,
-        height: 8,
+        height: 12,
       },
 
       shadowOpacity:
-        mode === "dark" ? 0 : 0.16,
+        mode === "dark" ? 0 : 0.12,
 
       shadowRadius:
-        18,
+        22,
 
       elevation:
-        mode === "dark" ? 0 : 4,
+        mode === "dark" ? 0 : 5,
     },
 
     selectedCard: {
@@ -591,18 +591,18 @@ const createStyles = (
     },
 
     iconContainer: {
-      width: scaledSize(50),
-      height: scaledSize(50),
-      borderRadius: scaledSize(12),
+      width: scaledSize(72),
+      height: scaledSize(72),
+      borderRadius: scaledSize(18),
       justifyContent: 'center',
       alignItems: 'center',
       // backgroundColor:'red',
-      marginRight: scaledSize(20),
+      marginRight: scaledSize(24),
     },
 
     icon: {
-      width: scaledSize(55),
-      height: scaledSize(55),
+      width: scaledSize(70),
+      height: scaledSize(70),
       resizeMode:
         "contain",
     },
@@ -619,16 +619,18 @@ const createStyles = (
       color:
         theme.primaryTextColor,
       fontSize:
-        scaledSize(14),
+        scaledSize(18),
       fontFamily:
-        Fonts.bold,
+        Fonts.regular,
+      fontWeight:
+        "800",
     },
 
     dateAndSizeParentView: {
       marginTop:
-        scaledSize(14),
+        scaledSize(12),
       gap:
-        scaledSize(10),
+        scaledSize(8),
     },
 
     metaRow: {
@@ -644,7 +646,7 @@ const createStyles = (
       color:
         theme.primaryTextColor,
       fontSize:
-        scaledSize(12),
+        scaledSize(15),
       fontFamily:
         Fonts.regular,
     },
@@ -655,24 +657,36 @@ const createStyles = (
       alignItems:
         "center",
       gap:
-        scaledSize(12),
+        scaledSize(14),
     },
 
     actionButton: {
       width:
-        scaledSize(34),
+        scaledSize(44),
       height:
-        scaledSize(34),
+        scaledSize(44),
       borderRadius:
-        scaledSize(8),
+        scaledSize(12),
       backgroundColor:
         mode === "dark"
           ? theme.buttonBGColor
-          : "#F5F5F5",
+          : "#FFFFFF",
       justifyContent:
         "center",
       alignItems:
         "center",
+      shadowColor:
+        "#9CA3AF",
+      shadowOffset: {
+        width: 0,
+        height: 6,
+      },
+      shadowOpacity:
+        mode === "dark" ? 0 : 0.15,
+      shadowRadius:
+        10,
+      elevation:
+        mode === "dark" ? 0 : 4,
     },
 
     deleteButton: {

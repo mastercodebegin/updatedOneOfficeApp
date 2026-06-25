@@ -44,7 +44,14 @@ const baseHeight = 700;
 const scaleWidth = width / baseWidth;
 const scaleHeight = height / baseHeight;
 const scale = Math.min(scaleWidth, scaleHeight);
-export const scaledSize = (size: any) => Math.ceil(size * scale);
+// export const scaledSize = (size: any) => Math.ceil(size * scale);
+export const scaledSize = (
+  size: number,
+  reductionPercentage = 20,
+) => {
+  const value = Math.ceil(size * scale);
+  return Math.ceil(value * (1 - reductionPercentage / 100));
+};
 // const storageProvider = require('./StorageProvider');
 export const navigationRef = createNavigationContainerRef();
 
