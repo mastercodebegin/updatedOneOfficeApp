@@ -20,7 +20,7 @@ export const useResponsive = () => {
 
   const scaledSize = (
     size: number,
-    reductionPercentage = 20,
+    reductionPercentage = 10,
   ) => {
     const value = Math.ceil(size * scale);
     return Math.ceil(value * (1 - reductionPercentage / 100));
