@@ -1,15 +1,29 @@
-import { View, Text,SafeAreaView } from 'react-native'
-import React from 'react'
+import React from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// interface myProps{
-//     myStyle:any,
-//     children:any
+interface Props {
+  children: React.ReactNode;
+  style?: any;
+}
 
-// }
-export default function RootView(props) {
+export default function RootView({
+  children,
+  style,
+}: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={props.customeStyle}>
-        {props.children}
-    </SafeAreaView>
-  )
+    <View
+      style={[
+        {
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+        style,
+      ]}>
+      {children}
+    </View>
+  );
 }

@@ -7,7 +7,7 @@ import {
 } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import CustomCloseIcon from '../../component/CustomCloseIcon'
-import {  scaledSize, Utility, widthFromPercentage } from '../../utilies/Utilities'
+import { scaledSize, Utility, widthFromPercentage } from '../../utilies/Utilities'
 import { COLORS, FONTS } from '../../utilies/GlobalColors'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import AntDesign from 'react-native-vector-icons/AntDesign'
@@ -37,7 +37,8 @@ import CustomHeader from '../../component/CustomHeader'
 import ConfirmationDialog from '../../component/ConfirmationDialog'
 import CustomErrorMsgModal from '../../component/CustomErrorMsgModal'
 import { Theme } from '../theme/ThemeConfig'
-import { getLocalData,setLocalData } from '../../../src/utilies/storageUtility'
+import { getLocalData, setLocalData } from '../../../src/utilies/storageUtility'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 
 const data = [
@@ -71,7 +72,7 @@ interface S {
   onPressBack: Function
 }
 export default function SaveUserCardDetails(props: S) {
-  const { onPressBack =()=>Utility.navigation.navigateToBack()} = props
+  const { onPressBack = () => Utility.navigation.navigateToBack() } = props
   const { theme, mode } = useTheme()
 
   const [isShowAddCardModal, setIsShowAddCardModal] = useState(false)
@@ -379,11 +380,11 @@ export default function SaveUserCardDetails(props: S) {
     ]
 
   useEffect(() => {
-    const data =  () => {
-      const savedUsers =  getLocalData(asyncStorageKeyName.SAVED_USERS) 
+    const data = () => {
+      const savedUsers = getLocalData(asyncStorageKeyName.SAVED_USERS)
       console.log('savedcards----', savedUsers);
       // console.log('isStateUpdated----', isStateUpdated);
-      const parseObj = savedUsers?JSON.parse(savedUsers):[]
+      const parseObj = savedUsers ? JSON.parse(savedUsers) : []
       if (parseObj && !isStateUpdated) {
         console.log('typeof--', parseObj);
         setUserDetails(parseObj)
@@ -396,7 +397,7 @@ export default function SaveUserCardDetails(props: S) {
   const deleteCardHandler = async (childIndex, parentIdx) => {
     // Create a deep copy of the userDetails object at the given parent index
     let arrStr = JSON.stringify(userDetails[parentIdx]);
- 
+
     console.log('arrStr==========', arrStr);
 
     let arr = JSON.parse(arrStr);
@@ -460,37 +461,37 @@ export default function SaveUserCardDetails(props: S) {
       return;
     }
 
-      const cardDetails = {
-        id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
-        customerId: customerId, ...selectedBank
-      };
-      const obj = { id: Utility.generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
-      const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
-      console.log('first', !!data);
+    const cardDetails = {
+      id: Utility.generateUniqueNumber(), bankName: bankName, lastFourDigit: lastFourDigit,
+      customerId: customerId, ...selectedBank
+    };
+    const obj = { id: Utility.generateUniqueNumber(), firstName: firstName, lastName: lastName, mobileNumber: mobileNumber, dob: selectedDate, cards: [cardDetails] }
+    const data = getLocalData(asyncStorageKeyName.SAVED_USERS)
+    console.log('first', !!data);
 
-      if (!!data) {
-        console.log('second1', !!data);
-        console.log('second1 data', data);
-        let arr = JSON.parse(data)
-        arr.push(obj)
-        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
-        setUserDetails(arr)
-        setIsShowAddUserDetailsModal(false)
-      }
-      else {
-        console.log('else part',);
-        console.log('second1', !!data);
-        console.log('key', asyncStorageKeyName.SAVED_USERS);
-        let arr = []
-        arr.push(obj)
-        setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+    if (!!data) {
+      console.log('second1', !!data);
+      console.log('second1 data', data);
+      let arr = JSON.parse(data)
+      arr.push(obj)
+      setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
+      setUserDetails(arr)
+      setIsShowAddUserDetailsModal(false)
+    }
+    else {
+      console.log('else part',);
+      console.log('second1', !!data);
+      console.log('key', asyncStorageKeyName.SAVED_USERS);
+      let arr = []
+      arr.push(obj)
+      setLocalData(asyncStorageKeyName.SAVED_USERS, JSON.stringify(arr))
 
-        setUserDetails(arr)
-        setIsShowAddUserDetailsModal(false)
+      setUserDetails(arr)
+      setIsShowAddUserDetailsModal(false)
 
 
-      }
-    
+    }
+
 
 
   }
@@ -599,11 +600,11 @@ export default function SaveUserCardDetails(props: S) {
         flexDirection: "row",
         alignItems: "center",
         // backgroundColor: theme.bgColor,
-        borderWidth:.5,
-        paddingHorizontal:scaledSize(12),
-        height:scaledSize(74),
+        borderWidth: .5,
+        paddingHorizontal: scaledSize(12),
+        height: scaledSize(74),
         // width:400,
-        borderRadius:scaledSize(10),
+        borderRadius: scaledSize(10),
         paddingVertical: scaledSize(10),
         borderColor: theme.borderColor,
         marginBottom: scaledSize(10)
@@ -635,9 +636,9 @@ export default function SaveUserCardDetails(props: S) {
 
         </View>
 
-        <TouchableOpacity onPress={() => editCard(item)} 
-        style={[styles.actionButton, 
-        { backgroundColor: theme.buttonBGColor,marginRight:scaledSize(4) }]}>
+        <TouchableOpacity onPress={() => editCard(item)}
+          style={[styles.actionButton,
+          { backgroundColor: theme.buttonBGColor, marginRight: scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="pencil"
             size={22}
@@ -648,7 +649,7 @@ export default function SaveUserCardDetails(props: S) {
         <TouchableOpacity onPress={() => {
           setCardToDelete({ parentIndex: parentIndex, childIndex: childIndex });
           setIsShowDeleteConfirmation(true);
-        }} style={[styles.actionButton, { backgroundColor: theme.buttonBGColor,right:scaledSize(4) }]}>
+        }} style={[styles.actionButton, { backgroundColor: theme.buttonBGColor, right: scaledSize(4) }]}>
           <MaterialCommunityIcons
             name="delete"
             size={22}
@@ -957,89 +958,90 @@ export default function SaveUserCardDetails(props: S) {
       </Modal>
     )
   }
-const renderAddCardDetails = () => {
-  return (
-    <Modal visible={isShowAddCardModal} transparent animationType='fade' >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <View style={styles.headerIconContainer}>
-              <MaterialCommunityIcons name='credit-card-plus-outline' size={scaledSize(28)} color={theme.themeColor} />
+  const renderAddCardDetails = () => {
+    return (
+      <Modal visible={isShowAddCardModal} transparent animationType='fade' >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.headerIconContainer}>
+                <MaterialCommunityIcons name='credit-card-plus-outline' size={scaledSize(28)} color={theme.themeColor} />
+              </View>
+              <View>
+                <Text style={styles.modalTitle}>Add New Card</Text>
+                <Text style={styles.modalSubtitle}>Link a new card to this user</Text>
+              </View>
             </View>
-            <View>
-              <Text style={styles.modalTitle}>Add New Card</Text>
-              <Text style={styles.modalSubtitle}>Link a new card to this user</Text>
-            </View>
-          </View>
 
-          <TouchableOpacity style={styles.closeButton} onPress={() => clearState()}>
-            <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => clearState()} />
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.closeButton} onPress={() => clearState()}>
+              <CustomCloseIcon color={theme.iconColor} style={{ fontSize: scaledSize(16), bottom: 1 }} iconSize={scaledSize(14)} onPress={() => clearState()} />
+            </TouchableOpacity>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-            {/* Bank Dropdown */}
-            <CustomDropdown
-              data={bankList}
-              placeholder="Select bank"
-              onSelect={(item) => onSelectBank(item)}
-              value={selectedBank.id}
-              onFocuse={() => setFocusedField('addCardBank')}
-              onBlur={() => setFocusedField(null)}
-              LeftIcon={() => (
-                selectedBank.value ?
-                  <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
-                  : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
-              )}
-            />
-
-            {/* Card Number */}
-            <View style={[styles.inputContainer, focusedField === 'addCardLast4' && styles.focusedInput]}>
-              <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
-              <TextInput
-                placeholder='Last 4 Digits of Card'
-                onChangeText={(v) => setLastFourDigit(v)}
-                maxLength={4}
-                keyboardType="number-pad"
-                style={styles.textInput}
-                placeholderTextColor={theme.secondaryTextColor}
-                onFocus={() => setFocusedField('addCardLast4')}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+              {/* Bank Dropdown */}
+              <CustomDropdown
+                data={bankList}
+                placeholder="Select bank"
+                onSelect={(item) => onSelectBank(item)}
+                value={selectedBank.id}
+                onFocuse={() => setFocusedField('addCardBank')}
                 onBlur={() => setFocusedField(null)}
+                LeftIcon={() => (
+                  selectedBank.value ?
+                    <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
+                    : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+                )}
               />
-            </View>
 
-            {/* Customer Id */}
-            {isCustomerIdRequired && (
-              <View style={[styles.inputContainer, focusedField === 'addCardCustomerId' && styles.focusedInput]}>
-                <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+              {/* Card Number */}
+              <View style={[styles.inputContainer, focusedField === 'addCardLast4' && styles.focusedInput]}>
+                <MaterialCommunityIcons name='credit-card-scan-outline' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
                 <TextInput
-                  placeholder='Enter Customer ID'
-                  onChangeText={(v) => setCustomerId(v)}
+                  placeholder='Last 4 Digits of Card'
+                  onChangeText={(v) => setLastFourDigit(v)}
+                  maxLength={4}
+                  keyboardType="number-pad"
                   style={styles.textInput}
                   placeholderTextColor={theme.secondaryTextColor}
-                  onFocus={() => setFocusedField('addCardCustomerId')}
+                  onFocus={() => setFocusedField('addCardLast4')}
                   onBlur={() => setFocusedField(null)}
                 />
               </View>
-            )}
-          </ScrollView>
 
-          {/* Button */}
-          <View style={styles.footer}>
-            <CustomeButton
-              name="Add Card"
-              onPress={() => addCard()}
-              buttonStyle={styles.saveButton}
-              textStyle={styles.saveButtonText}
-            />
+              {/* Customer Id */}
+              {isCustomerIdRequired && (
+                <View style={[styles.inputContainer, focusedField === 'addCardCustomerId' && styles.focusedInput]}>
+                  <MaterialCommunityIcons name='identifier' color={theme.secondaryTextColor} size={scaledSize(20)} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder='Enter Customer ID'
+                    onChangeText={(v) => setCustomerId(v)}
+                    style={styles.textInput}
+                    placeholderTextColor={theme.secondaryTextColor}
+                    onFocus={() => setFocusedField('addCardCustomerId')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Button */}
+            <View style={styles.footer}>
+              <CustomeButton
+                name="Add Card"
+                onPress={() => addCard()}
+                buttonStyle={styles.saveButton}
+                textStyle={styles.saveButtonText}
+              />
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
+      </Modal>
+    );
+  };
+  const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgContainor }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgContainor ,top:insets.top}}>
       <View style={{ height: scaledSize(50), backgroundColor: theme.bgColor }}>
         <CustomHeader
           title="Card holders"
@@ -1133,7 +1135,7 @@ const renderAddCardDetails = () => {
         )}
 
       </View>
-{renderAddCardDetails()}
+      {renderAddCardDetails()}
       <Modal visible={isShowAddUserDetailsModal} transparent animationType='fade' >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
@@ -1148,10 +1150,12 @@ const renderAddCardDetails = () => {
             </View>
 
             <TouchableOpacity style={styles.closeButton} onPress={() => { setIsShowAddUserDetailsModal(false), setBankName('') }}>
-              <CustomCloseIcon color={theme.iconColor} style={{fontSize:scaledSize(16),
-              bottom:1}}
-               iconSize={scaledSize(14)}
-              onPress={()=>setIsShowAddUserDetailsModal(false)} />
+              <CustomCloseIcon color={theme.iconColor} style={{
+                fontSize: scaledSize(16),
+                bottom: 1
+              }}
+                iconSize={scaledSize(14)}
+                onPress={() => setIsShowAddUserDetailsModal(false)} />
             </TouchableOpacity>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
@@ -1377,9 +1381,9 @@ const renderAddCardDetails = () => {
       </View>
       {/* <View style={{ height: scaledSize(150), borderTopWidth: !userDetails.length > 1 ? .2 : 0, borderColor: '#d3d3d3' }}> */}
 
-        <View style={{ left: scaledSize(300), height: scaledSize(50), top: scaledSize(710),position:'absolute' }}>
-          <CustomFAB onPress={() => setIsShowAddUserDetailsModal(true)} />
-        </View>
+      <View style={{ left: scaledSize(300), height: scaledSize(50), top: scaledSize(710), position: 'absolute' }}>
+        <CustomFAB onPress={() => setIsShowAddUserDetailsModal(true)} />
+      </View>
       {/* </View> */}
       {isShowCardsModal ? displayAllCards() : null}
       <ConfirmationDialog
@@ -1495,13 +1499,13 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 1,
-    borderWidth:.5,
+    borderWidth: .5,
     borderColor: theme.borderColor
   },
   avatarText: {
     fontSize: scaledSize(20),
     fontWeight: 'bold',
-    letterSpacing:1,
+    letterSpacing: 1,
     color: theme.themeColor,
   },
   nameContainer: {
@@ -1701,7 +1705,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    right:scaledSize(18),
+    right: scaledSize(18),
     top: scaledSize(18),
     width: scaledSize(28),
     height: scaledSize(28),
@@ -1719,7 +1723,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: scaledSize(12),
-    gap:scaledSize(8),
+    gap: scaledSize(8),
   },
 
   sectionTitle: {
@@ -1772,7 +1776,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     height: scaledSize(18),
   },
   bankIcon: {
-    width:scaledSize(24),
+    width: scaledSize(24),
     height: scaledSize(24),
     marginRight: scaledSize(8),
   },
@@ -1809,12 +1813,12 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   },
   saveButton: {
     // backgroundColor: theme.themeColor,
-    borderWidth:.5,
+    borderWidth: .5,
     borderColor: theme.themeColor,
     height: scaledSize(44),
     borderRadius: scaledSize(14),
-    width:'50%',
-    alignSelf:'center',
+    width: '50%',
+    alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
   },

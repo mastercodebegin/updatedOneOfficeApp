@@ -168,10 +168,12 @@ export default function App(props) {
     return (
       <BottomTabs.Navigator screenOptions={{
         headerShown: false,
+            tabBarLabelPosition: 'below-icon',
+
         tabBarStyle: {
           backgroundColor: mode == 'dark' ? theme.bgColor : '#FFFFFF',
-          height: heightFromPercentage(10.5),
-          borderTopWidth: 0,
+          height: heightFromPercentage(11.5),
+                borderTopWidth: 0,
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -200,29 +202,32 @@ export default function App(props) {
 
               },
             })}
-options={{
-  tabBarShowLabel: false,
-
-  tabBarIcon: ({ focused }) => (
-    <View
-      style={{
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      {focused ? item.focus(theme.themeColor) : item.unFocus('#7A7A7A')}
-
-      <Text
-        style={{
-          marginTop: scaledSize(4),
-          fontSize: scaledSize(11),
-          color: focused ? theme.themeColor : '#7A7A7A',
-          fontWeight: focused ? '700' : '400',
-        }}>
-        {item.name}
-      </Text>
-    </View>
-  ),
-}}
+            options={{
+              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(6), minWidth: scaledSize(54) }}>
+                {focused && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: scaledSize(-12),
+                      width: scaledSize(34),
+                      height: scaledSize(3),
+                      borderRadius: scaledSize(3),
+                      backgroundColor: theme.themeColor,
+                    }}
+                  />
+                )}
+                {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
+              </View>),
+              tabBarLabel: ({ focused }) => (
+                <Text style={{
+                  color: focused ? theme.themeColor : '#7A7A7A',
+                  fontSize: scaledSize(12),
+                  letterSpacing: 0,
+                  top: scaledSize(8),
+                  fontWeight: focused ? '700' : '400',
+                }}>{item.name}</Text>
+              ),
+            }}
           />)}
       </BottomTabs.Navigator>
     );

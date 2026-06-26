@@ -6,15 +6,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearSelectedFiles, updateFilesPassword } from '../screen/dashboard/FileSlice';
 import { Theme } from '../screen/theme/ThemeConfig';
 import { useTheme } from '../screen/theme/useTheme';
-import { heightFromPercentage, scaledSize, Utility } from '../utilies/Utilities';
+import {  Utility } from '../utilies/Utilities';
 import CustomHeader from './CustomHeader';
 import CustomMultiplePdfPasswordModal from './CustomMultiplePdfPasswordModal';
 import CustomVectorIcon from './CustomVectorIcon';
+import RootView from './RootView';
+import { useResponsive } from '../customhooks/useResponsive';
 
 interface S {
   pdfArr: Array<any>
 }
 const MultiplePdfView = (props: S) => {
+    const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
+
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const headerVisible = useRef(true);
   const headerHeight = useRef(new Animated.Value(scaledSize(50))).current;
@@ -40,6 +44,7 @@ const MultiplePdfView = (props: S) => {
   const pdfArr = props?.route?.params
   const dispatch = useDispatch()
   const { selectedFiles, filePasswords } = useSelector((state) => state.FileSlice);
+  
   // useEffect(() => {
   //   console.log('pdfArr======', response)
   //   setSelectedSheet(pdfArr[0])
@@ -283,7 +288,9 @@ const MultiplePdfView = (props: S) => {
       </View>
     )
   }
+
   return (
+<RootView>
 
     <View style={[styles.container]}>
       {headerComp()}
@@ -309,6 +316,8 @@ const MultiplePdfView = (props: S) => {
         } />
       </View>:<></>} */}
     </View>
+    </RootView>
+
 
   )
 }

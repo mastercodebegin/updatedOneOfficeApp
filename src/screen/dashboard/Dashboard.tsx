@@ -13,7 +13,7 @@ import {
   NativeModules,
   StatusBar,
 } from 'react-native';
-import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile, Utility, widthFromPercentage, } from '../../utilies/Utilities';
+import { deleteFile, getFilesFromPhoneByFileExtention, toastForDeleteFile, Utility, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import StaticServer from 'react-native-static-server';
 // const StaticServer = require('react-native-static-server').default;
@@ -74,6 +74,7 @@ import { useTheme } from '../theme/useTheme';
 import ManageExternalStorage from 'react-native-manage-external-storage';
 import { Theme } from '../theme/ThemeConfig';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../../customhooks/useResponsive';
 
 const { PdfCacheModule } = NativeModules;
 
@@ -91,6 +92,7 @@ function Dashboard({ navigation, route }) {
   const [filterData, setFilterData] = useState([]);
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
+const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
 
   // generate sample file data for renderfiles
 
@@ -413,7 +415,7 @@ function Dashboard({ navigation, route }) {
       const isFocused = useIsFocused();
 
         const styles = React.useMemo(() => {
-          return createStyles(theme, mode)
+          return createStyles(theme, mode,scaledSize,widthFromPercentage)
         }, [theme])
 
   const sortOptions = [
@@ -898,6 +900,7 @@ useEffect(() => {
   const renderHeaderIcons = () => {
     const headerIconColor = mode === 'dark' ? '#FFFFFF' : 'black';
     const fileOpenColor =  theme.themeColor;
+    const iconSize=scaledSize(20)
 
     return (
       <View style={styles.headerTopRow}>
@@ -918,7 +921,7 @@ useEffect(() => {
           'Clear',
           <MaterialCommunityIcons
             name="select-off"
-            size={scaledSize(22)}
+            size={iconSize}
             color={theme.deleteIconColor}
           />
         ,
@@ -932,7 +935,7 @@ useEffect(() => {
           'View',
           <MaterialIcons
             name="picture-as-pdf"
-            size={scaledSize(22)}
+            size={iconSize}
             color={headerIconColor}
           />
         ,
@@ -949,7 +952,7 @@ useEffect(() => {
                 ? 'view-list-outline'
                 : 'view-headline'
             }
-            size={scaledSize(24)}
+            size={iconSize}
             color={headerIconColor}
           />,
            onPressViewMode,
@@ -959,7 +962,7 @@ useEffect(() => {
           'Scan',
           <MaterialCommunityIcons
             name="line-scan"
-            size={scaledSize(25)}
+            size={iconSize}
             color={headerIconColor}
           />,
           () => navigation.navigate('Document'),
@@ -969,7 +972,7 @@ useEffect(() => {
           'User',
           <Feather
             name="user"
-            size={scaledSize(25)}
+            size={iconSize}
             color={headerIconColor}
           />,
           () => navigation.navigate('SaveUserCardDetails'),
@@ -979,7 +982,7 @@ useEffect(() => {
           'Sort',
           <MaterialCommunityIcons
             name="sort"
-            size={scaledSize(25)}
+            size={iconSize}
             color={headerIconColor}
           />,
           () => setIsShowSortModal(true),
@@ -989,7 +992,7 @@ useEffect(() => {
           'Open',
           <Feather
             name="folder"
-            size={scaledSize(25)}
+            size={iconSize}
             color={fileOpenColor}
           />,
           openFile,
@@ -1130,15 +1133,17 @@ useEffect(() => {
               onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
               placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
               inputStyle={{
-                fontSize: scaledSize(18),
+                fontSize: scaledSize(14),
                 letterSpacing: 0,
                 alignSelf: 'center',
+                marginLeft:scaledSize(4),
+                
                 color: theme.primaryTextColor,
                 minHeight: scaledSize(54),
               }}
               loading={false}
               icon={() => <Image source={searchIcon} style={{
-                height: scaledSize(19), width: scaledSize(19),
+                height: scaledSize(19), width: scaledSize(19),marginLeft:scaledSize(10),
                 tintColor: '#737B8D'
               }}
 
@@ -1199,7 +1204,7 @@ useEffect(() => {
   );
 }
 
-const createStyles = (theme:Theme,mode:string)=>StyleSheet.create({
+const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage:any)=>StyleSheet.create({
   ///
   safeArea: {
     flex: 1,

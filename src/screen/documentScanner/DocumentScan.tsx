@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, use, useMemo } from 'react'
-import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, FlatList, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleProp, StyleSheet, Switch, Text, TextInput, TextProps, TextStyle, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Image } from 'react-native'
 import DocumentScanner from 'react-native-document-scanner-plugin'
 import { Button } from 'react-native-paper';
 import { Chip } from 'react-native-paper'
 import RNFS from 'react-native-fs';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../../utilies/Constants';
-import {  deleteFile, fileShareMultiple, heightFromPercentage, scaledSize, Utility, VECTOR_ICON_LIBRARIES, widthFromPercentage } from '../../utilies/Utilities';
+import {   fileShareMultiple, Utility } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clear, cloud, searchIcon, } from '../../assets/GlobalImages';
 import { COLORS, FONTS } from '../../utilies/GlobalColors';
@@ -55,8 +55,8 @@ import CustomGoogleBtn from '../../component/CustomGoogleBtn';
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import CustomProgressBar from '../../component/CustomProgressBar';
 // import { getAuth } from '@react-native-firebase/auth';
-import { CameraIcon } from 'lucide-react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../../customhooks/useResponsive';
 
 
 
@@ -113,7 +113,8 @@ export const DocumentScan = () => {
 
   const [selectedFolderTag, setSelectedFolderTag] = useState({});
   const [tagForDeletion, setTagForDeletion] = useState({});
-
+  const insets = useSafeAreaInsets();
+const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
   // const toggleSwitch = toggleTheme()
   const sortOptions = [
     {
@@ -162,7 +163,7 @@ export const DocumentScan = () => {
   const { mode, theme, toggleTheme } = useTheme()
 
   const styles = useMemo(() => {
-    return createStyles(theme, mode)
+    return createStyles(theme, mode,scaledSize)
   }, [theme])
 
 
@@ -2304,7 +2305,7 @@ const renderParentItem = ({ item }) => {
 
     setIsShowUpdateTagModal(false);
   }
-  const insets = useSafeAreaInsets();
+
 
   return (
     <SafeAreaView style={[styles.container,{top:insets.top}]}>
@@ -2371,7 +2372,7 @@ const renderParentItem = ({ item }) => {
       </View>
 
       <View style={{
-        height: scaledSize(50), position: "absolute", left: scaledSize(300),
+         position: "absolute", left: widthFromPercentage(76),
         top: heightFromPercentage(72)
       }}>
         <CustomFAB
@@ -2539,7 +2540,7 @@ const renderParentItem = ({ item }) => {
 
 export default DocumentScan;
 
-const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+const createStyles = (theme: Theme, mode: string,scaledSize) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: mode=='dark'?theme.bgContainor:'white'

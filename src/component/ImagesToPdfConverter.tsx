@@ -6,7 +6,7 @@ import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 
 import RNFetchBlob from 'react-native-blob-util';
-import { deleteFile, getFileSize, heightFromPercentage, scaledSize, Utility, widthFromPercentage } from '../utilies/Utilities';
+import { deleteFile, getFileSize , Utility } from '../utilies/Utilities';
 import { PdfIcon, FilterIcon, searchIcon, clear } from '../assets/GlobalImages';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
@@ -34,6 +34,7 @@ import RNBlobUtil from 'react-native-blob-util';
 import { convertedPdfLocalService } from '../db/convertedPdfLocalService';
 import CustomEmptyState from './CustomEmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsive } from '../customhooks/useResponsive';
 
 // const RNImageToPdf = createPdf
 
@@ -69,8 +70,8 @@ const ImagesToPdfConverter = () => {
   const [isShowRenameModal, setIsShowRenameModal] = useState(false);
   const [fileToRename, setFileToRename] = useState(null);
   const [newFileName, setNewFileName] = useState('');
-
-  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
+  const styles = useMemo(() => createStyles(theme, mode,scaledSize,widthFromPercentage), [theme, mode]);
 
   const [isShowSortModal, setIsShowSortModal] = useState(false)
   const [selectedSort, setSelectedSort] = useState('latest')
@@ -568,8 +569,8 @@ const ImagesToPdfConverter = () => {
         {pdfData.length == 0 && <CustomEmptyState onPressReload={() => { }} />}
 
       <View style={{
-        position: 'absolute', left: heightFromPercentage(35),
-        top: heightFromPercentage(70), right: 0,
+        position: 'absolute', left: widthFromPercentage(75),
+        top: heightFromPercentage(66), right: 0,
       }}>
         <CustomFAB onPress={() => showSelectImagesModal()}
           style={{ borderWidth: 0, borderColor: theme.iconColor }}
@@ -677,7 +678,7 @@ const ImagesToPdfConverter = () => {
     </SafeAreaView>
   )
 }
-const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+const createStyles = (theme: Theme, mode: string,scaledSize:any,widthFromPercentage:any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgContainor },
 
   loading: {
