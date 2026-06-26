@@ -92,7 +92,8 @@ function Dashboard({ navigation, route }) {
   const [filterData, setFilterData] = useState([]);
   const [convertFilterData, setConvertFilterData] = useState([]);
   const [pdfData, setPdfData] = useState([]);
-const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
+const { heightFromPercentage,widthFromPercentage,scaledSize, width, height } = useResponsive();
+const isLandscape = width > height;
 
   // generate sample file data for renderfiles
 
@@ -415,8 +416,8 @@ const { heightFromPercentage,widthFromPercentage,scaledSize } = useResponsive();
       const isFocused = useIsFocused();
 
         const styles = React.useMemo(() => {
-          return createStyles(theme, mode,scaledSize,widthFromPercentage)
-        }, [theme])
+          return createStyles(theme, mode, scaledSize, widthFromPercentage, isLandscape)
+        }, [theme, mode, scaledSize, widthFromPercentage, isLandscape])
 
   const sortOptions = [
     {
@@ -1004,6 +1005,48 @@ useEffect(() => {
 
     )
   }
+
+  const renderSearchBar = () => (
+    <View style={styles.searchInner}>
+      <Searchbar
+        placeholder="Search PDFs"
+        style={[
+          styles.searchBar,
+          {
+            backgroundColor: mode !== 'dark' ? '#FFFFFF' : theme.bgColor,
+            elevation: mode === 'dark' ? 0 : 8,
+            shadowOpacity: mode === 'dark' ? 0 : 0.18,
+          },
+        ]}
+        onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
+        placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
+        inputStyle={{
+          fontSize: scaledSize(isLandscape ? 12 : 14),
+          letterSpacing: 0,
+          alignSelf: 'center',
+          marginLeft: scaledSize(4),
+          color: theme.primaryTextColor,
+          minHeight: scaledSize(isLandscape ? 42 : 54),
+        }}
+        loading={false}
+        icon={() => <Image source={searchIcon} style={{
+          height: scaledSize(19), width: scaledSize(19),marginLeft:scaledSize(10),
+          tintColor: '#737B8D'
+        }}
+
+        />}
+        clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
+          setSearchQuery(''), console.log('press search')
+        }}>
+          <Image source={clear} style={{
+            height: scaledSize(16), width: scaledSize(16),
+
+          }} />
+        </TouchableOpacity> : <></>}
+        value={searchQuery}
+      />
+    </View>
+  );
   // const handleDownloadPress = () => {
   //   console.log('🟢 RN: Button pressed');
 
@@ -1107,60 +1150,32 @@ useEffect(() => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}>
-        {renderHeaderIcons()}
+        {isLandscape ? (
+          <View style={styles.landscapeToolbar}>
+            <View style={styles.landscapeSearchSlot}>
+              {renderSearchBar()}
+            </View>
+            {renderHeaderIcons()}
+          </View>
+        ) : (
+          renderHeaderIcons()
+        )}
 
-        <View style={styles.titleBlock}>
+        {!isLandscape && <View style={styles.titleBlock}>
           {/* <Text style={styles.heroTitle}>My Documents</Text> */}
           <Text style={styles.heroSubtitle}></Text>
-        </View>
+        </View>}
 
       </LinearGradient>
       {/* =================================TabBar Started================================ */}
       <View style={[styles.content, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]}>
 
-        <View style={styles.searchWrap}>
-          <View style={styles.searchInner}>
-            <Searchbar
-              placeholder="Search PDFs"
-              style={[
-                styles.searchBar,
-                {
-                  backgroundColor: mode !== 'dark' ? '#FFFFFF' : theme.bgColor,
-                  elevation: mode === 'dark' ? 0 : 8,
-                  shadowOpacity: mode === 'dark' ? 0 : 0.18,
-                },
-              ]}
-              onChangeText={(value) => index == 0 ? search(value) : convertedFilesearch(value)}
-              placeholderTextColor={mode == 'dark' ? "#9CA3AF" : '#7B8190'}
-              inputStyle={{
-                fontSize: scaledSize(14),
-                letterSpacing: 0,
-                alignSelf: 'center',
-                marginLeft:scaledSize(4),
-                
-                color: theme.primaryTextColor,
-                minHeight: scaledSize(54),
-              }}
-              loading={false}
-              icon={() => <Image source={searchIcon} style={{
-                height: scaledSize(19), width: scaledSize(19),marginLeft:scaledSize(10),
-                tintColor: '#737B8D'
-              }}
-
-              />}
-              clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                setSearchQuery(''), console.log('press search')
-              }}>
-                <Image source={clear} style={{
-                  height: scaledSize(16), width: scaledSize(16),
-
-                }} />
-              </TouchableOpacity> : <></>}
-              value={searchQuery}
-            />
+        {!isLandscape && (
+          <View style={styles.searchWrap}>
+            {renderSearchBar()}
           </View>
-        </View>
-        <View style={{flex:1,bottom:scaledSize(40)}}>
+        )}
+        <View style={styles.fileListWrap}>
 
         <ReadSystemFile searchValue={searchQuery} key={uniqueNumber}
           ref={readPdfFileRef}
@@ -1204,24 +1219,34 @@ useEffect(() => {
   );
 }
 
-const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage:any)=>StyleSheet.create({
+const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage:any,isLandscape:boolean)=>StyleSheet.create({
   ///
   safeArea: {
     flex: 1,
   },
   hero: {
-    paddingTop: scaledSize(22),
-    paddingHorizontal: scaledSize(20),
-    paddingBottom: scaledSize(56),
-    borderBottomLeftRadius: scaledSize(22),
-    borderBottomRightRadius: scaledSize(22),
+    paddingTop: isLandscape ? scaledSize(10) : scaledSize(22),
+    paddingHorizontal: isLandscape ? scaledSize(16) : scaledSize(20),
+    paddingBottom: isLandscape ? scaledSize(10) : scaledSize(56),
+    borderBottomLeftRadius: isLandscape ? 0 : scaledSize(22),
+    borderBottomRightRadius: isLandscape ? 0 : scaledSize(22),
     overflow: 'visible',
   },
-  headerTopRow: {
-    minHeight: scaledSize(76),
+  landscapeToolbar: {
+    minHeight: scaledSize(72),
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: scaledSize(16),
+  },
+  landscapeSearchSlot: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerTopRow: {
+    minHeight: isLandscape ? scaledSize(72) : scaledSize(76),
+    flexDirection: 'row',
+    alignItems: isLandscape ? 'center' : 'flex-start',
+    justifyContent: isLandscape ? 'flex-end' : 'space-between',
   },
   menuCircle: {
     width: scaledSize(50),
@@ -1239,16 +1264,16 @@ const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage
   headerActions: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: scaledSize(18),
+    gap: isLandscape ? scaledSize(12) : scaledSize(18),
   },
   headerAction: {
     alignItems: 'center',
-    width: scaledSize(58),
+    width: isLandscape ? scaledSize(48) : scaledSize(58),
   },
   headerActionCircle: {
-    width: scaledSize(50),
-    height: scaledSize(50),
-    borderRadius: scaledSize(24),
+    width: isLandscape ? scaledSize(40) : scaledSize(50),
+    height: isLandscape ? scaledSize(40) : scaledSize(50),
+    borderRadius: isLandscape ? scaledSize(20) : scaledSize(24),
     backgroundColor: theme.bgColor,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1259,10 +1284,10 @@ const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage
     elevation: 5,
   },
   headerActionLabel: {
-    marginTop: scaledSize(9),
+    marginTop: isLandscape ? scaledSize(5) : scaledSize(9),
     color: '#3B46C6',
-    fontSize: scaledSize(12),
-    lineHeight: scaledSize(18),
+    fontSize: isLandscape ? scaledSize(10) : scaledSize(12),
+    lineHeight: isLandscape ? scaledSize(13) : scaledSize(18),
     fontFamily: Fonts.regular,
     fontWeight: '700',
   },
@@ -1297,12 +1322,12 @@ const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage
   },
   searchInner: {
     width: '100%',
-    height: scaledSize(64),
+    height: isLandscape ? scaledSize(46) : scaledSize(64),
     justifyContent: 'center',
   },
   searchBar: {
     width: '100%',
-    height: scaledSize(60),
+    height: isLandscape ? scaledSize(44) : scaledSize(60),
     borderRadius: scaledSize(32),
     shadowColor: '#75809A',
     shadowOffset: { width: 0, height: 14 },
@@ -1310,7 +1335,11 @@ const createStyles = (theme:Theme,mode:string,scaledSize:any,widthFromPercentage
   },
   content: {
     flex: 1,
-    paddingTop: scaledSize(48), // This padding creates space for the search bar
+    paddingTop: isLandscape ? scaledSize(10) : scaledSize(48), // This padding creates space for the search bar
+  },
+  fileListWrap: {
+    flex: 1,
+    bottom: isLandscape ? 0 : scaledSize(40),
   },
 
   loading: {

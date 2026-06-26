@@ -9,6 +9,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { scaledSize } from '../utilies/Utilities';
 import CustomVectorIcon from './CustomVectorIcon';
+import { useTheme } from '../screen/theme/useTheme';
 
 interface Props {
   onPressClose: () => void;
@@ -19,16 +20,17 @@ export default function PremiumPermissionModal({
   onPressClose,
   permissionMessage,
 }: Props) {
+  const { theme, mode } = useTheme()
   return (
     <View
       // colors={['#E0F2F1', '#F1F5F9']}
       style={styles.container}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.bgColor }]}>
         {/* Close Button */}
         <TouchableOpacity
           onPress={onPressClose}
-          style={styles.closeBtn}
+          style={[  styles.closeBtn, { backgroundColor: theme.buttonBGColor }]}
           activeOpacity={0.8}
         >
           <CustomVectorIcon
@@ -36,12 +38,12 @@ export default function PremiumPermissionModal({
             iconName="close"
             size={20}
             onPress={onPressClose}
-            style={{ color: '#444' }}
+            style={{ color: theme.buttonTextColor }}
           />
         </TouchableOpacity>
 
         {/* Title */}
-        <Text style={styles.title}>Permission Required</Text>
+        <Text style={[styles.title, { color: theme.primaryTextColor,fontSize:scaledSize(18) }]}>Permission Required</Text>
 
         {/* Red Info Icon */}
         <View style={styles.iconWrapper}>
@@ -54,7 +56,7 @@ export default function PremiumPermissionModal({
         </View>
 
         {/* Message */}
-        <Text style={styles.message}>
+        <Text style={[styles.message, { color: theme.primaryTextColor,fontSize:scaledSize(18) }]}>
           {permissionMessage}
         </Text>
 
@@ -67,9 +69,14 @@ export default function PremiumPermissionModal({
           }}
         >
           <LinearGradient
-            colors={['#0E7490', '#67C6D6']}
+            colors={
+              mode === 'dark'
+                ? ['#2D2F36', '#1C1C1E']
+                : ['#6EA8FF', '#4338CA']
+
+            }
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.button}
           >
             <Text style={styles.buttonText}>Open Settings</Text>

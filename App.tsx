@@ -147,6 +147,14 @@ export default function App(props) {
   function MyTabs() {
     const { theme, mode, toggleTheme } = useTheme();
     const colorScheme = useColorScheme();
+    const { width, height } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
+    const isLandscape = width > height;
+    const tabBarHeight = isLandscape
+      ? Math.max(scaledSize(74), Math.min(scaledSize(92), height * 0.22))
+      : heightFromPercentage(11.5);
+    const tabIconTop = isLandscape ? 0 : scaledSize(6);
+    const tabLabelTop = isLandscape ? scaledSize(2) : scaledSize(-8);
 
     React.useEffect(() => {
       const savedTheme = getLocalData(asyncStorageKeyName.THEME_MODE);
@@ -172,7 +180,7 @@ export default function App(props) {
 
         tabBarStyle: {
           backgroundColor: mode == 'dark' ? theme.bgColor : '#FFFFFF',
-          height: heightFromPercentage(11.5),
+          height: tabBarHeight,
                 borderTopWidth: 0,
           position: 'absolute',
           bottom: 0,
@@ -188,9 +196,15 @@ export default function App(props) {
           },
           shadowOpacity: mode === 'dark' ? 0.2 : 0.12,
           shadowRadius: 18,
+          paddingTop: isLandscape ? scaledSize(8) : 0,
+          paddingBottom: isLandscape ? Math.max(insets.bottom, scaledSize(10)) : Math.max(insets.bottom, scaledSize(4)),
 
 
-        }
+        },
+        tabBarItemStyle: {
+          justifyContent: 'center',
+          paddingVertical: isLandscape ? scaledSize(4) : 0,
+        },
       }}>
         {screensData.map((item, key) =>
           <BottomTabs.Screen key={key} name={item.name}
@@ -203,12 +217,12 @@ export default function App(props) {
               },
             })}
             options={{
-              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(6), minWidth: scaledSize(54) }}>
+              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: tabIconTop, minWidth: scaledSize(54) }}>
                 {focused && (
                   <View
                     style={{
                       position: 'absolute',
-                      top: scaledSize(-12),
+                      top: isLandscape ? scaledSize(-9) : scaledSize(-12),
                       width: scaledSize(34),
                       height: scaledSize(3),
                       borderRadius: scaledSize(3),
@@ -221,9 +235,10 @@ export default function App(props) {
               tabBarLabel: ({ focused }) => (
                 <Text style={{
                   color: focused ? theme.themeColor : '#7A7A7A',
-                  fontSize: scaledSize(12),
+                  fontSize: isLandscape ? scaledSize(10) : scaledSize(12),
+                  lineHeight: isLandscape ? scaledSize(14) : scaledSize(16),
                   letterSpacing: 0,
-                  top: scaledSize(8),
+                  top: tabLabelTop,
                   fontWeight: focused ? '700' : '400',
                 }}>{item.name}</Text>
               ),
