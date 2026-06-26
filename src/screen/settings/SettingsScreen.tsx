@@ -12,6 +12,7 @@ import { useGoogleAuth } from '../../customhooks/useGoogleAuth';
 import CustomHeader from '../../component/CustomHeader';
 import CustomSpinner from '../../component/CustomSpinner';
 import CustomVectorIcon from '../../component/CustomVectorIcon';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SettingsScreen = () => {
 
@@ -39,9 +40,10 @@ console.log('savedTheme', savedTheme);
   const handleLogout = () => {
     signOut();
   };
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{top:insets.top}]}>
       <View style={{ height: scaledSize(52) }}>
         <CustomHeader
           title="Settings"

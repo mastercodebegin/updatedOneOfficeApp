@@ -106,7 +106,7 @@ const MediaOption=()=>{
     <Modal visible={isShowPhotoOptionsModal} 
     style={{backgroundColor:'transparent',justifyContent:'center',alignItems:'center'}} transparent    >
       <View style={styles.mediaOptionContainer}>
-        <View style={{ flex: .4 }}>
+        <View style={{ flex: .4,marginTop:scaledSize(16) }}>
           <Text style={styles.mediaOptionTitle}>Select File</Text>
         </View>
 
@@ -333,8 +333,8 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       elevation: 3, // For Android shadow
     },
     mediaOptionContainer: {
-      height: scaledSize(200),
-      width: scaledSize(280),
+      height: scaledSize(250),
+      width: scaledSize(320),
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'center',
@@ -373,7 +373,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
       justifyContent: 'center',
       borderColor: theme.borderColor,
       alignItems: 'center',
-      bottom: scaledSize(10),
+      bottom: scaledSize(30),
       borderRadius: scaledSize(8),
       width: scaledSize(260),
       backgroundColor: theme.buttonBGColor,

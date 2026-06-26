@@ -17,14 +17,7 @@ const CustomEmptyState: React.FC<CustomEmptyStateProps> = ({ onPressReload }) =>
 
   return (
     <View style={styles.container}>
-      {/* <View style={styles.illustrationContainer}>
-        <CustomVectorIcon
-          iconName="refresh"
-          iconLibrary='MaterialCommunityIcons'
-          size={scaledSize(60)}
-          style={styles.icon}
-        />
-      </View> */}
+      
       <Text style={styles.title}>No files found</Text>
       <Text style={styles.subtitle}>
         There are no files to display. Try refreshing to load files.

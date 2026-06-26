@@ -40,13 +40,13 @@ export const lightTheme: Theme = {
   bgColor: '#FFFFFF',
   bgContainor: '#F8FAFC',
   primaryTextColor: '#111827',
-  secondaryTextColor: '#000000',
+  secondaryTextColor: 'grey',
   iconColor: '#6B7280',
   borderColor: '#d3d3d3',
   // themeColor: '#47b16a',
-  buttonBGColor:'white',
+  buttonBGColor:'#F8FAFC',
   themeSecondaryColor:'#47b16a',
-  buttonTextColor:'#000000'
+  buttonTextColor:'white'
 };
 
 export const darkTheme: Theme = {

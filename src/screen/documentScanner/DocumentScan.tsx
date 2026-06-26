@@ -56,6 +56,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign'
 import CustomProgressBar from '../../component/CustomProgressBar';
 // import { getAuth } from '@react-native-firebase/auth';
 import { CameraIcon } from 'lucide-react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 
@@ -1107,7 +1108,16 @@ export const DocumentScan = () => {
 
   const renderHeader = () => {
     return (
-      <SafeAreaView style={{ ...styles.headerContainer, backgroundColor: theme.bgContainor }}>
+      <LinearGradient
+              colors={[
+                mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#F1F3FF',
+                mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#E7F1FF',
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hero}>
+
+      <SafeAreaView style={{ ...styles.headerContainer, }}>
 
         {/* Top Row */}
         <View style={styles.topRow}>
@@ -1123,24 +1133,7 @@ export const DocumentScan = () => {
             </View>
           </View>
 
-          {/* <TouchableOpacity activeOpacity={0.9} onPress={requestCameraPermission}>
-            <LinearGradient colors={[theme.buttonBGColor, theme.buttonBGColor]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.uploadButton}>
-
-              <Text style={{
-                color: theme.iconColor,
-                letterSpacing: 1, fontSize: scaledSize(14), fontWeight: '500'
-              }} onPress={async () => {
-                await FileLocalService.resetFilesTable();
-                resetFoldersTable()
-                await tagLocalService.resetTagsTable();
-               const t= await tagLocalService.getTags()
-                setUserTags(t)
-              }}>AK</Text>
-            </LinearGradient>
-          </TouchableOpacity> */}
+          
         </View>
 
         {/* Search + Filter */}
@@ -1170,6 +1163,8 @@ export const DocumentScan = () => {
 
         </View>
       </SafeAreaView>
+    </LinearGradient>
+
     );
   };
   const getTagByIdHandler = (id: number) => {
@@ -1187,11 +1182,8 @@ return files
 
 const renderParentItem = ({ item }) => {
     console.log('item>>>>>>>>',item);
-   
-
+  
     const isSelected = checkisFolderSelected(item.id);
-    const stats = folderStats[item.id] || { count: 0, size: 0 };
-    // const sizePercentage = maxFolderSize > 0 ? (stats.size / maxFolderSize) * 100 : 0;
 
     return (
       <TouchableOpacity
@@ -1235,12 +1227,48 @@ const renderParentItem = ({ item }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.docMetadata}>
-            <Text style={styles.docMetaText}>{Utility.date.getDateByMomentFormat(item?.createdAt, DateFormat.DATE_WITH_MONTH_NAME)}</Text>
-            <Text style={styles.docMetaText}>{item?.filesCount} files</Text>
-            <Text style={styles.docMetaText}>{getTagByIdHandler(item.tagId)}</Text>
-          </View>
+<View style={styles.docMetadata}>
+  <View style={styles.metaItem}>
+    <Ionicons
+      name="calendar-outline"
+      size={scaledSize(14)}
+      color={theme.themeColor}
+    />
+    <Text style={[styles.docMetaText, { marginLeft: scaledSize(6) }]}>
+      {Utility.date.getDateByMomentFormat(
+        item?.createdAt,
+        DateFormat.DATE_WITH_MONTH_NAME,
+      )}
+    </Text>
+  </View>
 
+  <View style={styles.metaItem}>
+    <Ionicons
+      name="document-outline"
+      size={scaledSize(14)}
+      color={theme.themeColor}
+    />
+    <Text style={[styles.docMetaText, { marginLeft: scaledSize(6) }]}>
+      {item?.filesCount} Files
+    </Text>
+  </View>
+
+  <View style={styles.metaItem}>
+   <View style={{top:scaledSize(2)}}>
+
+    <Ionicons
+      name="pricetag-outline"
+      size={scaledSize(14)}
+      color={theme.themeColor}
+      />
+      </View>
+    <Text
+      numberOfLines={1}
+      style={[styles.docMetaText, { marginLeft: scaledSize(6), flex: 1 }]}>
+      {getTagByIdHandler(item.tagId)}
+    </Text>
+  </View>
+</View>
         </View>
 
         <View style={styles.docActions}>
@@ -2103,12 +2131,13 @@ const renderParentItem = ({ item }) => {
             </View>
 
             {/* Tags */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row',
+               justifyContent: 'space-between' }}>
 
 
               <Text
                 style={{
-                  color: '#9CA3AF',
+                  color: theme.primaryTextColor,
                   marginTop: scaledSize(20),
                   marginBottom: scaledSize(12),
                   fontSize: scaledSize(12),
@@ -2156,13 +2185,12 @@ const renderParentItem = ({ item }) => {
                       selectedFolderTag.id ===
                         item.id
                         ? theme.themeColor
-                        : '#2B2B2B',
+                        : theme.buttonBGColor,
                   }}
                 >
                   <Text
                     style={{
-                      color:
-                        theme.primaryTextColor,
+                      color: selectedFolderTag.id === item.id ?theme.secondaryTextColor:theme.primaryTextColor,
                     }}
                   >
                     {item.name}
@@ -2276,11 +2304,10 @@ const renderParentItem = ({ item }) => {
 
     setIsShowUpdateTagModal(false);
   }
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
-
-
+    <SafeAreaView style={[styles.container,{top:insets.top}]}>
       {renderHeader()}
       <View style={{
         paddingTop: scaledSize(0), paddingBottom: scaledSize(8)
@@ -2515,13 +2542,27 @@ export default DocumentScan;
 const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bgContainor
+    backgroundColor: mode=='dark'?theme.bgContainor:'white'
 
     // backgroundColor:
     //   mode === 'dark' ? '#0E1015' : '#F7F8FA'
   },
+  metaItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginVertical: scaledSize(4),
+  // top:scaledSize(2)
+},
+  hero: {
+    paddingTop: scaledSize(14),
+    paddingHorizontal: scaledSize(20),
+    paddingBottom: scaledSize(16),
+    borderBottomLeftRadius: scaledSize(22),
+    borderBottomRightRadius: scaledSize(22),
+    overflow: 'visible',
+  },
   docCard: {
-    height: scaledSize(120),
+    height: scaledSize(150),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.bgColor,
@@ -2529,7 +2570,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginHorizontal: scaledSize(16),
     marginBottom: scaledSize(12),
     padding: scaledSize(12),
-    borderWidth: 1,
+    borderWidth: .5,
     borderColor: theme.borderColor,
     shadowColor: theme.bgColor,
     shadowOffset: { width: 0, height: 4 },
@@ -2563,7 +2604,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     gap: scaledSize(6),
   },
   docTitle: {
-    fontSize: scaledSize(15),
+    fontSize: scaledSize(19),
     fontWeight: 'bold',
     color: theme.primaryTextColor,
     fontFamily: Fonts.bold,
@@ -2572,10 +2613,12 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     marginTop: scaledSize(4),
   },
   docMetaText: {
-    fontSize: scaledSize(11),
-    color: theme.secondaryTextColor,
-    fontFamily: Fonts.regular,
+    fontSize: scaledSize(14),
+    // fontFamily: Fonts.CALIBRI,
     lineHeight: scaledSize(16),
+    letterSpacing:1,
+    color:theme.primaryTextColor,
+    top:scaledSize(2),
   },
   docActions: {
     flexDirection: 'column',
@@ -2601,7 +2644,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     paddingTop: scaledSize(18),
     paddingBottom: scaledSize(10),
 
-    backgroundColor: theme.bgColor,
+    // backgroundColor: theme.bgColor,
   },
 
   topRow: {
@@ -2662,7 +2705,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
   searchContainer: {
     flex: 1,
 
-    height: scaledSize(45),
+    height: scaledSize(55),
 
     borderRadius: scaledSize(18),
 

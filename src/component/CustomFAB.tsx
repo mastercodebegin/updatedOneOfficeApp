@@ -16,27 +16,31 @@ interface S {
 }
 export default function CustomFAB(props: S) {
     const { onPress, height, icon, style } = props;
-    const hei = height ? height : scaledSize(60)
+    const hei = height ? height : scaledSize(80)
     const { mode, theme } = useTheme()
     return (
         <View style={[
-    {
-      height: scaledSize(hei),
+            {
+                height: scaledSize(hei),
 
-      width: scaledSize(hei),
+                width: scaledSize(hei),
 
-      borderRadius:
-        scaledSize(hei) / 2,
-    },
+                borderRadius:
+                    scaledSize(hei) / 2,
+            },
 
-    style,
-  ]}
->
+            style,
+        ]}
+        >
 
 
             <LinearGradient
-                colors={mode === 'light' ? [theme.themeColor, theme.themeColor] :
-                    [theme.buttonBGColor, theme.buttonBGColor]}
+                colors={
+                    mode === 'dark'
+                        ? ['#2D2F36', '#1C1C1E']
+                        : ['#6EA8FF', '#4338CA']
+
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{
@@ -53,7 +57,7 @@ export default function CustomFAB(props: S) {
                     onPress={() => onPress()}
                 >
                     {icon ? icon : <Ionicons name='camera-outline'
-                     color={mode === 'light' ? 'white' : theme.iconColor}  size={scaledSize(20)}
+                        color={mode === 'light' ? 'white' : theme.iconColor} size={scaledSize(30)}
                     />}
                 </TouchableOpacity>
             </LinearGradient>

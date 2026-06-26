@@ -16,9 +16,10 @@ import { FileCommonRenderItem } from './FileCommonRenderItem';
 import CustomSpinner from './CustomSpinner';
 import { asyncStorageKeyName, CONSTANT, DateFormat } from '../utilies/Constants';
 import { useDispatch, useSelector } from 'react-redux'
-import { Searchbar,Modal } from 'react-native-paper'
+import { Searchbar, Modal } from 'react-native-paper'
 import { useToast } from "react-native-toast-notifications";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import Ionicons from 'react-native-vector-icons/Ionicons'
 import LinearGradient from 'react-native-linear-gradient';
 import CustomFAB from './CustomFAB';
 import CustomPermissionMessage from './CustomPermissionMessage';
@@ -32,6 +33,7 @@ import CustomSortModal from './CustomSortModal';
 import RNBlobUtil from 'react-native-blob-util';
 import { convertedPdfLocalService } from '../db/convertedPdfLocalService';
 import CustomEmptyState from './CustomEmptyState';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // const RNImageToPdf = createPdf
 
@@ -369,7 +371,7 @@ const ImagesToPdfConverter = () => {
   }
 
   const renderInputFileName = () => {
-    return (<View>
+    return (<View style={{height:scaledSize(80)}}>
       <Text
         style={{
           fontSize: scaledSize(14),
@@ -387,8 +389,11 @@ const ImagesToPdfConverter = () => {
           flexDirection: 'row', alignItems: 'center',
           // backgroundColor: '#F3F4F6',
           borderRadius: scaledSize(14),
-          paddingHorizontal: scaledSize(14),
-          height: scaledSize(40),
+          width:'96%',
+          alignSelf:'center',
+          paddingHorizontal: scaledSize(24),
+          height: scaledSize(50),
+          
           borderWidth: .5,
           borderColor: '#d3d3d3'
         }}
@@ -473,63 +478,74 @@ const ImagesToPdfConverter = () => {
       </View>
     )
   }
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flex: 1, backgroundColor: theme.bgContainor, paddingTop: scaledSize(10) }}>
-        <View style={{
-          width: '95%', alignSelf: 'center',
-          flexDirection: 'row', alignItems: 'center', gap: scaledSize(8)
-        }}>
+    <SafeAreaView style={[styles.container, { top: insets.top }]}>
+      <View>
+        <LinearGradient
+          colors={[
+            mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#F1F3FF',
+            mode === 'dark' ? theme.bgContainor || '#1C1C1E' : '#E7F1FF',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          // style={styles.hero}
+          style={[styles.hero]}
+
+        >
+
           <View style={{
-            flex: 1,
-            // width: widthFromPercentage(95), 
-            height: scaledSize(43), marginTop: scaledSize(0),
-            justifyContent: 'center', alignItems: 'center', alignSelf: 'center'
+            width: '95%', alignSelf: 'center',
+            flexDirection: 'row', alignItems: 'center', gap: scaledSize(8)
           }}>
-            <Searchbar
-              placeholder="Search"
-              placeholderTextColor={theme.secondaryTextColor}
-              iconColor={theme.iconColor}
-              inputStyle={{
-                fontSize: scaledSize(12),
-                fontFamily: Fonts.regular,
-                color: theme.primaryTextColor,
-              }}
-              style={{
-                borderRadius: scaledSize(14),
-                height: scaledSize(44),
-                marginRight: 0,
-                backgroundColor: theme.bgColor,
-                borderWidth: 1,
-                borderColor: theme.borderColor,
-              }}
-              onChangeText={(value) => setSearchQuery(value)}
-              inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center', letterSpacing: 1 }}
-              loading={false}
-              icon={() => <Image source={searchIcon} style={{
-                height: scaledSize(16), width: scaledSize(16),
-              }}
+            <View style={{
+              flex: 1,
+              // width: widthFromPercentage(95), 
+              height: scaledSize(63), marginTop: scaledSize(0),
+              justifyContent: 'center', alignItems: 'center', alignSelf: 'center'
+            }}>
+              <Searchbar
+                placeholder="Search"
+                placeholderTextColor={theme.secondaryTextColor}
+                iconColor={theme.iconColor}
 
-              />}
-              clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
-                setSearchQuery(''), console.log('press search')
-              }}>
-                <Image source={clear} style={{
+                style={{
+                  borderRadius: scaledSize(20),
+                  height: scaledSize(55),
+                  marginRight: 0,
+                  backgroundColor: theme.bgColor,
+                  borderWidth: 1,
+                  borderColor: theme.borderColor,
+                }}
+                onChangeText={(value) => setSearchQuery(value)}
+                inputStyle={{ fontSize: scaledSize(14), alignSelf: 'center', letterSpacing: 1 }}
+                loading={false}
+                icon={() => <Image source={searchIcon} style={{
                   height: scaledSize(16), width: scaledSize(16),
+                }}
 
-                }} />
-              </TouchableOpacity> : <></>
-              }
-              value={searchQuery}
-            />
+                />}
+                clearIcon={() => searchQuery.length > 0 ? <TouchableOpacity onPress={() => {
+                  setSearchQuery(''), console.log('press search')
+                }}>
+                  <Image source={clear} style={{
+                    height: scaledSize(16), width: scaledSize(16),
+
+                  }} />
+                </TouchableOpacity> : <></>
+                }
+                value={searchQuery}
+              />
+            </View>
+            <TouchableOpacity style={styles.sortButton} onPress={() => setIsShowSortModal(true)}>
+              <MaterialCommunityIcons
+                name="sort"
+                size={scaledSize(22)} color={theme.primaryTextColor} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.sortButton} onPress={() => setIsShowSortModal(true)}>
-            <MaterialCommunityIcons
-              name="sort"
-              size={scaledSize(22)} color={theme.primaryTextColor} />
-          </TouchableOpacity>
-        </View>
+
+        </LinearGradient>
 
 
         {pdfData.length > 0 ? (
@@ -540,35 +556,42 @@ const ImagesToPdfConverter = () => {
           />
         ) : (
           <>
-            {isLoading ? <CustomSpinner isLoading={isLoading} /> : <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <CustomEmptyState onPressReload={() => { }} />
+            {isLoading &&<CustomSpinner isLoading={isLoading} /> 
+            
+            
 
-
-            </View>}
+            }
           </>
         )}
 
       </View>
+        {pdfData.length == 0 && <CustomEmptyState onPressReload={() => { }} />}
+
       <View style={{
         position: 'absolute', left: heightFromPercentage(35),
-        top: heightFromPercentage(78), right: 0,
+        top: heightFromPercentage(70), right: 0,
       }}>
-        <CustomFAB onPress={() => showSelectImagesModal()} />
+        <CustomFAB onPress={() => showSelectImagesModal()}
+          style={{ borderWidth: 0, borderColor: theme.iconColor }}
+          icon={<Ionicons name='camera-outline' size={scaledSize(24)}
+            color={mode === 'light' ? 'white' : theme.iconColor} />} />
       </View>
 
-      <Modal visible={isShowCreatePdfModalWindow} 
+      <Modal visible={isShowCreatePdfModalWindow}
         style={{
           borderRadius: scaledSize(26),
           backgroundColor: 'transparent',
-          justifyContent:'center',
-          alignItems:'center'
+          justifyContent: 'center',
+          alignItems: 'center'
         }} >
-        <View style={{ height: heightFromPercentage(54), 
-          width: widthFromPercentage(90),borderRadius:scaledSize(20),
-           backgroundColor: theme.bgColor,  }}>
+        <View style={{
+          height: heightFromPercentage(54),
+          width: widthFromPercentage(90), borderRadius: scaledSize(20),
+          backgroundColor: theme.bgColor,
+        }}>
           <View style={{
             height: heightFromPercentage(20),
-             width: widthFromPercentage(90),
+            width: widthFromPercentage(90),
             alignSelf: 'flex-end'
           }}>
             <CustomPhotoOrCameraSelectOption
@@ -584,7 +607,7 @@ const ImagesToPdfConverter = () => {
             onPress={handleProceedPress}
           >
             <LinearGradient
-              colors={[theme.themeColor, theme.themeSecondaryColor]}
+              colors={[theme.themeColor, theme.themeColor]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{
@@ -614,7 +637,7 @@ const ImagesToPdfConverter = () => {
               </Text>
             </LinearGradient>
           </TouchableOpacity>
-<CustomSpinner isLoading={isLoading} />
+          <CustomSpinner isLoading={isLoading} />
         </View>
       </Modal>
 
@@ -662,6 +685,14 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  hero: {
+    paddingTop: scaledSize(22),
+    paddingHorizontal: scaledSize(20),
+    paddingBottom: scaledSize(36),
+    borderBottomLeftRadius: scaledSize(22),
+    borderBottomRightRadius: scaledSize(22),
+    overflow: 'visible',
   },
   body: {
     fontSize: scaledSize(18),

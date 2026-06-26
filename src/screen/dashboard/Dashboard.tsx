@@ -11,6 +11,7 @@ import {
   ScrollView,
   Button,
   NativeModules,
+  StatusBar,
 } from 'react-native';
 import { deleteFile, getFilesFromPhoneByFileExtention, scaledSize, toastForDeleteFile, Utility, widthFromPercentage, } from '../../utilies/Utilities';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,6 +73,7 @@ import CustomSortModal from '../../component/CustomSortModal';
 import { useTheme } from '../theme/useTheme';
 import ManageExternalStorage from 'react-native-manage-external-storage';
 import { Theme } from '../theme/ThemeConfig';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { PdfCacheModule } = NativeModules;
 
@@ -1067,9 +1069,16 @@ useEffect(() => {
     // The spinner is already visible, just restart the scanning process
     readPdfFiles();
   };
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: mode === 'dark' ? theme.bgContainor : '#F6F8FE' }]} >
+    <SafeAreaView style={[styles.safeArea, 
+    { backgroundColor: theme.bgContainor,top:insets.top, }]} >
+<StatusBar
+  backgroundColor="black"
+  barStyle="light-content"
+  translucent={false}
+/>      
 
       {isScanning ? (
         <Modal visible={isLoading} transparent animationType="fade">

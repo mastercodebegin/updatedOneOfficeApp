@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { View, useWindowDimensions, PermissionsAndroid, Image, Text, Alert, Linking, Platform, AppState } from 'react-native';
+import { View, useWindowDimensions, PermissionsAndroid, Image, Text, Alert, Linking, Platform, AppState, StatusBar } from 'react-native';
 import { MenuProvider } from 'react-native-popup-menu';
 // import GoogleAdd from './src/component/DisplayAdd';
 import Dashboard from './src/screen/dashboard/Dashboard';
@@ -55,6 +55,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 
 // import { CONSTANT } from './src/utilies/Constants';
 import { NotificationService } from './src/service/NotificationService'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function App(props) {
   const Stack = createNativeStackNavigator();
   const [uri, setUri] = React.useState()
@@ -199,43 +200,48 @@ export default function App(props) {
 
               },
             })}
-            options={{
-              tabBarIcon: ({ focused }) => (<View style={{ alignItems: 'center', justifyContent: 'center', top: scaledSize(4), minWidth: scaledSize(54) }}>
-                {focused && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      top: scaledSize(-12),
-                      width: scaledSize(34),
-                      height: scaledSize(3),
-                      borderRadius: scaledSize(3),
-                      backgroundColor: theme.themeColor,
-                    }}
-                  />
-                )}
-                {focused ? item.focus(theme.themeColor) : item.unFocus('gray')}
-              </View>),
-              tabBarLabel: ({ focused }) => (
-                <Text style={{
-                  color: focused ? theme.themeColor : '#7A7A7A',
-                  fontSize: scaledSize(12),
-                  letterSpacing: 0,
-                  top: scaledSize(4),
-                  fontWeight: focused ? '700' : '400',
-                }}>{item.name}</Text>
-              ),
-            }}
+options={{
+  tabBarShowLabel: false,
+
+  tabBarIcon: ({ focused }) => (
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      {focused ? item.focus(theme.themeColor) : item.unFocus('#7A7A7A')}
+
+      <Text
+        style={{
+          marginTop: scaledSize(4),
+          fontSize: scaledSize(11),
+          color: focused ? theme.themeColor : '#7A7A7A',
+          fontWeight: focused ? '700' : '400',
+        }}>
+        {item.name}
+      </Text>
+    </View>
+  ),
+}}
           />)}
       </BottomTabs.Navigator>
     );
   }
+// const insets = useSafeAreaInsets();
   return (
+    <SafeAreaProvider >
+
     <PaperProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>{/* for gesture handler */}
         <BottomSheetModalProvider>
 
           <MenuProvider>
             <Provider store={Store}>
+        <StatusBar
+        barStyle="light-content"
+        backgroundColor="#5B6FEF"
+        translucent={true}
+      />
               <NavigationContainer ref={navigationRef}>
                 <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
                   {/* <Stack.Screen name="Splashscreen" component={Splashscreen} /> */}
@@ -265,5 +271,7 @@ export default function App(props) {
         </BottomSheetModalProvider>
       </GestureHandlerRootView>
     </PaperProvider>
+        </SafeAreaProvider>
+
   );
 }

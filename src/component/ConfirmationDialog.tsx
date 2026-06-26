@@ -260,7 +260,7 @@ const createStyles = (theme: Theme) =>
     confirmText: {
       fontSize: scaledSize(15),
 
-      color: theme.primaryTextColor,
+      color: theme.buttonTextColor,
 
       fontFamily: Fonts.regular,
     },
