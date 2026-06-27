@@ -7,26 +7,21 @@ import {
   Alert,
 } from "react-native";
 import { COLORS } from "../utilies/GlobalColors";
-import { capitalizeFirstLetter, scaledSize, toastForDeleteFile, Utility, } from "../utilies/Utilities";
-import { deviceBasedDynamicDimension } from "../utilies/scale";
+import {  Utility, } from "../utilies/Utilities";
 import { Fonts } from "../assets/fonts/GlobalFonts";
-import { Axis, BOB, calendarIcon, clear, eye, eyeClosed, info, } from "../assets/GlobalImages";
-import Info from '../assets/images/pdfIcon.png'
-import { asyncStorageKeyName, BANK_LOGOS, banksName, BanksObject, } from "../utilies/Constants";
+import { asyncStorageKeyName, BANK_LOGOS,  } from "../utilies/Constants";
 import CustomBannerAdd from "./admob/CustomBannerAdd";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RadioButton } from "react-native-paper";
-import moment from 'moment';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import SaveUserCardDetails from "../screen/dashboard/SaveUserCardDetails";
 import CustomDropdown from "./CustomDropDown";
 import { useToast } from "react-native-toast-notifications";
-import CustomLinearGradientView from "./CustomLinearGradientView";
 import CustomErrorMsgModal from "./CustomErrorMsgModal";
 import CustomVectorIcon from "./CustomVectorIcon";
 import { useTheme } from "../screen/theme/useTheme";
 import { Theme } from "../screen/theme/ThemeConfig";
 import { getLocalData } from "../utilies/storageUtility";
+import { useResponsive } from "../customhooks/useResponsive";
 
 
 //local imports
@@ -47,8 +42,7 @@ interface myProps {
 
 
 const ModalView = (props: myProps) => {
-  const { theme,mode } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const [visible, setIsvisible] = useState(false)
   const [open, setOpen] = useState(false)
   const [calendar, setCalendar] = useState(false)
@@ -71,7 +65,9 @@ const ModalView = (props: myProps) => {
   const [isShowErrorModal, setIsShowErrorModal] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const toast = useToast();
-
+  const {scaledSize} = useResponsive()
+  const { theme,mode } = useTheme();
+  const styles = useMemo(() => createStyles(theme,scaledSize), [theme]);
   useEffect(() => {
     console.log('getCardsForDropDown', getCardsForDropDown());
 
@@ -88,6 +84,8 @@ const ModalView = (props: myProps) => {
   }, [])
 
   const selectUser = (item) => {
+    console.log('item====',item);
+    
     console.log('on select user', item);
     // console.log('bank--',bankDetails);
 
@@ -349,7 +347,7 @@ const ModalView = (props: myProps) => {
                 <CustomDropdown
                   placeholder="Select user"
                   isShowSearch={false}
-                  value={selectedUser ? selectedUser.firstName : ''}
+                  value={selectedUser.id}
                   LeftIcon={() => <CustomVectorIcon iconLibrary="Feather" iconName="user"
                     style={{ fontSize: scaledSize(14), marginRight: scaledSize(8), color: theme.secondaryTextColor }} />}
                   data={savedUser}
@@ -360,15 +358,15 @@ const ModalView = (props: myProps) => {
               </View>
 
               {/* BANK DROPDOWN */}
-              <View style={{ marginTop: 15 }}>
+              <View style={{ marginTop: scaledSize(15),height:scaledSize(70) }}>
                 <CustomDropdown
                 isShowSearch={false}
                   placeholder="Select Bank"
-                  // value={se}
+                  // value={selected}
                   LeftIcon={() => selectedBank.value ?
                     <View style={{width:scaledSize(24)}}>
-
-                    <Image source={BANK_LOGOS[selectedBank.value.bankName]} style={{ height: 20, width: 20,paddingHorizontal:10 }} />
+                    <Image source={BANK_LOGOS[selectedBank.value.bankName]}
+                     style={{ height: scaledSize(20), width: scaledSize(20),paddingHorizontal:10 }} />
                     </View>
 
                     :
@@ -458,7 +456,7 @@ const ModalView = (props: myProps) => {
   );
 };
 
-const createStyles = (theme: Theme) => StyleSheet.create({
+const createStyles = (theme: Theme,scaledSize:any) => StyleSheet.create({
 
   overlay: {
     flex: 1,
@@ -495,9 +493,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontSize: scaledSize(12),
     color: theme.secondaryTextColor,
     flex: 1,
-    letterSpacing: scaledSize(1),
+    letterSpacing: scaledSize(.5),
     left: scaledSize(4),
-    // fontFamily:Fonts.regular,
+    fontFamily:Fonts.regular,
     lineHeight: scaledSize(16)
   },
 

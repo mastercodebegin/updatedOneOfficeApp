@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  StyleProp,
   StyleSheet,
   Text,
-  View
+  View,
+  ViewStyle
 } from 'react-native';
 
 import { Dropdown } from 'react-native-element-dropdown';
@@ -11,15 +13,22 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
 import { Fonts } from '../assets/fonts/GlobalFonts';
-import { scaledSize } from '../utilies/Utilities';
+import { useResponsive } from '../customhooks/useResponsive';
 
 const ICON_SIZE = 24;
 
+export interface BankDropdownItem {
+  id: number;
+  label: string;
+  value: object;
+  icon: number;
+}
 interface S {
+  containorStyle?:StyleProp<ViewStyle>
   placeholder: string;
   value?: string;
   onSelect: Function;
-  data: Array<any>;
+  data: Array<BankDropdownItem>;
   onFocuse?: Function;
   onBlur?: Function;
   LeftIcon?: any
@@ -29,12 +38,17 @@ interface S {
 
 const CustomDropdown = (props: S) => {
 
-  const { placeholder, onSelect, data,value, onFocuse, onBlur, LeftIcon, searchPlaceholder = 'Enter keyword', isShowSearch = true } = props;
+  const { placeholder, onSelect, data,value, onFocuse, onBlur, LeftIcon,containorStyle={}, searchPlaceholder = 'Enter keyword', isShowSearch = true } = props;
 
   const { theme, mode } = useTheme();
   const [isFocus, setIsFocus] = useState(false);
-  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+  const {scaledSize} = useResponsive()
+  const styles = useMemo(() => createStyles(theme, mode,scaledSize), [theme, mode]);
 
+  useEffect(()=>{
+    console.log('data===',data);
+    
+  })
   /* ---------- Dropdown Item ---------- */
 
   const renderDropdownItem = (item: any) => {
@@ -63,7 +77,7 @@ const CustomDropdown = (props: S) => {
 
       <Dropdown
         style={[
-          styles.dropdown,
+          styles.dropdown,containorStyle,
           isFocus && styles.focusedDropdown
         ]}
 
@@ -135,17 +149,17 @@ const CustomDropdown = (props: S) => {
 
 export default CustomDropdown;
 
-const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
+const createStyles = (theme: Theme, mode: string,scaledSize:any) => StyleSheet.create({
 
   wrapper: {
     width: '100%',
   },
 
   dropdown: {
-    height: 58,
+    height: scaledSize(45),
     backgroundColor: theme.bgContainor,
-    borderRadius: 18,
-    paddingHorizontal: 16,
+    borderRadius: scaledSize(18),
+    paddingHorizontal: scaledSize(16),
     borderWidth: 1,
     borderColor: theme.borderColor,
     shadowColor: '#000',
@@ -157,7 +171,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
 
   focusedDropdown: {
     // borderColor: theme.themeColor,
-    borderWidth: 1.5,
+    borderWidth: scaledSize(1),
     elevation: 4,
   },
 
@@ -180,7 +194,7 @@ const createStyles = (theme: Theme, mode: string) => StyleSheet.create({
     borderRadius: scaledSize(12),
     backgroundColor: theme.bgColor,
     borderColor: theme.borderColor,
-    borderWidth: 1,
+    borderWidth: 0,
     color: theme.primaryTextColor,
     paddingHorizontal: scaledSize(10),
     fontFamily: Fonts.regular,

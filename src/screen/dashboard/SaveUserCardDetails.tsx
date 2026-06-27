@@ -1213,6 +1213,7 @@ export default function SaveUserCardDetails(props: S) {
                 <CustomDropdown
                   data={bankList}
                   placeholder="Select bank"
+                  containorStyle={{height:scaledSize(54)}}
                   onSelect={(item) => {
                     selectBankOnAddUser(item);
                   }}
@@ -1221,10 +1222,10 @@ export default function SaveUserCardDetails(props: S) {
                   onBlur={() => setFocusedField(null)}
                   LeftIcon={() => (
                     selectedBank.value ?
-                      <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
-                      : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
+                    <Image source={selectedBank.icon} style={styles.bankIcon} resizeMode="contain" />
+                    : <MaterialCommunityIcons name="bank-outline" size={22} color={theme.secondaryTextColor} style={styles.inputIcon} />
                   )}
-                />
+                  />
 
                 <TouchableOpacity style={[styles.inputContainer, focusedField === 'dob' && styles.focusedInput]} onPress={() => { setIsShowCalendar(true); setFocusedField('dob') }}>
                   <AntDesign name='calendar' color={theme.secondaryTextColor} size={20} style={styles.inputIcon} />

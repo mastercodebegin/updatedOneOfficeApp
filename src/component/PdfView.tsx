@@ -271,70 +271,70 @@ const PdfViewer = (props: any) => {
 
         {!visible ? (
           pdfUri ? (
-          <>
-            <Pdf
-              trustAllCerts={false}
-              password={text}
-              maxScale={100}
-              source={{
-                uri: pdfUri,
-              }}
+            <>
+              <Pdf
+                trustAllCerts={false}
+                password={text}
+                maxScale={100}
+                source={{
+                  uri: pdfUri,
+                }}
 
-              onError={() => {
-                PdfPasswordErrorHandler();
-              }}
-              onLoadComplete={(pages) => {
-                console.log('PDF loaded', pages);
-              }}
+                onError={() => {
+                  PdfPasswordErrorHandler();
+                }}
+                onLoadComplete={(pages) => {
+                  console.log('PDF loaded', pages);
+                }}
 
 
-              onPageChanged={(page) => {
+                onPageChanged={(page) => {
 
-                setCurrentPage(page);
+                  setCurrentPage(page);
 
-                if (
-                  page >
-                  previousPage.current
-                ) {
-                  toggleHeader(false);
-                } else {
-                  toggleHeader(true);
-                }
+                  if (
+                    page >
+                    previousPage.current
+                  ) {
+                    toggleHeader(false);
+                  } else {
+                    toggleHeader(true);
+                  }
 
-                previousPage.current = page;
-              }}
+                  previousPage.current = page;
+                }}
 
-              style={{
-                flex: 1,
-
-                backgroundColor:
-                  mode === 'dark'
-                    ? '#12151D'
-                    : '#FFFFFF',
-              }}
-            />
-
-            {/* Dark mode overlay */}
-
-            {mode === 'dark' && (
-              <View
-                pointerEvents="none"
                 style={{
-                  position: 'absolute',
+                  flex: 1,
 
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-
-                  backgroundColor: '#000',
-
-                  opacity: 0.12,
+                  backgroundColor:
+                    mode === 'dark'
+                      ? '#12151D'
+                      : '#FFFFFF',
                 }}
               />
-            )}
 
-          </>
+              {/* Dark mode overlay */}
+
+              {mode === 'dark' && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+
+                    backgroundColor: '#000',
+
+                    opacity: 0.12,
+                  }}
+                />
+              )}
+
+            </>
           ) : (
             <View style={{ flex: 1 }} />
           )
@@ -353,7 +353,7 @@ const PdfViewer = (props: any) => {
         )}
 
       </View>
-
+      
       <CustomErrorMsgModal
         isVisible={showErrorModal}
         errorMessage={modalErrorMessage}

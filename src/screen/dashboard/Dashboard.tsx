@@ -901,7 +901,7 @@ useEffect(() => {
   const renderHeaderIcons = () => {
     const headerIconColor = mode === 'dark' ? '#FFFFFF' : 'black';
     const fileOpenColor =  theme.themeColor;
-    const iconSize=scaledSize(20)
+    const iconSize=scaledSize(22)
 
     return (
       <View style={styles.headerTopRow}>
@@ -960,13 +960,13 @@ useEffect(() => {
         )}
 
         {renderCircleAction(
-          'Scan',
+          'Refreash',
           <MaterialCommunityIcons
-            name="line-scan"
+            name="refresh"
             size={iconSize}
             color={headerIconColor}
           />,
-          () => navigation.navigate('Document'),
+          () => readPdfFiles(),
         )}
 
         {renderCircleAction(

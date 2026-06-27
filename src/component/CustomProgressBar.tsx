@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { scaledSize } from '../utilies/Utilities';
 import { useTheme } from '../screen/theme/useTheme';
 import { Theme } from '../screen/theme/ThemeConfig';
@@ -22,9 +22,35 @@ interface CustomProgressBarProps {
 const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
     const { theme } = useTheme();
     const styles = useMemo(() => createStyles(theme), [theme]);
-    const isComplete = props.progress === 100; // Check if progress is 100
     const { onRescan, onContinue, progress, filesFound, foundFiles, title, subtitle, destinationPath } = props;
+    const targetProgress = Math.max(0, Math.min(100, Math.round(progress || 0)));
+    const [displayProgress, setDisplayProgress] = useState(targetProgress);
+    const isComplete = displayProgress === 100; // Check if progress is 100
     const isBackup = title?.includes('Backup');
+
+    useEffect(() => {
+        if (targetProgress <= 0) {
+            setDisplayProgress(0);
+        }
+
+        const timer = setInterval(() => {
+            setDisplayProgress(previous => {
+                if (targetProgress >= 100) {
+                    return Math.min(previous + 1, 100);
+                }
+
+                const softLimit = targetProgress <= 0 ? 90 : 95;
+                const nextSoftTarget = Math.min(softLimit, Math.max(targetProgress, previous + 1));
+                if (previous < nextSoftTarget) {
+                    return previous + 1;
+                }
+
+                return previous;
+            });
+        }, targetProgress >= 100 ? 80 : 300);
+
+        return () => clearInterval(timer);
+    }, [targetProgress]);
 
     const getFileIcon = (fileName: string) => {
         const extension = fileName.split('.').pop()?.toLowerCase();
@@ -65,27 +91,27 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
 
                 <View style={styles.divider} />
                 {foundFiles && // Only show files section if the prop is provided
-                <View style={styles.filesSection}>
-                    <Text style={styles.filesFoundText}>{`${filesFound || 0} files found`}</Text>
+                    <View style={styles.filesSection}>
+                        <Text style={styles.filesFoundText}>{`${filesFound || 0} files found`}</Text>
 
-                    <FlatList
-                        data={foundFiles}
-                        renderItem={renderFoundFile}
-                        keyExtractor={(item, index) => `${item.name}-${index}`}
-                        style={styles.fileList}
-                        contentContainerStyle={{ paddingBottom: 4 }}
-                        ListEmptyComponent={
-                            <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                                {/* <ActivityIndicator size="small" color={theme.themeColor} /> */}
-                                </View>
+                        {foundFiles.length > 0 ? <FlatList
+                            data={foundFiles}
+                            renderItem={renderFoundFile}
+                            keyExtractor={(item, index) => `${item.name}-${index}`}
+                            style={styles.fileList}
+                            contentContainerStyle={{ paddingBottom: 4 }}
+                        /> :
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <ActivityIndicator size="small" color={theme.themeColor} />
+                            </View>
+
                         }
-                    />
-                </View>}
+                    </View>}
 
                 <View style={styles.progressSection}>
                     <Progress.Bar
-                        indeterminate={!isComplete && (progress === 0 || !foundFiles)}
-                        progress={(progress || 0) / 100}
+                        indeterminate={!isComplete && (displayProgress === 0 || !foundFiles)}
+                        progress={displayProgress / 100}
                         width={scaledSize(220)}
                         height={10}
                         animated={true}
@@ -95,7 +121,7 @@ const CustomProgressBar: React.FC<CustomProgressBarProps> = (props) => {
                         borderColor={theme.borderColor}
                         useNativeDriver={true}
                     />
-                    <Text style={styles.progressPercentage}>{`${progress || 0}% complete`}</Text>
+                    <Text style={styles.progressPercentage}>{`${displayProgress}% complete`}</Text>
                 </View>
 
                 {isComplete && onContinue && onRescan && (
@@ -138,6 +164,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         shadowColor: theme.themeColor,
         shadowOpacity: 0.7,
         shadowRadius: 15,
+        borderWidth:.1,borderColor:'white'
     },
     progressContent: {
         alignItems: 'center',
@@ -148,7 +175,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         marginBottom: scaledSize(20),
     },
     progressTitle: {
-        fontSize: scaledSize(16),
+        fontSize: scaledSize(18),
         color: theme.primaryTextColor,
         // fontWeight: '600',
         letterSpacing: 0.5,
@@ -234,8 +261,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     secondaryButtonText: {
         color: theme.primaryTextColor,
         fontSize: scaledSize(14),
-        fontFamily:Fonts.regular,
-        letterSpacing:.5,
+        fontFamily: Fonts.regular,
+        letterSpacing: .5,
         // fontWeight: '500',
         marginLeft: scaledSize(8),
     },
@@ -254,7 +281,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
         color: theme.primaryTextColor,
         fontSize: scaledSize(14),
         // fontWeight: '500',
-        letterSpacing:.5,
+        letterSpacing: .5,
         fontFamily: Fonts.regular,
         marginRight: scaledSize(8),
     },
